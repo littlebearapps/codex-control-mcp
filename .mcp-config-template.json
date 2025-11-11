@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "codex-control": {
+      "command": "node",
+      "args": [
+        "/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js"
+      ],
+      "env": {
+        "CODEX_MAX_CONCURRENCY": "2"
+      },
+      "description": "Programmatic control of OpenAI Codex for build/test/debug/review tasks",
+      "tools": ["codex_run", "codex_plan", "codex_apply", "codex_status"]
+    }
+  }
+}

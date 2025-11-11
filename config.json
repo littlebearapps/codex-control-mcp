@@ -1,0 +1,30 @@
+{
+  "name": "codex-control",
+  "description": "MCP server for programmatic control of OpenAI Codex",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "codex_run",
+      "description": "Execute a Codex task in read-only mode (analysis, tests, etc.)",
+      "modes": ["read-only", "full-auto", "danger-full-access"]
+    },
+    {
+      "name": "codex_plan",
+      "description": "Preview what Codex would do without executing"
+    },
+    {
+      "name": "codex_apply",
+      "description": "Execute file-modifying tasks (requires confirm=true)"
+    },
+    {
+      "name": "codex_status",
+      "description": "Get server status and active processes"
+    }
+  ],
+  "security": {
+    "maxConcurrency": 2,
+    "secretRedaction": true,
+    "inputValidation": true,
+    "mutationGating": true
+  }
+}

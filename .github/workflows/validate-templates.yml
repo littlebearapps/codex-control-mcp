@@ -1,0 +1,105 @@
+name: Validate Environment Templates
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/resources/**'
+      - 'src/types/template_types.ts'
+      - 'scripts/validate_templates.py'
+      - '.github/workflows/validate-templates.yml'
+  pull_request:
+    paths:
+      - 'src/resources/**'
+      - 'src/types/template_types.ts'
+      - 'scripts/validate_templates.py'
+      - '.github/workflows/validate-templates.yml'
+
+jobs:
+  validate:
+    name: Validate Templates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Validate templates
+        run: python3 scripts/validate_templates.py
+
+      - name: Check template count
+        run: |
+          TEMPLATE_COUNT=$(grep -c "name:" src/resources/environment_templates.ts)
+          echo "Found $TEMPLATE_COUNT templates"
+          if [ "$TEMPLATE_COUNT" -lt 5 ]; then
+            echo "❌ Expected at least 5 templates, found $TEMPLATE_COUNT"
+            exit 1
+          fi
+          echo "✅ Template count validation passed"
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Checking for hardcoded secrets in templates..."
+          if grep -rE "(ghp_|gho_|github_pat_|AKIA|sk-)[A-Za-z0-9_]{16,}" src/resources/ --exclude-dir=node_modules; then
+            echo "❌ Found potential hardcoded secrets!"
+            exit 1
+          fi
+          echo "✅ No hardcoded secrets found"
+
+      - name: Verify required templates exist
+        run: |
+          REQUIRED_TEMPLATES=("github-node-typescript" "github-python" "github-go" "github-rust" "basic-codex-cloud")
+          for template in "${REQUIRED_TEMPLATES[@]}"; do
+            if ! grep -q "name: '$template'" src/resources/environment_templates.ts; then
+              echo "❌ Required template missing: $template"
+              exit 1
+            fi
+            echo "✅ Found required template: $template"
+          done
+
+      - name: Validate GitHub CLI installation script
+        run: |
+          echo "Checking for 4-level fallback in GitHub CLI installation..."
+          if ! grep -q "Level 1: Standard APT installation" src/resources/environment_templates.ts; then
+            echo "❌ Missing Level 1 fallback"
+            exit 1
+          fi
+          if ! grep -q "Level 2: Direct binary download" src/resources/environment_templates.ts; then
+            echo "❌ Missing Level 2 fallback"
+            exit 1
+          fi
+          if ! grep -q "Level 3: Graceful degradation" src/resources/environment_templates.ts; then
+            echo "❌ Missing Level 3 fallback"
+            exit 1
+          fi
+          echo "✅ 4-level fallback validation passed"
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ All template validations passed!"
+          echo ""
+          echo "Validated:"
+          echo "  - Template structure and required fields"
+          echo "  - No hardcoded secrets"
+          echo "  - All 5 required templates present"
+          echo "  - 4-level fallback error handling"

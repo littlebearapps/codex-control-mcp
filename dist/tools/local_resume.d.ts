@@ -1,0 +1,70 @@
+import { z } from 'zod';
+declare const LocalResumeInputSchema: z.ZodObject<{
+    threadId: z.ZodString;
+    task: z.ZodString;
+    mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["read-only", "full-auto", "danger-full-access"]>>>;
+    outputSchema: z.ZodOptional<z.ZodAny>;
+    model: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    task: string;
+    mode: "read-only" | "full-auto" | "danger-full-access";
+    threadId: string;
+    outputSchema?: any;
+    model?: string | undefined;
+}, {
+    task: string;
+    threadId: string;
+    mode?: "read-only" | "full-auto" | "danger-full-access" | undefined;
+    outputSchema?: any;
+    model?: string | undefined;
+}>;
+export type LocalResumeInput = z.infer<typeof LocalResumeInputSchema>;
+export interface LocalResumeResult {
+    success: boolean;
+    threadId: string;
+    events: any[];
+    finalResponse: string;
+    usage?: {
+        input_tokens: number;
+        cached_input_tokens: number;
+        output_tokens: number;
+    };
+    error?: string;
+}
+export declare class LocalResumeTool {
+    static getSchema(): {
+        name: string;
+        description: string;
+        inputSchema: {
+            type: string;
+            properties: {
+                threadId: {
+                    type: string;
+                    description: string;
+                };
+                task: {
+                    type: string;
+                    description: string;
+                };
+                mode: {
+                    type: string;
+                    enum: string[];
+                    description: string;
+                    default: string;
+                };
+                outputSchema: {
+                    type: string;
+                    description: string;
+                };
+                model: {
+                    type: string;
+                    description: string;
+                };
+            };
+            required: string[];
+        };
+    };
+    execute(input: LocalResumeInput): Promise<LocalResumeResult>;
+}
+export {};
+//# sourceMappingURL=local_resume.d.ts.map

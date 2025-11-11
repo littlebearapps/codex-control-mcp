@@ -1,0 +1,38 @@
+{
+  "name": "codex-control-mcp",
+  "version": "2.1.0",
+  "description": "MCP server for dual-mode Codex execution (local SDK + Cloud) with real-time status tracking",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch & node --watch dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "codex",
+    "openai",
+    "claude-code"
+  ],
+  "author": "Nathan Schram",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@openai/codex-sdk": "^0.57.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^22.19.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
