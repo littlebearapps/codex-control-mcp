@@ -12,7 +12,57 @@ export class LocalExecTool {
     static getSchema() {
         return {
             name: 'codex_local_exec',
-            description: 'Execute a Codex task locally with real-time status tracking via TypeScript SDK. Runs on your Mac, uses local filesystem, provides full event stream visibility. Perfect for: tasks needing status tracking, iterative development, local service integration. Returns: thread ID for resumption, all events, final response, token usage.',
+            description: `Execute a Codex task locally with real-time status tracking via TypeScript SDK. Runs on your Mac, uses local filesystem, provides full event stream visibility. Perfect for: tasks needing status tracking, iterative development, local service integration. Returns: thread ID for resumption, all events, final response, token usage.
+
+EXECUTION MODES - Choose based on desired behavior:
+
+1. 'read-only' (DEFAULT - Safest, Most Common):
+   - Codex ANALYZES code and PROPOSES changes but DOES NOT modify files
+   - Returns: Complete patch/diff with exact code to apply
+   - Use when: You want to review changes before applying, learning what Codex suggests, or unsure about modifications
+   - Thread resumption: Use codex_local_resume with thread ID for follow-up questions
+   - How to apply: Codex provides exact commands and file contents - review and apply manually
+   - Best practice: Start with read-only, review output, then decide on next steps
+
+2. 'full-auto' (Caution - Direct Modifications):
+   - Codex CAN create branches, edit files, run commands, commit changes
+   - Returns: Actual filesystem changes + thread ID + event log
+   - Use when: You trust Codex to make changes directly, iterative development in safe branches
+   - Requires: Git repository (trusted directory)
+   - Risk: Codex makes real changes - ensure you can review/revert (use feature branches!)
+   - Best practice: Only use in feature branches, never on main/production
+
+3. 'danger-full-access' (High Risk - Unrestricted):
+   - Codex has UNRESTRICTED access - can modify ANY file, run ANY command
+   - Returns: Any filesystem modifications + thread ID + event log
+   - Use when: Codex needs system-level access, infrastructure changes, or you need maximum flexibility
+   - Requires: Full understanding of what Codex will do
+   - Risk: HIGH - Codex can modify critical files, delete data, run dangerous commands
+   - Best practice: Only use when absolutely necessary, in isolated test environments
+
+THREAD PERSISTENCE & RESUMPTION:
+- Thread ID returned enables RESUMPTION with codex_local_resume
+- Threads preserve full conversation context across sessions
+- Cache benefits: 45-93% cache rates on resumed threads (significant cost savings)
+- Use cases: Multi-step refactoring, iterative debugging, follow-up questions
+
+WORKFLOW RECOMMENDATIONS:
+
+For Code Improvements:
+1. Start: codex_local_exec with mode='read-only'
+2. Review: Examine Codex's proposed changes
+3. If approved: Apply manually OR re-run with mode='full-auto' in feature branch
+4. Follow-up: Use codex_local_resume with thread ID for refinements
+
+For Iterative Development:
+1. Start: codex_local_exec with mode='full-auto' in feature branch
+2. Iterate: Use codex_local_resume for follow-up changes
+3. Benefit: High cache rates (45-93%) reduce costs and latency
+
+For Analysis Only:
+1. Use: codex_local_exec with mode='read-only'
+2. Get: Comprehensive analysis, suggestions, patches
+3. No risk: No files modified, safe to run anytime`,
             inputSchema: {
                 type: 'object',
                 properties: {
