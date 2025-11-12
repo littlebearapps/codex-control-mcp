@@ -2,19 +2,19 @@ import { z } from 'zod';
 declare const LocalResumeInputSchema: z.ZodObject<{
     threadId: z.ZodString;
     task: z.ZodString;
-    mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["read-only", "full-auto", "danger-full-access"]>>>;
+    mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["read-only", "workspace-write", "danger-full-access"]>>>;
     outputSchema: z.ZodOptional<z.ZodAny>;
     model: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     task: string;
-    mode: "read-only" | "full-auto" | "danger-full-access";
+    mode: "read-only" | "workspace-write" | "danger-full-access";
     threadId: string;
     outputSchema?: any;
     model?: string | undefined;
 }, {
     task: string;
     threadId: string;
-    mode?: "read-only" | "full-auto" | "danger-full-access" | undefined;
+    mode?: "read-only" | "workspace-write" | "danger-full-access" | undefined;
     outputSchema?: any;
     model?: string | undefined;
 }>;
@@ -64,7 +64,7 @@ export declare class LocalResumeTool {
             required: string[];
         };
     };
-    execute(input: LocalResumeInput): Promise<LocalResumeResult>;
+    execute(input: LocalResumeInput): Promise<any>;
 }
 export {};
 //# sourceMappingURL=local_resume.d.ts.map

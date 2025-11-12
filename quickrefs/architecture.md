@@ -146,7 +146,7 @@ Not JSON - ignored
 
 **Validations**:
 - **Task length**: Max 10,000 characters
-- **Mode whitelist**: Only `read-only`, `full-auto`, `danger-full-access`
+- **Mode whitelist**: Only `read-only`, `workspace-write`, `danger-full-access`
 - **Model whitelist**: Known OpenAI models only
 - **Path validation**: No `..` traversal, absolute paths only
 - **Injection prevention**: Escape shell metacharacters

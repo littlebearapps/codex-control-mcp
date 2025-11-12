@@ -38,7 +38,7 @@ task: "Analyze main.ts for bugs"
 ```
 
 #### Execution Mode
-- **Whitelist**: `read-only`, `full-auto`, `danger-full-access`
+- **Whitelist**: `read-only`, `workspace-write`, `danger-full-access`
 - **Default**: `read-only`
 
 **Example**:
@@ -49,7 +49,7 @@ mode: "custom"
 
 // ✅ Accepted
 mode: "read-only"
-mode: "full-auto"
+mode: "workspace-write"
 ```
 
 #### Model Name
@@ -196,7 +196,7 @@ console.assert(!output.includes(testSecret));
 **Rule**: File-modifying modes require explicit `confirm=true`.
 
 **Modes Requiring Confirmation**:
-- `full-auto`
+- `workspace-write`
 - `danger-full-access`
 
 **Example**:
@@ -204,14 +204,14 @@ console.assert(!output.includes(testSecret));
 // ❌ Rejected
 {
   task: "Modify files",
-  mode: "full-auto",
+  mode: "workspace-write",
   confirm: false  // Missing confirmation
 }
 
 // ✅ Accepted
 {
   task: "Modify files",
-  mode: "full-auto",
+  mode: "workspace-write",
   confirm: true
 }
 ```
@@ -231,7 +231,7 @@ console.assert(!output.includes(testSecret));
 {
   task: "Add error handling to API endpoints",
   confirm: true,
-  mode: "full-auto"
+  mode: "workspace-write"
 }
 // Returns: Changes applied
 ```

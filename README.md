@@ -192,7 +192,7 @@ Execute Codex tasks without file modifications.
 
 **Parameters**:
 - `task` (required): Task description for Codex
-- `mode` (optional): Execution mode (`read-only` (default), `full-auto`, `danger-full-access`)
+- `mode` (optional): Execution mode (`read-only` (default), `workspace-write`, `danger-full-access`)
 - `model` (optional): OpenAI model (`gpt-4o`, `o1`, `o3-mini`, etc.)
 - `outputSchema` (optional): JSON schema for structured output
 - `workingDir` (optional): Absolute path to working directory
@@ -286,7 +286,7 @@ Execute file-modifying tasks with confirmation.
 **Parameters**:
 - `task` (required): Task description
 - `confirm` (required): Must be `true` to proceed
-- `mode` (optional): `full-auto` (default) or `danger-full-access`
+- `mode` (optional): `workspace-write` (default) or `danger-full-access`
 - `model` (optional): OpenAI model
 - `outputSchema` (optional): JSON schema
 - `workingDir` (optional): Working directory
@@ -308,7 +308,7 @@ Execute file-modifying tasks with confirmation.
 This operation will modify files in your project.
 
 **Task**: Add TypeScript types to all functions in utils.ts
-**Mode**: full-auto
+**Mode**: workspace-write
 
 **To proceed**, call this tool again with `confirm=true`.
 
@@ -328,7 +328,7 @@ This operation will modify files in your project.
 ✅ Changes Applied
 
 **Task**: Add TypeScript types to all functions in utils.ts
-**Mode**: full-auto
+**Mode**: workspace-write
 
 **Summary**: Added TypeScript types to 8 functions
 
@@ -659,7 +659,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 **Parameters**:
 - `task` (required): Task description for Codex
 - `workingDir` (optional): Working directory (defaults to current directory)
-- `mode` (optional): Execution mode (`read-only` (default), `full-auto`, `danger-full-access`)
+- `mode` (optional): Execution mode (`read-only` (default), `workspace-write`, `danger-full-access`)
 - `outputSchema` (optional): JSON Schema for structured output
 - `skipGitRepoCheck` (optional): Skip Git repository check (default: false)
 - `model` (optional): OpenAI model (`gpt-5-codex`, `gpt-5`, etc.)
@@ -740,7 +740,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 - ✅ How to apply: Codex provides exact commands and file contents - review and apply manually
 - ✅ Best practice: Start with read-only, review output, then decide on next steps
 
-**2. `full-auto` (Caution - Direct Modifications)**
+**2. `workspace-write` (Caution - Direct Modifications)**
 - ⚠️ Codex CAN create branches, edit files, run commands, commit changes
 - ⚠️ Returns: Actual filesystem changes + thread ID + event log
 - ⚠️ Use when: You trust Codex to make changes directly, iterative development in safe branches
@@ -761,11 +761,11 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 *For Code Improvements:*
 1. Start: `codex_local_exec` with `mode='read-only'`
 2. Review: Examine Codex's proposed changes
-3. If approved: Apply manually OR re-run with `mode='full-auto'` in feature branch
+3. If approved: Apply manually OR re-run with `mode='workspace-write'` in feature branch
 4. Follow-up: Use `codex_local_resume` with thread ID for refinements
 
 *For Iterative Development:*
-1. Start: `codex_local_exec` with `mode='full-auto'` in feature branch
+1. Start: `codex_local_exec` with `mode='workspace-write'` in feature branch
 2. Iterate: Use `codex_local_resume` for follow-up changes
 3. Benefit: High cache rates (45-93%) reduce costs and latency
 
@@ -799,7 +799,7 @@ Resume a previous local thread with follow-up tasks and full conversation contex
 {
   "threadId": "thread_abc123xyz",
   "task": "Apply the refactoring to the next 3 files in the same pattern",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 
@@ -1369,7 +1369,7 @@ codex cloud  # Interactive browser
 ### Input Validation
 
 - **Task Length**: Max 10,000 characters
-- **Mode Whitelist**: Only `read-only`, `full-auto`, `danger-full-access`
+- **Mode Whitelist**: Only `read-only`, `workspace-write`, `danger-full-access`
 - **Model Whitelist**: Known OpenAI models (`gpt-4o`, `o1`, `o3-mini`, etc.)
 - **Path Validation**: No path traversal (`..`), absolute paths only
 - **No Shell Injection**: Uses `spawn(cmd, args)` not `exec(string)`
@@ -1400,10 +1400,10 @@ File-modifying modes require explicit confirmation:
 
 ```typescript
 // This fails
-{ task: "modify files", mode: "full-auto", confirm: false }
+{ task: "modify files", mode: "workspace-write", confirm: false }
 
 // This succeeds
-{ task: "modify files", mode: "full-auto", confirm: true }
+{ task: "modify files", mode: "workspace-write", confirm: true }
 ```
 
 ### Environment Variable Policy

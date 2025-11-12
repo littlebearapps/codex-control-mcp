@@ -13,7 +13,7 @@ import { JSONLParser, CodexEvent } from './jsonl_parser.js';
 
 export interface CodexProcessOptions {
   task: string;
-  mode?: 'read-only' | 'full-auto' | 'danger-full-access';
+  mode?: 'read-only' | 'workspace-write' | 'danger-full-access';
   outputSchema?: any;
   model?: string;
   workingDir?: string;
@@ -145,6 +145,9 @@ export class ProcessManager {
       let stdout = '';
       let stderr = '';
 
+      // Show iTerm2 badge when Codex starts
+      this.setITermBadge('⚙️ CODEX');
+
       // Spawn process (no shell = no injection risk)
       const proc = spawn('codex', args, {
         cwd: workingDir || process.cwd(),
@@ -179,6 +182,9 @@ export class ProcessManager {
         if (finalEvent) {
           events.push(finalEvent);
         }
+
+        // Clear iTerm2 badge when Codex completes
+        this.clearITermBadge();
 
         // Cleanup
         this.processes.delete(processId);
@@ -229,5 +235,38 @@ export class ProcessManager {
       activeProcesses: this.processes.size,
       ...this.queue.getStats(),
     };
+  }
+
+  /**
+   * Show iTerm2 badge (visible in terminal)
+   * Uses escape sequences to set badge text
+   * Writes directly to /dev/tty to bypass stdio redirection
+   */
+  private setITermBadge(text: string) {
+    if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
+      try {
+        const fs = require('fs');
+        // Write directly to terminal device to bypass MCP stdio redirection
+        const badge = Buffer.from(text).toString('base64');
+        fs.writeFileSync('/dev/tty', `\x1b]1337;SetBadgeFormat=${badge}\x07`);
+      } catch (error) {
+        // Silently fail if /dev/tty not accessible
+      }
+    }
+  }
+
+  /**
+   * Clear iTerm2 badge
+   */
+  private clearITermBadge() {
+    if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
+      try {
+        const fs = require('fs');
+        // Clear badge by writing empty badge format
+        fs.writeFileSync('/dev/tty', '\x1b]1337;SetBadgeFormat=\x07');
+      } catch (error) {
+        // Silently fail if /dev/tty not accessible
+      }
+    }
   }
 }

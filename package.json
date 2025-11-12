@@ -1,7 +1,7 @@
 {
   "name": "codex-control-mcp",
-  "version": "2.1.0",
-  "description": "MCP server for dual-mode Codex execution (local SDK + Cloud) with real-time status tracking",
+  "version": "2.1.1",
+  "description": "MCP server for dual-mode Codex execution (local SDK + Cloud) with async/non-blocking support and real-time status tracking",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

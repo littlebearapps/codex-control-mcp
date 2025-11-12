@@ -1,26 +1,29 @@
 /**
- * Run Tool - Execute Codex Tasks (Read-Only by Default)
+ * Apply Tool - Execute Mutations with Confirmation
  *
- * Executes a Codex task with read-only mode by default.
- * Returns structured results with events, summary, and file changes.
+ * Executes file-modifying tasks but REQUIRES explicit confirmation.
+ * Prevents accidental mutations by requiring confirm=true parameter.
  */
 
 import { ProcessManager, CodexProcessOptions } from '../executor/process_manager.js';
 import { ErrorMapper } from '../executor/error_mapper.js';
 import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
+import { localTaskRegistry } from '../state/local_task_registry.js';
 
-export interface RunToolInput {
+export interface ApplyToolInput {
   task: string;
-  mode?: 'read-only' | 'full-auto' | 'danger-full-access';
+  mode?: 'workspace-write' | 'danger-full-access';
+  confirm?: boolean;
   outputSchema?: any;
   model?: string;
   workingDir?: string;
   envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
   envAllowList?: string[];
+  async?: boolean; // Return immediately with task ID instead of waiting
 }
 
-export interface RunToolResult {
+export interface ApplyToolResult {
   content: Array<{
     type: 'text';
     text: string;
@@ -28,7 +31,7 @@ export interface RunToolResult {
   isError?: boolean;
 }
 
-export class RunTool {
+export class ApplyTool {
   private processManager: ProcessManager;
 
   constructor(processManager: ProcessManager) {
@@ -36,11 +39,24 @@ export class RunTool {
   }
 
   /**
-   * Execute the run tool
+   * Execute the apply tool (mutation mode)
    */
-  async execute(input: RunToolInput): Promise<RunToolResult> {
-    // Default to read-only mode
-    const mode = input.mode || 'read-only';
+  async execute(input: ApplyToolInput): Promise<ApplyToolResult> {
+    // Default to workspace-write mode
+    const mode = input.mode || 'workspace-write';
+
+    // CRITICAL: Require explicit confirmation
+    if (input.confirm !== true) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `⚠️ Confirmation Required\n\nThis operation will modify files in your project.\n\n**Task**: ${input.task}\n**Mode**: ${mode}\n\n**To proceed**, call this tool again with \`confirm=true\`.\n\n**Tip**: Use \`codex_plan\` first to preview changes.`,
+          },
+        ],
+        isError: true,
+      };
+    }
 
     // Validate inputs
     const validation = InputValidator.validateAll({
@@ -49,6 +65,7 @@ export class RunTool {
       model: input.model,
       outputSchema: input.outputSchema,
       workingDir: input.workingDir,
+      confirm: input.confirm,
     });
 
     if (!validation.valid) {
@@ -63,7 +80,7 @@ export class RunTool {
       };
     }
 
-    // Execute Codex task
+    // Execute Codex task in mutation mode
     const options: CodexProcessOptions = {
       task: input.task,
       mode,
@@ -75,6 +92,29 @@ export class RunTool {
     };
 
     try {
+      // ASYNC MODE: Return immediately with task ID
+      if (input.async) {
+        const taskId = `local-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const promise = this.processManager.execute(options);
+
+        // Register task for status tracking
+        localTaskRegistry.registerTask(taskId, input.task, promise, {
+          mode,
+          model: input.model,
+          workingDir: input.workingDir,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✅ Codex Apply Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${input.task}\n\n**Mode**: ${mode}\n\n**Status**: Running in background (file modifications will be applied)\n\n💡 Use \`codex_local_status\` to check progress and \`codex_local_results\` to get details when complete.\n\n⚠️ **Note**: This task WILL modify files. Monitor with git status after completion.`,
+            },
+          ],
+        };
+      }
+
+      // SYNC MODE: Wait for completion (original behavior)
       const result = await this.processManager.execute(options);
 
       // Redact secrets from output
@@ -90,7 +130,7 @@ export class RunTool {
           content: [
             {
               type: 'text',
-              text: `❌ Codex Task Failed\n\n**Error**: ${error.message}\n\n**Code**: ${error.code}\n\n**Details**:\n\`\`\`json\n${JSON.stringify(error.details, null, 2)}\n\`\`\``,
+              text: `❌ Apply Failed\n\n**Error**: ${error.message}\n\n**Code**: ${error.code}\n\n**Details**:\n\`\`\`json\n${JSON.stringify(error.details, null, 2)}\n\`\`\``,
             },
           ],
           isError: true,
@@ -103,11 +143,13 @@ export class RunTool {
       const commands = ErrorMapper.extractCommands(result.events);
 
       // Build result message
-      let message = `✅ Codex Task Completed\n\n`;
+      let message = `✅ Changes Applied\n\n`;
+      message += `**Task**: ${input.task}\n`;
+      message += `**Mode**: ${mode}\n\n`;
       message += `**Summary**: ${summary}\n\n`;
 
       if (fileChanges.length > 0) {
-        message += `**File Changes** (${fileChanges.length}):\n`;
+        message += `**Files Modified** (${fileChanges.length}):\n`;
         for (const change of fileChanges) {
           message += `- ${change.operation}: \`${change.path}\`\n`;
         }
@@ -125,7 +167,7 @@ export class RunTool {
       message += `**Events**: ${result.events.length} events captured\n`;
       message += `**Exit Code**: ${result.exitCode}\n`;
 
-      // Include Codex output (analysis, explanations, etc.)
+      // Include Codex output (explanations, reasoning, etc.)
       if (redactedOutput.stdout.trim()) {
         const maxStdoutLength = 10000; // Prevent huge responses
         const truncatedStdout = redactedOutput.stdout.substring(0, maxStdoutLength);
@@ -142,6 +184,12 @@ export class RunTool {
       if (redactedOutput.stderr.trim()) {
         message += `\n**Warnings/Debug Info**:\n\`\`\`\n${redactedOutput.stderr.substring(0, 1000)}\n\`\`\`\n`;
       }
+
+      // Remind about git
+      message += `\n**Next Steps**:\n`;
+      message += `- Review changes: \`git diff\`\n`;
+      message += `- Run tests: \`npm test\` or equivalent\n`;
+      message += `- Commit changes: \`git add . && git commit -m "..."\`\n`;
 
       return {
         content: [
@@ -169,22 +217,27 @@ export class RunTool {
    */
   static getSchema() {
     return {
-      name: 'codex_run',
+      name: 'codex_cli_apply',
       description:
-        'Execute a Codex task (read-only by default). Use for analyzing code, reading files, running tests, etc.',
+        'Execute a local Codex task via CLI that modifies files. REQUIRES confirm=true to prevent accidental changes. Use codex_cli_plan first to preview.',
       inputSchema: {
         type: 'object',
         properties: {
           task: {
             type: 'string',
-            description: 'Task description for Codex (e.g., "analyze the main.ts file for bugs")',
+            description: 'Task description for Codex (e.g., "add error handling to main.ts")',
           },
           mode: {
             type: 'string',
-            enum: ['read-only', 'full-auto', 'danger-full-access'],
-            default: 'read-only',
+            enum: ['workspace-write', 'danger-full-access'],
+            default: 'workspace-write',
             description:
-              'Execution mode: read-only (safe), full-auto (can modify files), danger-full-access (unrestricted)',
+              'Execution mode: workspace-write (standard mutations), danger-full-access (unrestricted)',
+          },
+          confirm: {
+            type: 'boolean',
+            default: false,
+            description: 'REQUIRED: Set to true to confirm file modifications',
           },
           model: {
             type: 'string',
@@ -212,8 +265,14 @@ export class RunTool {
             description:
               'List of environment variables to pass to Codex Cloud (only used with envPolicy=allow-list). Example: ["OPENAI_API_KEY", "DATABASE_URL"]',
           },
+          async: {
+            type: 'boolean',
+            default: false,
+            description:
+              'Run task in background (async mode). Set to true to return immediately with a task ID, then use codex_local_status and codex_local_results to check progress. Note: File modifications will still be applied.',
+          },
         },
-        required: ['task'],
+        required: ['task', 'confirm'],
       },
     };
   }

@@ -7,12 +7,13 @@
 import { ProcessManager } from '../executor/process_manager.js';
 export interface RunToolInput {
     task: string;
-    mode?: 'read-only' | 'full-auto' | 'danger-full-access';
+    mode?: 'read-only' | 'workspace-write' | 'danger-full-access';
     outputSchema?: any;
     model?: string;
     workingDir?: string;
     envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
     envAllowList?: string[];
+    async?: boolean;
 }
 export interface RunToolResult {
     content: Array<{
@@ -70,6 +71,11 @@ export declare class RunTool {
                     items: {
                         type: string;
                     };
+                    description: string;
+                };
+                async: {
+                    type: string;
+                    default: boolean;
                     description: string;
                 };
             };

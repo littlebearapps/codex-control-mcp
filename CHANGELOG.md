@@ -5,6 +5,155 @@ All notable changes to Codex Control MCP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2025-11-12
+
+### Added
+
+**Async/Non-Blocking Execution for All Tools** 🔥
+
+All tools now support non-blocking async execution - Claude Code never freezes waiting for Codex!
+
+- **CLI Tools Made Async-Capable**:
+  - Added `async: true` parameter to `codex_cli_run`, `codex_cli_plan`, `codex_cli_apply`
+  - Returns task ID immediately for background execution
+  - Use `codex_local_status` and `codex_local_results` to check progress
+
+- **SDK Tools Always Async** (Fixed Critical Thread ID Bug):
+  - `codex_local_exec` now generates proper task IDs (was returning `null`)
+  - Integrated with LocalTaskRegistry for task tracking
+  - Background Promise execution with immediate task ID return
+  - Thread ID captured during execution for use with `codex_local_resume`
+
+- **CLI Tools Renamed for Clarity**:
+  - `codex_run` → `codex_cli_run`
+  - `codex_plan` → `codex_cli_plan`
+  - `codex_apply` → `codex_cli_apply`
+  - `codex_status` → `codex_cli_status`
+  - Naming now clearly indicates execution mechanism (CLI vs SDK vs Cloud)
+
+- **New Status & Results Tools**:
+  - `codex_local_status` - Check status of local async tasks
+  - `codex_local_results` - Retrieve results of completed tasks
+  - LocalTaskRegistry persists tasks across MCP server restarts
+
+- **Tool Count Updated**: 13 → 15 tools total
+
+**Testing**: All async tools validated in production - see `ASYNC-TEST-RESULTS.md`
+
+### Fixed
+
+**Critical Bug Fixes - Mode Parameter and MCP Response Format**
+
+Three critical bugs have been identified and fixed that prevented the MCP server from functioning correctly:
+
+#### Bug #1: Mode Parameter Mismatch ✅
+- **Issue**: Code used deprecated `full-auto` value, but Codex CLI v0.57.0 expects `workspace-write`
+- **Symptom**: `invalid value 'full-auto' for '--sandbox <SANDBOX_MODE>'` errors
+- **Fix**: Replaced all occurrences of `full-auto` with `workspace-write` in 6 source files
+- **Files Updated**:
+  - `src/tools/run.ts`
+  - `src/tools/apply.ts`
+  - `src/tools/local_exec.ts`
+  - `src/tools/local_resume.ts`
+  - `src/executor/process_manager.ts`
+  - `src/security/input_validator.ts`
+  - All documentation files (README.md, quickrefs/)
+
+#### Bug #2: Misleading Tool Count ✅
+- **Issue**: `codex_status` showed hardcoded list of 4 tools instead of all 13
+- **Symptom**: Users reported "Only 4 tools available" when all 13 were actually registered
+- **Fix**: Updated `src/tools/status.ts` to show categorized list of all 13 tools
+- **Impact**: Status reporting now accurate and complete
+
+#### Bug #3: SDK Tools Silent Failure ✅ (MOST CRITICAL)
+- **Issue**: `codex_local_exec` and `codex_local_resume` returned raw objects instead of MCP-compatible format
+- **Symptom**: "Tool ran without output or errors" - silent failures with no error messages
+- **Root Cause**: Tools didn't wrap responses in `{ content: [{ type: 'text', text: '...' }] }` format required by MCP protocol
+- **Fix**:
+  - Added MCP-compatible response wrapper to both tools
+  - Added extensive debug logging to stderr for troubleshooting
+  - Changed return type from specific interfaces to `Promise<any>` for flexibility
+- **Files Updated**:
+  - `src/tools/local_exec.ts`
+  - `src/tools/local_resume.ts`
+
+#### Bug #4: Process Tracking Visibility ✅
+- **Issue**: `codex_status` only showed ProcessManager-tracked processes, missing SDK-spawned processes
+- **Symptom**: System shows running `codex exec` processes but `codex_status` reports 0 active processes
+- **Root Cause**: SDK tools (`codex_local_exec`, `codex_local_resume`) spawn processes via `@openai/codex-sdk` which aren't registered with ProcessManager
+- **Impact**: Users had no visibility into SDK-spawned processes, couldn't detect stuck/orphaned processes
+- **Fix**:
+  - Added system-wide process detection to `codex_status`
+  - Now shows total processes, CLI-tracked vs SDK-spawned breakdown
+  - Displays process details (PID, CPU, memory, start time) for all `codex exec` processes
+  - Warns when SDK-spawned processes detected
+- **Files Updated**:
+  - `src/tools/status.ts` - Added `detectSystemProcesses()` method using `ps aux`
+- **Example Output**:
+  ```
+  **Total Codex Processes**: 1
+    - CLI-tracked: 0
+    - SDK-spawned: 1
+
+  **System-Wide Process Details**:
+  - PID 70565 | Started 4:29PM | CPU 0.5% | Mem 0.1%
+    codex exec --experimental-json ...
+
+  ⚠️ Detected 1 SDK-spawned process(es) - not tracked by ProcessManager
+  💡 SDK processes are spawned by codex_local_exec and codex_local_resume
+  ```
+
+#### Bug #5: SDK Tools Async Streaming Returns Empty ✅ (CRITICAL - Production Testing)
+- **Issue**: `codex_local_exec` and `codex_local_resume` spawn processes successfully but return empty output to Claude Code
+- **Symptom**: "Tool ran without output or errors" - process visible in `codex_status` but no results returned via MCP
+- **Discovery**: Found during production testing (2025-11-12 5:00 PM)
+- **Root Cause**: Async event streaming loop (`for await (const event of events)`) was blocking MCP's request-response mechanism
+  - MCP has 60-second timeout (confirmed via GitHub issue #245)
+  - Event stream consumption wasn't explicitly completing before return
+  - No logging to diagnose where async execution was failing
+- **Fix**:
+  - Added comprehensive execution logging throughout both tools
+  - Added try-catch around event streaming loop with detailed error handling
+  - Added event-by-event logging to track stream consumption
+  - Explicit logging before return to verify response creation
+  - Proper async stream completion handling
+- **Files Updated**:
+  - `src/tools/local_exec.ts` - Added 20+ log statements, improved error handling
+  - `src/tools/local_resume.ts` - Added 20+ log statements, improved error handling
+- **Test Results**:
+  - ✅ `codex_local_exec`: Returns complete output with thread ID, all events, final response, usage stats
+  - ✅ `codex_local_resume`: Returns complete output with 97% cache rate (11,008/11,365 tokens cached)
+  - ✅ Thread persistence working: Follow-up tasks leverage cached context
+  - ✅ Real-time event streaming visible in logs
+  - ✅ Both tools tested successfully in production (codex-control directory)
+- **Impact**: SDK tools now fully functional, enabling iterative development workflows with thread persistence
+
+### Validated
+
+**Testing Results** (2025-11-12):
+- ✅ All 13 tools now discoverable via `codex_status`
+- ✅ `codex_local_exec` working perfectly - Full output with thread ID, events, usage stats
+- ✅ `codex_local_resume` working perfectly - 97% cache rate (11,008/11,365 tokens cached)
+- ✅ Thread persistence verified - Follow-up tasks leverage cached context
+- ✅ `codex_run` executes without mode parameter errors
+- ✅ `codex_status` now detects SDK-spawned processes correctly (Bug #4 fix verified)
+- ✅ Process tracking visibility fixed (tested in auditor-toolkit)
+- ✅ 100% test success rate in codex-control directory
+- ✅ Successfully tested in auditor-toolkit environment
+- ✅ Bug #5 fix validated in production (codex-control directory, 2025-11-12 5:30 PM)
+
+**Documentation Updated**:
+- README.md: All mode parameter references updated
+- quickrefs/tools.md: Tool examples updated
+- quickrefs/workflows.md: Workflow examples updated
+- quickrefs/security.md: Security validation updated
+- quickrefs/architecture.md: Mode whitelist updated
+- CLAUDE.md: Current focus section updated with bug fix status
+- Test results: `TEST-RESULTS-CODEX-CONTROL-DIRECTORY.md` created
+- **KNOWN-ISSUES.md**: Created new file documenting:
+  - Issue #1: Python version mismatch in SDK tasks (workarounds included)
+  - Issue #2: Process tracking visibility (fixed in v2.1.1)
+
 ## [2.1.0] - 2025-11-11
 
 ### Added
@@ -30,7 +179,7 @@ Execute Codex tasks locally with real-time event streaming, full status visibili
 **Parameters:**
 - `task` (required): Task description for Codex
 - `workingDir` (optional): Working directory (defaults to current)
-- `mode` (optional): Execution mode (`read-only`, `full-auto`, `danger-full-access`)
+- `mode` (optional): Execution mode (`read-only`, `workspace-write`, `danger-full-access`)
 - `outputSchema` (optional): JSON Schema for structured output
 - `skipGitRepoCheck` (optional): Skip Git repository check (default: false)
 - `model` (optional): OpenAI model (`gpt-5-codex`, `gpt-5`, etc.)

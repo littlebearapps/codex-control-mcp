@@ -2,9 +2,9 @@
  * Status Tool - Monitor Active Codex Sessions
  *
  * Provides information about:
- * - Active Codex processes
+ * - Active Codex processes (CLI-based and SDK-based)
  * - Process queue status
- * - Recent session logs
+ * - System-wide process detection
  */
 import { ProcessManager } from '../executor/process_manager.js';
 export interface StatusToolInput {
@@ -18,6 +18,11 @@ export interface StatusToolResult {
 export declare class StatusTool {
     private processManager;
     constructor(processManager: ProcessManager);
+    /**
+     * Detect all codex processes running on the system
+     * Includes both ProcessManager-tracked and SDK-spawned processes
+     */
+    private detectSystemProcesses;
     /**
      * Execute the status tool
      */

@@ -7,13 +7,14 @@
 import { ProcessManager } from '../executor/process_manager.js';
 export interface ApplyToolInput {
     task: string;
-    mode?: 'full-auto' | 'danger-full-access';
+    mode?: 'workspace-write' | 'danger-full-access';
     confirm?: boolean;
     outputSchema?: any;
     model?: string;
     workingDir?: string;
     envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
     envAllowList?: string[];
+    async?: boolean;
 }
 export interface ApplyToolResult {
     content: Array<{
@@ -76,6 +77,11 @@ export declare class ApplyTool {
                     items: {
                         type: string;
                     };
+                    description: string;
+                };
+                async: {
+                    type: string;
+                    default: boolean;
                     description: string;
                 };
             };

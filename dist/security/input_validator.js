@@ -33,7 +33,7 @@ export class InputValidator {
         if (!mode) {
             return { valid: true }; // Default mode is acceptable
         }
-        const validModes = ['read-only', 'full-auto', 'danger-full-access'];
+        const validModes = ['read-only', 'workspace-write', 'danger-full-access'];
         if (!validModes.includes(mode)) {
             return {
                 valid: false,
@@ -119,7 +119,7 @@ export class InputValidator {
             return { valid: true };
         }
         // For mutation modes, require explicit confirmation
-        if (mode === 'full-auto' || mode === 'danger-full-access') {
+        if (mode === 'workspace-write' || mode === 'danger-full-access') {
             if (confirm !== true) {
                 return {
                     valid: false,

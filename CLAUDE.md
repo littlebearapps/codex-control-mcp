@@ -1,7 +1,7 @@
 # Codex Control MCP Server - Claude Code Memory
 
-**Version**: 2.1.0
-**Purpose**: Dual-mode Codex execution (local SDK + cloud) via MCP
+**Version**: 2.1.1
+**Purpose**: Dual-mode Codex execution (local SDK + cloud) via MCP with async/non-blocking support
 **Status**: Production Ready
 
 ---
@@ -9,11 +9,13 @@
 ## Quick Reference
 
 See detailed documentation in `quickrefs/`:
-- @quickrefs/tools.md - All 13 tools with examples
+- @quickrefs/tools.md - All 15 tools with examples
 - @quickrefs/architecture.md - System design and components
 - @quickrefs/workflows.md - Common development workflows
 - @quickrefs/security.md - Security features and best practices
 - @quickrefs/troubleshooting.md - Common issues and solutions
+
+**Latest Test Results**: See `ASYNC-TEST-RESULTS.md` for comprehensive async validation
 
 ---
 
@@ -103,9 +105,11 @@ claude
 ## Key Architecture Points
 
 ### Execution Modes
-- **Local CLI** (Tools 1-4): Blocking, CLI-based, no thread persistence
-- **Local SDK** (Tools 9-10): Async streaming, thread persistence, token tracking
-- **Cloud** (Tools 5-8): Background execution, sandboxed containers
+- **Local CLI** (Tools 1-4): Async-capable CLI-based execution with task tracking
+- **Local SDK** (Tools 5-6): Always async, thread persistence, token tracking
+- **Cloud** (Tools 7-11): Background execution, sandboxed containers
+
+**All tools now support non-blocking async execution** - Claude Code never freezes waiting for Codex!
 
 ### Security Layers
 1. **Input Validation** - Sanitize all user inputs (paths, task descriptions)
@@ -143,27 +147,29 @@ claude
 
 ---
 
-## Tool Categories
+## Tool Categories (15 Tools)
 
-### Local Execution (CLI-based)
-- `codex_run` - Read-only analysis, tests
-- `codex_plan` - Preview changes without executing
-- `codex_apply` - Apply mutations with confirmation
-- `codex_status` - Server status and queue info
+### Local CLI Execution (4 tools)
+- `codex_cli_run` - Read-only analysis, tests (async-capable)
+- `codex_cli_plan` - Preview changes without executing (async-capable)
+- `codex_cli_apply` - Apply mutations with confirmation (async-capable)
+- `codex_cli_status` - Server status and queue info
 
-### Local Execution (SDK-based) 🆕
-- `codex_local_exec` - Real-time streaming with thread persistence
+### Local SDK Execution (4 tools) 🔥 Always Async
+- `codex_local_exec` - Async execution with task tracking
 - `codex_local_resume` - Resume threads with context preservation
+- `codex_local_status` - Check local task status
+- `codex_local_results` - Get local task results
 
-### Cloud Execution
+### Cloud Execution (5 tools)
 - `codex_cloud_submit` - Background task submission
-- `codex_cloud_list_tasks` - Persistent task registry
 - `codex_cloud_status` - Task status checking
 - `codex_cloud_results` - Retrieve task results
-- `codex_cloud_check_reminder` - Pending task reminder 🆕
+- `codex_cloud_list_tasks` - Persistent task registry
+- `codex_cloud_check_reminder` - Pending task reminder
 
-### Configuration & Setup
-- `codex_list_environments` - Local environment registry 🆕
+### Configuration & Setup (2 tools)
+- `codex_list_environments` - Local environment registry
 - `codex_github_setup_guide` - GitHub integration helper
 
 ---
@@ -264,8 +270,29 @@ npm run build
 
 ## Current Focus (2025-11-12)
 
-- ✅ v2.1.0 released with dual execution modes
-- ✅ All 13 tools validated in production
-- ✅ 100% test success rate
-- ✅ Deployed to all 18 projects + root
-- 🎯 Ready for iterative development workflows
+- ✅ **v2.1.1 - Async Implementation Complete**
+  - All tools now support non-blocking async execution
+  - CLI tools renamed to `codex_cli_*` for clarity
+  - SDK tools always async with proper task ID tracking
+  - No more blocking behavior - Claude Code stays responsive!
+
+- ✅ **Bug Fixes Completed**:
+  - Fixed SDK thread ID null bug (now returns proper task IDs)
+  - CLI tools renamed: `codex_run` → `codex_cli_run`, etc.
+  - Updated all tool routing and registrations
+  - Fixed LocalTaskRegistry integration for SDK tools
+
+- ✅ **Production Testing Completed**:
+  - Local SDK execution: ✅ Returns task ID immediately
+  - Local CLI execution: ✅ Returns task ID immediately (async mode)
+  - Status tracking: ✅ Shows running/completed tasks correctly
+  - Results retrieval: ✅ Full output captured and retrievable
+  - See `ASYNC-TEST-RESULTS.md` for complete validation
+
+- ✅ **Documentation Updated**:
+  - CLAUDE.md updated with async details (15 tools)
+  - All quickrefs updated with new tool names
+  - Async workflow examples added
+  - Test results documented
+
+- 🎯 **Ready for Deployment**: All 15 tools production-ready across all projects

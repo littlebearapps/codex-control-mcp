@@ -7,6 +7,7 @@
 import { ErrorMapper } from '../executor/error_mapper.js';
 import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
+import { localTaskRegistry } from '../state/local_task_registry.js';
 export class ApplyTool {
     processManager;
     constructor(processManager) {
@@ -16,8 +17,8 @@ export class ApplyTool {
      * Execute the apply tool (mutation mode)
      */
     async execute(input) {
-        // Default to full-auto mode
-        const mode = input.mode || 'full-auto';
+        // Default to workspace-write mode
+        const mode = input.mode || 'workspace-write';
         // CRITICAL: Require explicit confirmation
         if (input.confirm !== true) {
             return {
@@ -61,6 +62,26 @@ export class ApplyTool {
             envAllowList: input.envAllowList,
         };
         try {
+            // ASYNC MODE: Return immediately with task ID
+            if (input.async) {
+                const taskId = `local-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                const promise = this.processManager.execute(options);
+                // Register task for status tracking
+                localTaskRegistry.registerTask(taskId, input.task, promise, {
+                    mode,
+                    model: input.model,
+                    workingDir: input.workingDir,
+                });
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `✅ Codex Apply Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${input.task}\n\n**Mode**: ${mode}\n\n**Status**: Running in background (file modifications will be applied)\n\n💡 Use \`codex_local_status\` to check progress and \`codex_local_results\` to get details when complete.\n\n⚠️ **Note**: This task WILL modify files. Monitor with git status after completion.`,
+                        },
+                    ],
+                };
+            }
+            // SYNC MODE: Wait for completion (original behavior)
             const result = await this.processManager.execute(options);
             // Redact secrets from output
             const redactedOutput = globalRedactor.redactOutput({
@@ -161,9 +182,9 @@ export class ApplyTool {
                     },
                     mode: {
                         type: 'string',
-                        enum: ['full-auto', 'danger-full-access'],
-                        default: 'full-auto',
-                        description: 'Execution mode: full-auto (standard mutations), danger-full-access (unrestricted)',
+                        enum: ['workspace-write', 'danger-full-access'],
+                        default: 'workspace-write',
+                        description: 'Execution mode: workspace-write (standard mutations), danger-full-access (unrestricted)',
                     },
                     confirm: {
                         type: 'boolean',
@@ -192,6 +213,11 @@ export class ApplyTool {
                         type: 'array',
                         items: { type: 'string' },
                         description: 'List of environment variables to pass to Codex Cloud (only used with envPolicy=allow-list). Example: ["OPENAI_API_KEY", "DATABASE_URL"]',
+                    },
+                    async: {
+                        type: 'boolean',
+                        default: false,
+                        description: 'Run task in background (async mode). Set to true to return immediately with a task ID, then use codex_local_status and codex_local_results to check progress. Note: File modifications will still be applied.',
                     },
                 },
                 required: ['task', 'confirm'],

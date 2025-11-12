@@ -2,20 +2,20 @@ import { z } from 'zod';
 declare const LocalExecInputSchema: z.ZodObject<{
     task: z.ZodString;
     workingDir: z.ZodOptional<z.ZodString>;
-    mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["read-only", "full-auto", "danger-full-access"]>>>;
+    mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["read-only", "workspace-write", "danger-full-access"]>>>;
     outputSchema: z.ZodOptional<z.ZodAny>;
     skipGitRepoCheck: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     model: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     task: string;
-    mode: "read-only" | "full-auto" | "danger-full-access";
+    mode: "read-only" | "workspace-write" | "danger-full-access";
     skipGitRepoCheck: boolean;
     outputSchema?: any;
     model?: string | undefined;
     workingDir?: string | undefined;
 }, {
     task: string;
-    mode?: "read-only" | "full-auto" | "danger-full-access" | undefined;
+    mode?: "read-only" | "workspace-write" | "danger-full-access" | undefined;
     outputSchema?: any;
     model?: string | undefined;
     workingDir?: string | undefined;
@@ -72,7 +72,7 @@ export declare class LocalExecTool {
             required: string[];
         };
     };
-    execute(input: LocalExecInput): Promise<LocalExecResult>;
+    execute(input: LocalExecInput): Promise<any>;
 }
 export {};
 //# sourceMappingURL=local_exec.d.ts.map

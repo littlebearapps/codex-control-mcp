@@ -139,7 +139,7 @@ Complete guide to all 13 Codex Control MCP tools.
 {
   task: string;        // Required: Task description
   confirm: boolean;    // Required: Must be true
-  mode?: string;       // Optional: 'full-auto' (default)
+  mode?: string;       // Optional: 'workspace-write' (default)
   model?: string;      // Optional: OpenAI model
   workingDir?: string; // Optional: Working directory
 }
@@ -150,7 +150,7 @@ Complete guide to all 13 Codex Control MCP tools.
 {
   "task": "Add TypeScript types to utils.ts",
   "confirm": true,
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 

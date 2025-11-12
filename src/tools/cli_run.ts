@@ -1,24 +1,28 @@
 /**
- * Plan Tool - Preview Codex Task Without Execution
+ * Run Tool - Execute Codex Tasks (Read-Only by Default)
  *
- * Shows what Codex would do without actually executing.
- * Useful for understanding proposed changes before applying them.
+ * Executes a Codex task with read-only mode by default.
+ * Returns structured results with events, summary, and file changes.
  */
 
 import { ProcessManager, CodexProcessOptions } from '../executor/process_manager.js';
 import { ErrorMapper } from '../executor/error_mapper.js';
 import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
+import { localTaskRegistry } from '../state/local_task_registry.js';
 
-export interface PlanToolInput {
+export interface RunToolInput {
   task: string;
+  mode?: 'read-only' | 'workspace-write' | 'danger-full-access';
+  outputSchema?: any;
   model?: string;
   workingDir?: string;
   envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
   envAllowList?: string[];
+  async?: boolean; // NEW: Return immediately with task ID instead of waiting
 }
 
-export interface PlanToolResult {
+export interface RunToolResult {
   content: Array<{
     type: 'text';
     text: string;
@@ -26,7 +30,7 @@ export interface PlanToolResult {
   isError?: boolean;
 }
 
-export class PlanTool {
+export class RunTool {
   private processManager: ProcessManager;
 
   constructor(processManager: ProcessManager) {
@@ -34,14 +38,18 @@ export class PlanTool {
   }
 
   /**
-   * Execute the plan tool (dry-run)
+   * Execute the run tool
    */
-  async execute(input: PlanToolInput): Promise<PlanToolResult> {
+  async execute(input: RunToolInput): Promise<RunToolResult> {
+    // Default to read-only mode
+    const mode = input.mode || 'read-only';
+
     // Validate inputs
     const validation = InputValidator.validateAll({
       task: input.task,
-      mode: 'read-only', // Plan is always read-only
+      mode,
       model: input.model,
+      outputSchema: input.outputSchema,
       workingDir: input.workingDir,
     });
 
@@ -57,17 +65,41 @@ export class PlanTool {
       };
     }
 
-    // Execute Codex task in read-only mode (plan/preview)
+    // Execute Codex task
     const options: CodexProcessOptions = {
-      task: `Preview/plan this task without executing: ${input.task}`,
-      mode: 'read-only',
+      task: input.task,
+      mode,
       model: input.model,
+      outputSchema: input.outputSchema,
       workingDir: input.workingDir,
       envPolicy: input.envPolicy,
       envAllowList: input.envAllowList,
     };
 
     try {
+      // ASYNC MODE: Return immediately with task ID
+      if (input.async) {
+        const taskId = `local-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        const promise = this.processManager.execute(options);
+
+        // Register task for status tracking
+        localTaskRegistry.registerTask(taskId, input.task, promise, {
+          mode,
+          model: input.model,
+          workingDir: input.workingDir,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✅ Codex Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${input.task}\n\n**Mode**: ${mode}\n\n**Status**: Running in background\n\n💡 Use \`codex_local_status\` to check progress and \`codex_local_results\` to get results when complete.`,
+            },
+          ],
+        };
+      }
+
+      // SYNC MODE: Wait for completion (original behavior)
       const result = await this.processManager.execute(options);
 
       // Redact secrets from output
@@ -83,25 +115,24 @@ export class PlanTool {
           content: [
             {
               type: 'text',
-              text: `❌ Plan Failed\n\n**Error**: ${error.message}\n\n**Code**: ${error.code}\n\n**Details**:\n\`\`\`json\n${JSON.stringify(error.details, null, 2)}\n\`\`\``,
+              text: `❌ Codex Task Failed\n\n**Error**: ${error.message}\n\n**Code**: ${error.code}\n\n**Details**:\n\`\`\`json\n${JSON.stringify(error.details, null, 2)}\n\`\`\``,
             },
           ],
           isError: true,
         };
       }
 
-      // Extract plan information from events
+      // Extract meaningful information from events
       const summary = ErrorMapper.extractSummary(result.events);
       const fileChanges = ErrorMapper.extractFileChanges(result.events);
       const commands = ErrorMapper.extractCommands(result.events);
 
-      // Build plan message
-      let message = `📋 Codex Task Plan (Preview)\n\n`;
-      message += `**Original Task**: ${input.task}\n\n`;
-      message += `**Plan Summary**: ${summary}\n\n`;
+      // Build result message
+      let message = `✅ Codex Task Completed\n\n`;
+      message += `**Summary**: ${summary}\n\n`;
 
       if (fileChanges.length > 0) {
-        message += `**Proposed File Changes** (${fileChanges.length}):\n`;
+        message += `**File Changes** (${fileChanges.length}):\n`;
         for (const change of fileChanges) {
           message += `- ${change.operation}: \`${change.path}\`\n`;
         }
@@ -109,39 +140,32 @@ export class PlanTool {
       }
 
       if (commands.length > 0) {
-        message += `**Proposed Commands** (${commands.length}):\n`;
+        message += `**Commands Executed** (${commands.length}):\n`;
         for (const cmd of commands) {
-          message += `- \`${cmd.command}\`\n`;
+          message += `- \`${cmd.command}\` (exit ${cmd.exitCode})\n`;
         }
         message += '\n';
       }
 
-      message += `**Note**: This is a preview only. Use \`codex_apply\` with \`confirm=true\` to execute.\n`;
+      message += `**Events**: ${result.events.length} events captured\n`;
+      message += `**Exit Code**: ${result.exitCode}\n`;
 
-      // Include Codex output (plan details, explanations)
+      // Include Codex output (analysis, explanations, etc.)
       if (redactedOutput.stdout.trim()) {
         const maxStdoutLength = 10000; // Prevent huge responses
         const truncatedStdout = redactedOutput.stdout.substring(0, maxStdoutLength);
         const wasTruncated = redactedOutput.stdout.length > maxStdoutLength;
 
-        message += `\n**Codex Plan Details**:\n\`\`\`\n${truncatedStdout}\n\`\`\`\n`;
+        message += `\n**Codex Output**:\n\`\`\`\n${truncatedStdout}\n\`\`\`\n`;
 
         if (wasTruncated) {
           message += `\n*(Output truncated - showing first ${maxStdoutLength} characters)*\n`;
         }
       }
 
-      // Include reasoning events if available
-      const reasoningEvents = result.events.filter(
-        (e) => e.type === 'item.completed' && e.data?.type === 'reasoning'
-      );
-
-      if (reasoningEvents.length > 0) {
-        message += `\n**Reasoning Steps**:\n`;
-        for (const event of reasoningEvents.slice(0, 3)) {
-          // Show first 3 reasoning steps
-          message += `- ${event.data?.content || 'N/A'}\n`;
-        }
+      // Include stderr if present (warnings, debug info)
+      if (redactedOutput.stderr.trim()) {
+        message += `\n**Warnings/Debug Info**:\n\`\`\`\n${redactedOutput.stderr.substring(0, 1000)}\n\`\`\`\n`;
       }
 
       return {
@@ -170,20 +194,31 @@ export class PlanTool {
    */
   static getSchema() {
     return {
-      name: 'codex_plan',
+      name: 'codex_cli_run',
       description:
-        'Preview what Codex would do for a task without executing it. Shows proposed file changes and commands.',
+        'Execute a local Codex task via CLI (read-only by default). Use for analyzing code, reading files, running tests, etc.',
       inputSchema: {
         type: 'object',
         properties: {
           task: {
             type: 'string',
-            description: 'Task description to preview (e.g., "add error handling to main.ts")',
+            description: 'Task description for Codex (e.g., "analyze the main.ts file for bugs")',
+          },
+          mode: {
+            type: 'string',
+            enum: ['read-only', 'workspace-write', 'danger-full-access'],
+            default: 'read-only',
+            description:
+              'Execution mode: read-only (safe), workspace-write (can modify files), danger-full-access (unrestricted)',
           },
           model: {
             type: 'string',
             description:
               'OpenAI model to use (e.g., "gpt-4o", "o1", "o3-mini"). Defaults to Codex default.',
+          },
+          outputSchema: {
+            type: 'object',
+            description: 'Optional JSON schema for structured output',
           },
           workingDir: {
             type: 'string',
@@ -201,6 +236,12 @@ export class PlanTool {
             items: { type: 'string' },
             description:
               'List of environment variables to pass to Codex Cloud (only used with envPolicy=allow-list). Example: ["OPENAI_API_KEY", "DATABASE_URL"]',
+          },
+          async: {
+            type: 'boolean',
+            default: false,
+            description:
+              'Run task asynchronously (return immediately with task ID). Set to true to avoid blocking Claude Code. Use codex_local_status and codex_local_results to check progress.',
           },
         },
         required: ['task'],

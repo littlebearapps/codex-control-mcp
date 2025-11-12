@@ -10,7 +10,7 @@
 import { CodexEvent } from './jsonl_parser.js';
 export interface CodexProcessOptions {
     task: string;
-    mode?: 'read-only' | 'full-auto' | 'danger-full-access';
+    mode?: 'read-only' | 'workspace-write' | 'danger-full-access';
     outputSchema?: any;
     model?: string;
     workingDir?: string;
@@ -75,5 +75,15 @@ export declare class ProcessManager {
         maxConcurrency: number;
         activeProcesses: number;
     };
+    /**
+     * Show iTerm2 badge (visible in terminal)
+     * Uses escape sequences to set badge text
+     * Writes directly to /dev/tty to bypass stdio redirection
+     */
+    private setITermBadge;
+    /**
+     * Clear iTerm2 badge
+     */
+    private clearITermBadge;
 }
 //# sourceMappingURL=process_manager.d.ts.map

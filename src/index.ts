@@ -17,10 +17,10 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { ProcessManager } from './executor/process_manager.js';
-import { RunTool } from './tools/run.js';
-import { PlanTool } from './tools/plan.js';
-import { ApplyTool } from './tools/apply.js';
-import { StatusTool } from './tools/status.js';
+import { RunTool } from './tools/cli_run.js';
+import { PlanTool } from './tools/cli_plan.js';
+import { ApplyTool } from './tools/cli_apply.js';
+import { StatusTool } from './tools/cli_status.js';
 import {
   CloudSubmitTool,
   CloudStatusTool,
@@ -32,6 +32,8 @@ import { LocalExecTool } from './tools/local_exec.js';
 import { LocalResumeTool } from './tools/local_resume.js';
 import { CloudCheckReminderTool } from './tools/cloud_check_reminder.js';
 import { ListEnvironmentsTool } from './tools/list_environments.js';
+import { LocalStatusTool } from './tools/local_status.js';
+import { LocalResultsTool } from './tools/local_results.js';
 import { templates } from './resources/environment_templates.js';
 
 /**
@@ -39,7 +41,7 @@ import { templates } from './resources/environment_templates.js';
  */
 const MAX_CONCURRENCY = parseInt(process.env.CODEX_MAX_CONCURRENCY || '2', 10);
 const SERVER_NAME = 'codex-control';
-const SERVER_VERSION = '2.1.0';
+const SERVER_VERSION = '2.1.1';
 
 /**
  * Main Server Class
@@ -60,6 +62,8 @@ class CodexControlServer {
   private localResumeTool: LocalResumeTool;
   private cloudCheckReminderTool: CloudCheckReminderTool;
   private listEnvironmentsTool: ListEnvironmentsTool;
+  private localStatusTool: LocalStatusTool;
+  private localResultsTool: LocalResultsTool;
 
   constructor() {
     // Initialize process manager
@@ -79,6 +83,8 @@ class CodexControlServer {
     this.localResumeTool = new LocalResumeTool();
     this.cloudCheckReminderTool = new CloudCheckReminderTool();
     this.listEnvironmentsTool = new ListEnvironmentsTool();
+    this.localStatusTool = new LocalStatusTool();
+    this.localResultsTool = new LocalResultsTool();
 
     // Create MCP server
     this.server = new Server(
@@ -122,6 +128,8 @@ class CodexControlServer {
           LocalResumeTool.getSchema(),
           CloudCheckReminderTool.getSchema(),
           ListEnvironmentsTool.getSchema(),
+          LocalStatusTool.getSchema(),
+          LocalResultsTool.getSchema(),
         ],
       };
     });
@@ -132,16 +140,16 @@ class CodexControlServer {
 
       try {
         switch (name) {
-          case 'codex_run':
+          case 'codex_cli_run':
             return await this.runTool.execute(args as any) as any;
 
-          case 'codex_plan':
+          case 'codex_cli_plan':
             return await this.planTool.execute(args as any) as any;
 
-          case 'codex_apply':
+          case 'codex_cli_apply':
             return await this.applyTool.execute(args as any) as any;
 
-          case 'codex_status':
+          case 'codex_cli_status':
             return await this.statusTool.execute(args as any) as any;
 
           case 'codex_cloud_submit':
@@ -170,6 +178,12 @@ class CodexControlServer {
 
           case 'codex_list_environments':
             return await this.listEnvironmentsTool.execute() as any;
+
+          case 'codex_local_status':
+            return await this.localStatusTool.execute(args as any) as any;
+
+          case 'codex_local_results':
+            return await this.localResultsTool.execute(args as any) as any;
 
           default:
             return {
@@ -262,7 +276,7 @@ class CodexControlServer {
     console.error(`[CodexControl] Name: ${SERVER_NAME}`);
     console.error(`[CodexControl] Version: ${SERVER_VERSION}`);
     console.error(`[CodexControl] Max Concurrency: ${MAX_CONCURRENCY}`);
-    console.error(`[CodexControl] Tools: codex_run, codex_plan, codex_apply, codex_status, codex_cloud_submit, codex_cloud_status, codex_cloud_results, codex_cloud_list_tasks, codex_github_setup_guide, codex_local_exec, codex_local_resume, codex_cloud_check_reminder, codex_list_environments`);
+    console.error(`[CodexControl] Tools: codex_cli_run, codex_cli_plan, codex_cli_apply, codex_cli_status, codex_cloud_submit, codex_cloud_status, codex_cloud_results, codex_cloud_list_tasks, codex_github_setup_guide, codex_local_exec, codex_local_resume, codex_cloud_check_reminder, codex_list_environments, codex_local_status, codex_local_results`);
     console.error(`[CodexControl] Resources: ${templates.length} environment templates`);
   }
 }

@@ -7,6 +7,7 @@
 import { ErrorMapper } from '../executor/error_mapper.js';
 import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
+import { localTaskRegistry } from '../state/local_task_registry.js';
 export class PlanTool {
     processManager;
     constructor(processManager) {
@@ -44,6 +45,26 @@ export class PlanTool {
             envAllowList: input.envAllowList,
         };
         try {
+            // ASYNC MODE: Return immediately with task ID
+            if (input.async) {
+                const taskId = `local-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+                const promise = this.processManager.execute(options);
+                // Register task for status tracking
+                localTaskRegistry.registerTask(taskId, input.task, promise, {
+                    mode: 'read-only',
+                    model: input.model,
+                    workingDir: input.workingDir,
+                });
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `✅ Codex Plan Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: Preview/plan - ${input.task}\n\n**Mode**: read-only (preview)\n\n**Status**: Running in background\n\n💡 Use \`codex_local_status\` to check progress and \`codex_local_results\` to get plan details when complete.`,
+                        },
+                    ],
+                };
+            }
+            // SYNC MODE: Wait for completion (original behavior)
             const result = await this.processManager.execute(options);
             // Redact secrets from output
             const redactedOutput = globalRedactor.redactOutput({
@@ -158,6 +179,11 @@ export class PlanTool {
                         type: 'array',
                         items: { type: 'string' },
                         description: 'List of environment variables to pass to Codex Cloud (only used with envPolicy=allow-list). Example: ["OPENAI_API_KEY", "DATABASE_URL"]',
+                    },
+                    async: {
+                        type: 'boolean',
+                        default: false,
+                        description: 'Run task in background (async mode). Set to true to return immediately with a task ID, then use codex_local_status and codex_local_results to check progress and retrieve plan details.',
                     },
                 },
                 required: ['task'],

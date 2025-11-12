@@ -51,7 +51,7 @@ Common development workflows using Codex Control MCP.
 {
   "task": "Fix the security vulnerabilities identified in previous analysis",
   "confirm": true,
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 
@@ -107,7 +107,7 @@ Common development workflows using Codex Control MCP.
 {
   "threadId": "thread_abc123xyz",
   "task": "Implement step 1 of the migration plan: Update auth middleware",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 
@@ -132,7 +132,7 @@ Common development workflows using Codex Control MCP.
 2. codex_local_resume
    → Write tests first (TDD)
 
-3. codex_local_resume (full-auto in feature branch)
+3. codex_local_resume (workspace-write in feature branch)
    → Implement feature to pass tests
 
 4. codex_local_resume
@@ -154,21 +154,21 @@ Common development workflows using Codex Control MCP.
 {
   "threadId": "thread_abc123xyz",
   "task": "Create comprehensive test cases for drag-and-drop file upload",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 
 // Step 3: Implement feature
 {
   "threadId": "thread_abc123xyz",
   "task": "Implement the drag-and-drop upload feature to pass all tests",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 
 // Step 4: Refine
 {
   "threadId": "thread_abc123xyz",
   "task": "Add progress indicators and error handling for edge cases",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 
@@ -195,7 +195,7 @@ Common development workflows using Codex Control MCP.
 3. codex_local_resume
    → Propose minimal fix
 
-4. codex_local_resume (full-auto)
+4. codex_local_resume (workspace-write)
    → Apply fix and verify
 ```
 
@@ -224,7 +224,7 @@ Common development workflows using Codex Control MCP.
 {
   "threadId": "thread_abc123xyz",
   "task": "Apply the fix and add a test case to prevent regression",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 
@@ -247,7 +247,7 @@ Common development workflows using Codex Control MCP.
    → Run test suite, capture failures
 
 2. If failures < 5:
-   → Use codex_local_exec (full-auto)
+   → Use codex_local_exec (workspace-write)
    → Fix each failure iteratively
 
 3. If failures > 5:
@@ -266,7 +266,7 @@ Common development workflows using Codex Control MCP.
 // Step 2: Fix iteratively
 {
   "task": "Fix the 3 failing tests in utils.test.ts",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 
@@ -291,7 +291,7 @@ Common development workflows using Codex Control MCP.
 1. codex_local_exec (read-only)
    → Run coverage tool, identify gaps
 
-2. codex_local_resume (full-auto)
+2. codex_local_resume (workspace-write)
    → Add tests for uncovered code
 
 3. codex_local_resume
@@ -327,7 +327,7 @@ Common development workflows using Codex Control MCP.
 {
   "threadId": "thread_abc123xyz",
   "task": "Add comprehensive tests for the 5 functions with lowest coverage",
-  "mode": "full-auto"
+  "mode": "workspace-write"
 }
 ```
 

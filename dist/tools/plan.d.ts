@@ -11,6 +11,7 @@ export interface PlanToolInput {
     workingDir?: string;
     envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
     envAllowList?: string[];
+    async?: boolean;
 }
 export interface PlanToolResult {
     content: Array<{
@@ -58,6 +59,11 @@ export declare class PlanTool {
                     items: {
                         type: string;
                     };
+                    description: string;
+                };
+                async: {
+                    type: string;
+                    default: boolean;
                     description: string;
                 };
             };

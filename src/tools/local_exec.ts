@@ -1,10 +1,12 @@
 import { Codex } from '@openai/codex-sdk';
 import { z } from 'zod';
+import { localTaskRegistry } from '../state/local_task_registry.js';
+import { CodexProcessResult } from '../executor/process_manager.js';
 
 const LocalExecInputSchema = z.object({
   task: z.string().describe('The task to execute locally'),
   workingDir: z.string().optional().describe('Working directory (defaults to current directory)'),
-  mode: z.enum(['read-only', 'full-auto', 'danger-full-access']).optional().default('read-only').describe('Execution mode: read-only (safe), full-auto (can edit files), danger-full-access (unrestricted)'),
+  mode: z.enum(['read-only', 'workspace-write', 'danger-full-access']).optional().default('read-only').describe('Execution mode: read-only (safe), workspace-write (can edit files), danger-full-access (unrestricted)'),
   outputSchema: z.any().optional().describe('Optional JSON Schema for structured output'),
   skipGitRepoCheck: z.boolean().optional().default(false).describe('Skip Git repository check (use with caution)'),
   model: z.string().optional().describe('Model to use (e.g., gpt-5-codex, gpt-5)'),
@@ -41,7 +43,7 @@ EXECUTION MODES - Choose based on desired behavior:
    - How to apply: Codex provides exact commands and file contents - review and apply manually
    - Best practice: Start with read-only, review output, then decide on next steps
 
-2. 'full-auto' (Caution - Direct Modifications):
+2. 'workspace-write' (Caution - Direct Modifications):
    - Codex CAN create branches, edit files, run commands, commit changes
    - Returns: Actual filesystem changes + thread ID + event log
    - Use when: You trust Codex to make changes directly, iterative development in safe branches
@@ -68,11 +70,11 @@ WORKFLOW RECOMMENDATIONS:
 For Code Improvements:
 1. Start: codex_local_exec with mode='read-only'
 2. Review: Examine Codex's proposed changes
-3. If approved: Apply manually OR re-run with mode='full-auto' in feature branch
+3. If approved: Apply manually OR re-run with mode='workspace-write' in feature branch
 4. Follow-up: Use codex_local_resume with thread ID for refinements
 
 For Iterative Development:
-1. Start: codex_local_exec with mode='full-auto' in feature branch
+1. Start: codex_local_exec with mode='workspace-write' in feature branch
 2. Iterate: Use codex_local_resume for follow-up changes
 3. Benefit: High cache rates (45-93%) reduce costs and latency
 
@@ -93,8 +95,8 @@ For Analysis Only:
           },
           mode: {
             type: 'string',
-            enum: ['read-only', 'full-auto', 'danger-full-access'],
-            description: 'Execution mode: read-only (safe), full-auto (can edit files), danger-full-access (unrestricted)',
+            enum: ['read-only', 'workspace-write', 'danger-full-access'],
+            description: 'Execution mode: read-only (safe), workspace-write (can edit files), danger-full-access (unrestricted)',
             default: 'read-only',
           },
           outputSchema: {
@@ -116,12 +118,29 @@ For Analysis Only:
     };
   }
 
-  async execute(input: LocalExecInput): Promise<LocalExecResult> {
+  async execute(input: LocalExecInput): Promise<any> {
     try {
+      console.error('[LocalExec] Starting execution with:', JSON.stringify(input, null, 2));
+
+      // TEST MODE: Return immediately to verify MCP response works
+      if (process.env.LOCAL_EXEC_TEST_MODE === 'true') {
+        console.error('[LocalExec] TEST MODE: Returning immediate test response');
+        return {
+          content: [
+            {
+              type: 'text',
+              text: '🧪 TEST MODE: This is a test response from codex_local_exec. If you see this, MCP response mechanism works!',
+            },
+          ],
+        };
+      }
+
       // Validate input
       const validated = LocalExecInputSchema.parse(input);
+      console.error('[LocalExec] Input validated:', validated);
 
       // Initialize Codex SDK
+      console.error('[LocalExec] Initializing Codex SDK...');
       const codex = new Codex();
 
       // Start thread with configuration
@@ -137,7 +156,9 @@ For Analysis Only:
         threadOptions.model = validated.model;
       }
 
+      console.error('[LocalExec] Starting thread with options:', threadOptions);
       const thread = codex.startThread(threadOptions);
+      console.error('[LocalExec] Thread started with ID:', thread.id);
 
       // Prepare run options
       const runOptions: any = {
@@ -148,50 +169,107 @@ For Analysis Only:
         runOptions.outputSchema = validated.outputSchema;
       }
 
-      // Execute with streaming to capture all events
-      const { events } = await thread.runStreamed(validated.task, runOptions);
+      console.error('[LocalExec] Running task with options:', runOptions);
+      console.error('[LocalExec] *** STARTING ASYNC EXECUTION (NON-BLOCKING) ***');
 
-      const eventLog: any[] = [];
-      let finalResponse = '';
-      let usage: any = undefined;
+      // Generate task ID for tracking
+      const taskId = `sdk-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-      // Stream and collect events
-      for await (const event of events) {
-        eventLog.push(event);
+      // Create promise wrapper for SDK execution
+      const executionPromise = new Promise<CodexProcessResult>(async (resolve, reject) => {
+        try {
+          const { events } = await thread.runStreamed(validated.task, runOptions);
 
-        // Extract final response and usage
-        if (event.type === 'turn.completed') {
-          // Find the final agent_message item
-          const agentMessage = eventLog
-            .filter((e) => e.type === 'item.completed' && e.item?.type === 'agent_message')
-            .pop();
+          let threadId = '';
+          let eventCount = 0;
+          const eventLog: any[] = [];
+          let finalOutput = '';
 
-          if (agentMessage?.item?.text) {
-            finalResponse = agentMessage.item.text;
+          console.error(`[LocalExec:${taskId}] Background execution started`);
+
+          for await (const event of events) {
+            eventCount++;
+            eventLog.push(event);
+
+            // Capture thread ID when it becomes available
+            if (!threadId && thread.id) {
+              threadId = thread.id;
+              console.error(`[LocalExec:${taskId}] Thread ID: ${threadId}`);
+            }
+
+            console.error(`[LocalExec:${taskId}] Event ${eventCount}:`, event.type);
+
+            // Capture final output from various event types
+            if (event.type === 'turn.completed') {
+              finalOutput += `Turn completed\n`;
+            } else if (event.type === 'item.completed' && (event as any).output) {
+              finalOutput += JSON.stringify((event as any).output) + '\n';
+            }
           }
 
-          // Capture usage stats
-          if (event.usage) {
-            usage = event.usage;
-          }
+          console.error(`[LocalExec:${taskId}] ✅ Execution complete, ${eventCount} events, thread: ${threadId}`);
+
+          resolve({
+            success: true,
+            stdout: finalOutput || `SDK execution complete (${eventCount} events, thread: ${threadId})`,
+            stderr: '',
+            exitCode: 0,
+            signal: null,
+            events: eventLog,
+          });
+        } catch (error) {
+          console.error(`[LocalExec:${taskId}] ❌ Error:`, error);
+          reject(error);
         }
-      }
+      });
 
-      return {
-        success: true,
-        threadId: thread.id || 'unknown',
-        events: eventLog,
-        finalResponse,
-        usage,
+      // Register task in registry for status tracking
+      localTaskRegistry.registerTask(taskId, validated.task, executionPromise, {
+        mode: validated.mode,
+        model: validated.model,
+        workingDir: validated.workingDir,
+      });
+
+      // Return task ID immediately (non-blocking)
+      const mcpResponse = {
+        content: [
+          {
+            type: 'text',
+            text: `✅ Codex SDK Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Working Directory**: ${validated.workingDir || process.cwd()}\n\n**Status**: Running in background\n\n💡 **Check Progress**:\n- Use \`codex_local_status\` to check status\n- Use \`codex_local_results\` with task ID to get results when complete\n- Thread data persists in \`~/.codex/sessions/\` for resumption\n\n**Note**: SDK execution continues in background. Results will include thread ID for use with \`codex_local_resume\`.`,
+          },
+        ],
       };
+
+      console.error('[LocalExec] ✅ Returned task ID immediately (non-blocking)');
+      console.error('[LocalExec] ==================== EXECUTE END (ASYNC) ====================');
+      return mcpResponse;
     } catch (error) {
-      return {
+      console.error('[LocalExec] ❌❌❌ CAUGHT ERROR ❌❌❌');
+      console.error('[LocalExec] Error type:', error instanceof Error ? 'Error' : typeof error);
+      console.error('[LocalExec] Error message:', error instanceof Error ? error.message : String(error));
+      console.error('[LocalExec] Error stack:', error instanceof Error ? error.stack : 'N/A');
+
+      const errorResult = {
         success: false,
         threadId: '',
         events: [],
         finalResponse: '',
         error: error instanceof Error ? error.message : String(error),
       };
+
+      // Return MCP-compatible error response
+      const errorResponse = {
+        content: [
+          {
+            type: 'text',
+            text: `❌ codex_local_exec failed:\n${JSON.stringify(errorResult, null, 2)}`,
+          },
+        ],
+        isError: true,
+      };
+
+      console.error('[LocalExec] ==================== EXECUTE END (ERROR) ====================');
+      return errorResponse;
     }
   }
 }
