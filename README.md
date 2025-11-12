@@ -730,6 +730,50 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 - **Use Local** for iterative development with multiple follow-ups
 - **Use Cloud** for fire-and-forget background tasks
 
+**Execution Modes Explained**:
+
+**1. `read-only` (DEFAULT - Safest, Most Common)**
+- ✅ Codex ANALYZES code and PROPOSES changes but DOES NOT modify files
+- ✅ Returns: Complete patch/diff with exact code to apply
+- ✅ Use when: You want to review changes before applying, learning what Codex suggests, or unsure about modifications
+- ✅ Thread resumption: Use `codex_local_resume` with thread ID for follow-up questions
+- ✅ How to apply: Codex provides exact commands and file contents - review and apply manually
+- ✅ Best practice: Start with read-only, review output, then decide on next steps
+
+**2. `full-auto` (Caution - Direct Modifications)**
+- ⚠️ Codex CAN create branches, edit files, run commands, commit changes
+- ⚠️ Returns: Actual filesystem changes + thread ID + event log
+- ⚠️ Use when: You trust Codex to make changes directly, iterative development in safe branches
+- ⚠️ Requires: Git repository (trusted directory)
+- ⚠️ Risk: Codex makes real changes - ensure you can review/revert (use feature branches!)
+- ⚠️ Best practice: Only use in feature branches, never on main/production
+
+**3. `danger-full-access` (High Risk - Unrestricted)**
+- 🚨 Codex has UNRESTRICTED access - can modify ANY file, run ANY command
+- 🚨 Returns: Any filesystem modifications + thread ID + event log
+- 🚨 Use when: Codex needs system-level access, infrastructure changes, or you need maximum flexibility
+- 🚨 Requires: Full understanding of what Codex will do
+- 🚨 Risk: HIGH - Codex can modify critical files, delete data, run dangerous commands
+- 🚨 Best practice: Only use when absolutely necessary, in isolated test environments
+
+**Recommended Workflows**:
+
+*For Code Improvements:*
+1. Start: `codex_local_exec` with `mode='read-only'`
+2. Review: Examine Codex's proposed changes
+3. If approved: Apply manually OR re-run with `mode='full-auto'` in feature branch
+4. Follow-up: Use `codex_local_resume` with thread ID for refinements
+
+*For Iterative Development:*
+1. Start: `codex_local_exec` with `mode='full-auto'` in feature branch
+2. Iterate: Use `codex_local_resume` for follow-up changes
+3. Benefit: High cache rates (45-93%) reduce costs and latency
+
+*For Analysis Only:*
+1. Use: `codex_local_exec` with `mode='read-only'`
+2. Get: Comprehensive analysis, suggestions, patches
+3. No risk: No files modified, safe to run anytime
+
 ---
 
 ### Tool 10: `codex_local_resume` 🆕 (Resume Local Thread)
