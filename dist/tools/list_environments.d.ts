@@ -5,10 +5,10 @@ export interface CodexEnvironment {
     description?: string;
 }
 export interface ListEnvironmentsResult {
-    environments: Record<string, CodexEnvironment>;
-    count: number;
-    message: string;
-    configPath: string;
+    content: Array<{
+        type: 'text';
+        text: string;
+    }>;
 }
 export declare class ListEnvironmentsTool {
     static getSchema(): {

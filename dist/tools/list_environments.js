@@ -20,26 +20,46 @@ export class ListEnvironmentsTool {
             const data = await readFile(ENVIRONMENTS_CONFIG_PATH, 'utf-8');
             const environments = JSON.parse(data);
             const count = Object.keys(environments).length;
-            const message = count === 0
-                ? '⚠️  No environments configured in local config.'
-                : count === 1
-                    ? '✅ 1 environment configured.'
-                    : `✅ ${count} environments configured.`;
+            if (count === 0) {
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `⚠️  No environments configured in local config.\n\n**Config Path**: ${ENVIRONMENTS_CONFIG_PATH}\n\n**Setup**: Create this file with your Codex Cloud environments. Use \`codex_github_setup_guide\` for examples.`,
+                        },
+                    ],
+                };
+            }
+            // Format environment list
+            let message = `## Codex Cloud Environments\n\n`;
+            message += `✅ **${count}** environment${count === 1 ? '' : 's'} configured\n\n`;
+            message += `**Config**: ${ENVIRONMENTS_CONFIG_PATH}\n\n`;
+            message += `### Environments:\n\n`;
+            for (const [envId, env] of Object.entries(environments)) {
+                message += `**${envId}**\n`;
+                message += `- Name: ${env.name}\n`;
+                message += `- Stack: ${env.stack}\n`;
+                message += `- Repo: ${env.repoUrl}\n`;
+                if (env.description) {
+                    message += `- Description: ${env.description}\n`;
+                }
+                message += `\n`;
+            }
+            message += `\n💡 Use these environment IDs with \`codex_cloud_submit\` to submit background tasks.`;
             return {
-                environments,
-                count,
-                message,
-                configPath: ENVIRONMENTS_CONFIG_PATH,
+                content: [{ type: 'text', text: message }],
             };
         }
         catch (error) {
             // Config file doesn't exist
             if (error.code === 'ENOENT') {
                 return {
-                    environments: {},
-                    count: 0,
-                    message: `⚠️  Environment config not found. Create ${ENVIRONMENTS_CONFIG_PATH} to define environments.`,
-                    configPath: ENVIRONMENTS_CONFIG_PATH,
+                    content: [
+                        {
+                            type: 'text',
+                            text: `⚠️  Environment config not found.\n\n**Expected Path**: ${ENVIRONMENTS_CONFIG_PATH}\n\n**Setup**: Create this file to define Codex Cloud environments. Use \`codex_github_setup_guide\` to generate setup instructions.\n\n**Example**:\n\`\`\`json\n${ListEnvironmentsTool.getExampleConfig()}\n\`\`\``,
+                        },
+                    ],
                 };
             }
             throw error;

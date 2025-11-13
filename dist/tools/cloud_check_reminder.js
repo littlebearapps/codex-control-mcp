@@ -36,29 +36,45 @@ export class CloudCheckReminderTool {
                 };
             });
             const pendingCount = pendingTasks.length;
-            let message;
             if (pendingCount === 0) {
-                message = '✅ No pending Cloud tasks. All submitted tasks have been checked or completed.';
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: '✅ No pending Cloud tasks. All submitted tasks have been checked or completed.',
+                        },
+                    ],
+                };
             }
-            else if (pendingCount === 1) {
-                message = `⏳ You have 1 pending Cloud task. Check status at the Web UI link below.`;
+            // Format pending tasks as text
+            let message = `## ⏳ Pending Cloud Tasks\n\n`;
+            message += `**Count**: ${pendingCount} task${pendingCount === 1 ? '' : 's'}\n\n`;
+            message += `### Tasks:\n\n`;
+            for (const t of pendingTasks) {
+                const timeAgo = t.minutesAgo < 60
+                    ? `${t.minutesAgo}m ago`
+                    : `${Math.floor(t.minutesAgo / 60)}h ${t.minutesAgo % 60}m ago`;
+                message += `**${t.taskId}**\n`;
+                message += `- Environment: ${t.envId}\n`;
+                message += `- Task: ${t.task}\n`;
+                message += `- Submitted: ${timeAgo}\n`;
+                message += `- Check Status: ${t.checkUrl}\n\n`;
             }
-            else {
-                message = `⏳ You have ${pendingCount} pending Cloud tasks. Check status at the Web UI links below.`;
-            }
+            message += `\n💡 Click the links above to check task status in Codex Cloud Web UI.`;
             return {
-                pendingCount,
-                pendingTasks,
-                message,
+                content: [{ type: 'text', text: message }],
             };
         }
         catch (error) {
             // Registry file doesn't exist or is empty
             if (error.code === 'ENOENT') {
                 return {
-                    pendingCount: 0,
-                    pendingTasks: [],
-                    message: '✅ No Cloud tasks have been submitted yet.',
+                    content: [
+                        {
+                            type: 'text',
+                            text: '✅ No Cloud tasks have been submitted yet.\n\n💡 Use `codex_cloud_submit` to submit your first task.',
+                        },
+                    ],
                 };
             }
             throw error;

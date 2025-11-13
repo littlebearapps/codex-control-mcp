@@ -7,16 +7,10 @@ export interface CloudTask {
     status: 'submitted' | 'completed' | 'failed';
 }
 export interface CloudCheckReminderResult {
-    pendingCount: number;
-    pendingTasks: Array<{
-        taskId: string;
-        envId: string;
-        task: string;
-        submittedAt: string;
-        checkUrl: string;
-        minutesAgo: number;
+    content: Array<{
+        type: 'text';
+        text: string;
     }>;
-    message: string;
 }
 export declare class CloudCheckReminderTool {
     static getSchema(): {
