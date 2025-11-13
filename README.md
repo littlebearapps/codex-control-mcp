@@ -1,6 +1,6 @@
 # Codex Control MCP Server
 
-**Version**: 2.1.0
+**Version**: 2.1.1
 **Status**: ✅ Production Ready - Fully Validated
 **Repository**: [github.com/littlebearapps/codex-control-mcp](https://github.com/littlebearapps/codex-control-mcp)
 **Purpose**: Complete Codex workflow control with both local (real-time status) and cloud (background) execution modes
@@ -87,6 +87,18 @@ Access via:
 - Tolerant line-buffered parser handles partial lines and non-JSON stderr
 - Process queue with concurrency limits
 - Graceful error handling and cleanup
+
+### ⚠️ Codex Cloud Limitations
+
+**Important**: OpenAI does not provide programmatic API access to Codex Cloud environments.
+
+**What this means**:
+- ❌ Cannot automatically discover or list cloud environments
+- ❌ Cannot sync environment changes from ChatGPT settings
+- ✅ **Manual setup required**: Create `~/.config/codex-control/environments.json`
+- ✅ Environment IDs must be copied from ChatGPT web UI
+
+**See**: [Detailed Codex Cloud Limitations](#️-important-codex-cloud-limitations) section below for full investigation report and setup instructions.
 
 ---
 
@@ -905,6 +917,8 @@ Check for pending Codex Cloud tasks and get Web UI links for status checking.
 
 List available Codex Cloud environments from local configuration.
 
+⚠️ **Important**: This tool reads from `~/.config/codex-control/environments.json` (local file) only. It **cannot** query Codex Cloud directly due to lack of programmatic API. See [Codex Cloud Limitations](#️-important-codex-cloud-limitations).
+
 **Parameters**: None
 
 **Example**:
@@ -1166,9 +1180,93 @@ All GitHub templates include:
 
 ---
 
+## ⚠️ Important: Codex Cloud Limitations
+
+### No Programmatic API Available
+
+**Critical Finding**: OpenAI does not provide any programmatic API, REST endpoint, GraphQL interface, or SDK method to list, query, or manage Codex Cloud environments.
+
+**What This Means**:
+- ❌ Cannot automatically discover your cloud environments
+- ❌ Cannot sync environment changes from ChatGPT settings
+- ❌ Cannot validate environment IDs programmatically before submission
+- ❌ Cannot query environment configuration or status via API
+- ✅ **Must manually maintain** `~/.config/codex-control/environments.json`
+
+**Investigation Summary** (see `OPENAI-API-INVESTIGATION.md` for full report):
+- ❌ **REST API**: No endpoints exist for environment management
+- ❌ **GraphQL**: No interface available
+- ❌ **SDK Methods**: `@openai/codex-sdk` has no `listEnvironments()`, `getEnvironment()`, or similar methods
+- ❌ **CLI JSON Output**: `codex cloud` is interactive TUI only (no `--json`, `--list`, or `--format` flags)
+- ✅ **Web UI Only**: https://chatgpt.com/codex/settings/environments is the ONLY way to manage environments
+
+**Impact on Codex Control MCP**:
+- Environment creation requires ChatGPT web UI (manual process)
+- Environment IDs must be manually added to local config file
+- One-time setup per environment required
+- `codex_list_environments` tool reads from local config only (not from Codex Cloud)
+- `codex_cloud_submit` requires pre-configured environment ID
+
+### Why Manual Configuration?
+
+After comprehensive investigation of all available OpenAI Codex APIs, SDKs, and CLI tools:
+
+**OpenAI Codex SDK** (`@openai/codex-sdk` v0.58.0-alpha.7):
+```typescript
+// ✅ Available methods
+const codex = new Codex();
+const thread = codex.startThread();
+codex.resumeThread(threadId);
+thread.run(prompt);
+thread.runStreamed(prompt);
+
+// ❌ NOT available (do not exist)
+codex.listEnvironments();      // No such method
+codex.getEnvironment(id);      // No such method
+codex.getCloudTasks();         // No such method
+```
+
+**Codex CLI Commands**:
+```bash
+# ✅ Works - Interactive TUI (human-only)
+codex cloud
+
+# ✅ Works - Task submission (requires known environment ID)
+codex cloud exec --env env_abc123xyz "task description"
+
+# ❌ Does NOT exist
+codex cloud --list              # No such flag
+codex cloud --json              # No such flag
+codex cloud --format json       # No such flag
+```
+
+**Authentication Tokens** (in `~/.codex/auth.json`):
+```json
+{
+  "tokens": {
+    "id_token": "eyJ...",
+    "access_token": "eyJ...",
+    "account_id": "579ea81f-..."
+  }
+}
+```
+- ✅ JWT tokens exist and are valid
+- ✅ Account ID and user ID available in token payload
+- ❌ **No API endpoints exist** to use these tokens for environment queries
+
+**Conclusion**: Manual configuration via `environments.json` is the **only** option currently available.
+
+---
+
 ## Codex Cloud Setup
 
-### 1. Configure Environments
+### Prerequisites
+
+Before using Codex Cloud tools, you **must**:
+1. Have Codex Cloud environments configured in ChatGPT web UI
+2. Manually create local configuration file with environment IDs
+
+### 1. Configure Environments in ChatGPT Web UI
 
 Codex Cloud environments define the execution context (dependencies, secrets, setup scripts).
 
@@ -1182,17 +1280,76 @@ Codex Cloud environments define the execution context (dependencies, secrets, se
    - **Setup Script**: Initialization commands
    - **Internet Access**: Off/Limited/Full
 
-**Get Environment ID**:
-```bash
-# Option 1: Browse in terminal
-codex cloud
+**Important**: Note the Environment ID (e.g., `env_abc123xyz`) from the environment details page. You'll need this for the next step.
 
-# Option 2: Check web UI
-# Visit https://chatgpt.com/codex/settings/environments
-# Copy ENV_ID from environment details
+### 2. Create Local Configuration File
+
+⚠️ **Manual Step Required**: Because no API exists to query environments, you must manually create a local configuration file.
+
+**Create config directory**:
+```bash
+mkdir -p ~/.config/codex-control
 ```
 
-### 2. Submit Tasks via Claude Code
+**Create `environments.json`**:
+```bash
+cat > ~/.config/codex-control/environments.json << 'EOF'
+{
+  "my-project-env": {
+    "name": "My Project",
+    "repoUrl": "https://github.com/username/repo",
+    "stack": "node",
+    "description": "Production environment"
+  },
+  "another-env": {
+    "name": "Another Project",
+    "repoUrl": "https://github.com/username/another-repo",
+    "stack": "python",
+    "description": "Staging environment"
+  }
+}
+EOF
+```
+
+**Or edit manually**:
+```bash
+# Open in your editor
+nano ~/.config/codex-control/environments.json
+# Or
+code ~/.config/codex-control/environments.json
+```
+
+**Configuration Format**:
+```json
+{
+  "env_id_from_chatgpt": {
+    "name": "Human-readable name",
+    "repoUrl": "https://github.com/org/repo",
+    "stack": "node|python|go|rust",
+    "description": "Optional description"
+  }
+}
+```
+
+**Field Descriptions**:
+- **Key** (`env_id_from_chatgpt`): The Environment ID from ChatGPT web UI settings
+- **name**: Display name for `codex_list_environments`
+- **repoUrl**: GitHub repository URL (for reference only)
+- **stack**: Technology stack (`node`, `python`, `go`, `rust`) - used by `codex_github_setup_guide`
+- **description**: Optional notes about the environment
+
+**Verify Configuration**:
+```typescript
+// Use codex_list_environments tool in Claude Code
+{} // No parameters needed
+
+// Should display:
+// ✅ 2 environments configured
+// - my-project-env (My Project)
+// - another-env (Another Project)
+```
+
+### 3. Submit Tasks via Claude Code
 
 Once environments are configured:
 
@@ -1217,11 +1374,6 @@ codex cloud  # Interactive browser
 
 **Mobile App**:
 - ChatGPT app → Codex → Tasks
-
-**Limitations**:
-- ❌ Environment configuration has NO programmatic API (web UI only)
-- ❌ `codex cloud` TUI is interactive-only (not scriptable yet)
-- ✅ Task submission is fully scriptable via `codex cloud exec`
 
 ---
 
@@ -1485,6 +1637,119 @@ cd /Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control
 rm -rf dist node_modules
 npm install
 npm run build
+```
+
+### Cloud Environment Not Found
+
+**Error**: `Error: environment 'env_xyz' not found; run 'codex cloud' to list available environments`
+
+**Cause**: Environment ID doesn't exist in your Codex Cloud account, or local config file has wrong ID.
+
+**Solutions**:
+
+```bash
+# Solution 1: Verify environment ID in ChatGPT web UI
+# Visit: https://chatgpt.com/codex/settings/environments
+# Copy exact environment ID
+
+# Solution 2: Browse environments via interactive TUI
+codex cloud
+# Use arrow keys to navigate, copy exact ID
+
+# Solution 3: Update local config with correct ID
+nano ~/.config/codex-control/environments.json
+# Ensure key matches exact environment ID from ChatGPT
+```
+
+**Example Fix**:
+```json
+{
+  "env_abc123xyz": {  // ✅ Exact ID from ChatGPT
+    "name": "My Project",
+    "repoUrl": "https://github.com/user/repo",
+    "stack": "node"
+  }
+}
+```
+
+### Cannot List Environments Programmatically
+
+**Error**: "How do I get my cloud environments automatically?"
+
+**Answer**: ⚠️ **Not possible** - OpenAI does not provide programmatic API to list environments.
+
+**Why**: See [Important: Codex Cloud Limitations](#️-important-codex-cloud-limitations) section.
+
+**Workaround**:
+```bash
+# Manual setup required
+# 1. Visit https://chatgpt.com/codex/settings/environments
+# 2. Copy environment IDs
+# 3. Add to ~/.config/codex-control/environments.json
+```
+
+### Cloud Task Submission Failed
+
+**Error**: `Error submitting to Codex Cloud` or `codex cloud exec failed`
+
+**Common Causes & Solutions**:
+
+**Cause 1: Not authenticated**
+```bash
+# Check auth status
+codex auth status
+
+# Re-authenticate if needed
+codex auth
+```
+
+**Cause 2: Invalid environment ID**
+```bash
+# Verify environment exists in ChatGPT
+# Visit: https://chatgpt.com/codex/settings/environments
+
+# Verify local config matches
+cat ~/.config/codex-control/environments.json
+```
+
+**Cause 3: ChatGPT Pro subscription required**
+```bash
+# Codex Cloud requires ChatGPT Plus or Team subscription
+# Verify at: https://chatgpt.com/settings
+```
+
+**Cause 4: Network/connectivity issues**
+```bash
+# Test basic connectivity
+codex cloud  # Should open TUI if connected
+
+# Test task submission manually
+codex cloud exec --env YOUR_ENV_ID "echo hello"
+```
+
+### Local Configuration File Missing
+
+**Error**: Using `codex_list_environments` returns "No configuration file found"
+
+**Solution**:
+```bash
+# Create config directory
+mkdir -p ~/.config/codex-control
+
+# Create environments.json
+cat > ~/.config/codex-control/environments.json << 'EOF'
+{
+  "my-env-id": {
+    "name": "My Environment",
+    "repoUrl": "https://github.com/user/repo",
+    "stack": "node",
+    "description": "Description here"
+  }
+}
+EOF
+
+# Verify
+cat ~/.config/codex-control/environments.json
 ```
 
 ---
