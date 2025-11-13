@@ -1,0 +1,5 @@
+# Runtime logs
+*.log
+
+# Ad-hoc test scripts
+test-*.js
