@@ -19,6 +19,25 @@ See detailed documentation in `quickrefs/`:
 
 ---
 
+## Production Deployment
+
+**⚠️ TEMPORARY DEPLOYMENT**: This MCP server is deployed to `/Users/nathanschram/claude-code-tools/mcp/codex-control/` for production use by all Claude Code working directories. This is a temporary solution until we package codex-control as an npm package or Homebrew formula.
+
+**Directory Structure**:
+- **Development** (where you edit): `/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/`
+- **Production** (where MCP configs point): `/Users/nathanschram/claude-code-tools/mcp/codex-control/`
+
+**Deployment Process**:
+1. Make changes in development directory
+2. Build with `npm run build`
+3. Test locally with `node dist/index.js`
+4. Copy to production: `cp -r dist /Users/nathanschram/claude-code-tools/mcp/codex-control/`
+5. Restart Claude Code in all working directories
+
+**Future**: Will be packaged as `@littlebearapps/codex-control-mcp` on npm or via Homebrew for easier installation and updates.
+
+---
+
 ## Common Commands
 
 ### Build & Development
