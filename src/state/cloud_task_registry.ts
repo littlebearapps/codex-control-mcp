@@ -9,6 +9,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { ProgressSummary } from '../executor/progress_inference.js';
 
 export interface CloudTask {
   taskId: string;
@@ -21,6 +22,7 @@ export interface CloudTask {
   status: 'submitted' | 'completed' | 'failed' | 'cancelled';
   lastCheckedStatus?: string;
   notes?: string;
+  progress?: ProgressSummary;
 }
 
 export interface CloudTaskFilter {
@@ -135,6 +137,13 @@ export class CloudTaskRegistry {
 
     console.error(`[CloudTaskRegistry] Updated task ${taskId}`);
     return updated;
+  }
+
+  /**
+   * Update progress for a task
+   */
+  async updateProgress(taskId: string, progress: ProgressSummary): Promise<CloudTask | null> {
+    return this.updateTask(taskId, { progress });
   }
 
   /**

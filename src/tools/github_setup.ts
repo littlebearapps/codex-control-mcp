@@ -56,41 +56,8 @@ export class GitHubSetupTool {
    */
   static getSchema() {
     return {
-      name: 'codex_github_setup_guide',
-      description: `Generate custom GitHub integration guide for Codex Cloud environment.
-
-USAGE:
-- Provide repository URL and technology stack
-- Optionally customize git user name and email
-- Receive complete setup guide with scripts and test tasks
-
-OUTPUT INCLUDES:
-- Fine-grained GitHub token creation instructions
-- Codex Cloud environment configuration steps
-- Custom setup and maintenance scripts (pre-filled)
-- Test task for verification
-- Troubleshooting guide for common issues
-
-SUPPORTED STACKS:
-- node: Node.js/TypeScript projects
-- python: Python projects
-- go: Go projects
-- rust: Rust projects
-
-EXAMPLE:
-{
-  "repoUrl": "https://github.com/user/my-project",
-  "stack": "node",
-  "gitUserName": "Your Name",
-  "gitUserEmail": "your@email.com"
-}
-
-WORKFLOW:
-1. Call this tool with repository details
-2. Follow generated guide to create GitHub token
-3. Configure Codex Cloud environment with provided scripts
-4. Run test task to verify setup
-5. Start using autonomous PR workflows!`,
+      name: '_codex_cloud_github_setup',
+      description: 'Generate a custom GitHub setup guide - like a personalized installation wizard. Provide your repo URL and tech stack (node/python/go/rust), and get back a complete guide: how to create a fine-grained GitHub token, Codex Cloud environment config, pre-filled setup scripts, and a test task to verify everything works. Think of it as "setup in a box" for autonomous PR workflows. Use this when: you\'re integrating a new repo with Codex Cloud and want GitHub capabilities (branch creation, commits, PRs). Returns: step-by-step guide with copy-paste commands, troubleshooting tips, and a verification task. Perfect for: first-time setup, adding new repos, or when you forgot the token permissions. The generated guide is repo-specific with your URLs and settings filled in. Avoid for: repos already configured (just use _codex_cloud_submit), or if you don\'t need GitHub integration.',
       inputSchema: {
         type: 'object',
         properties: {

@@ -1,109 +1,99 @@
 /**
- * Status Tool - Monitor Active Codex Sessions
+ * Unified Status Tool - Process Manager + Task Registry
  *
- * Provides information about:
- * - Active Codex processes (CLI-based and SDK-based)
- * - Process queue status
- * - System-wide process detection
+ * Shows both real-time process state AND persistent task history.
+ * Consolidates codex_cli_status and codex_local_status into one tool.
  */
-import { spawn } from 'child_process';
+import { localTaskRegistry } from '../state/local_task_registry.js';
 export class StatusTool {
     processManager;
     constructor(processManager) {
         this.processManager = processManager;
     }
-    /**
-     * Detect all codex processes running on the system
-     * Includes both ProcessManager-tracked and SDK-spawned processes
-     */
-    async detectSystemProcesses() {
-        return new Promise((resolve) => {
-            const proc = spawn('ps', ['aux']);
-            let output = '';
-            proc.stdout.on('data', (data) => {
-                output += data.toString();
-            });
-            proc.on('close', () => {
-                const lines = output.split('\n');
-                const codexProcesses = lines
-                    .filter(line => line.includes('codex exec'))
-                    .filter(line => !line.includes('grep'))
-                    .map(line => {
-                    const parts = line.split(/\s+/);
-                    return {
-                        pid: parts[1] || 'unknown',
-                        cpu: parts[2] || '0',
-                        mem: parts[3] || '0',
-                        started: parts[8] || 'unknown',
-                        command: parts.slice(10).join(' ').substring(0, 80)
-                    };
-                });
-                resolve(codexProcesses);
-            });
-            proc.on('error', () => {
-                // If ps fails, return empty array
-                resolve([]);
-            });
-        });
-    }
-    /**
-     * Execute the status tool
-     */
-    async execute(_input) {
-        const stats = this.processManager.getStats();
-        const systemProcesses = await this.detectSystemProcesses();
-        // Calculate total processes (CLI-tracked + SDK-spawned)
-        const totalProcesses = systemProcesses.length;
-        const sdkProcesses = Math.max(0, totalProcesses - stats.activeProcesses);
-        let message = `📊 Codex Control Status\n\n`;
-        message += `**Total Codex Processes**: ${totalProcesses}\n`;
-        message += `  - CLI-tracked: ${stats.activeProcesses}\n`;
-        message += `  - SDK-spawned: ${sdkProcesses}\n`;
-        message += `**Queued Tasks**: ${stats.queued}\n`;
-        message += `**Running Tasks**: ${stats.running}\n`;
-        message += `**Max Concurrency**: ${stats.maxConcurrency}\n\n`;
-        // System-wide process details
-        if (systemProcesses.length > 0) {
-            message += `**System-Wide Process Details**:\n`;
-            for (const proc of systemProcesses) {
-                message += `- PID ${proc.pid} | Started ${proc.started} | CPU ${proc.cpu}% | Mem ${proc.mem}%\n`;
-                message += `  ${proc.command}\n`;
-            }
-            message += `\n`;
-        }
-        // Status indicators
-        if (totalProcesses === 0 && stats.queued === 0) {
-            message += `✅ No active Codex tasks\n`;
-        }
-        else if (sdkProcesses > 0) {
-            message += `⚠️ Detected ${sdkProcesses} SDK-spawned process(es) - not tracked by ProcessManager\n`;
-            message += `💡 SDK processes are spawned by codex_local_exec and codex_local_resume\n`;
-        }
-        else if (stats.running >= stats.maxConcurrency) {
-            message += `⚠️ At max concurrency. New tasks will queue.\n`;
+    async execute(input) {
+        const workingDir = input.workingDir || process.cwd();
+        const showAll = input.showAll || false;
+        let message = `## 📊 Codex Execution Status\n\n`;
+        // ========================================
+        // SECTION 1: Active Processes (Process Manager)
+        // ========================================
+        const processStatus = this.processManager.getStats();
+        message += `### Active Processes (MCP Server)\n\n`;
+        if (processStatus.activeProcesses === 0 && processStatus.queued === 0) {
+            message += `✅ No active processes or queued tasks\n\n`;
         }
         else {
-            message += `✅ Ready to accept more tasks\n`;
+            message += `**Active Processes**: ${processStatus.activeProcesses}\n`;
+            message += `**Queued Tasks**: ${processStatus.queued}\n`;
+            message += `**Running Tasks**: ${processStatus.running}\n`;
+            message += `**Concurrency Limit**: ${processStatus.maxConcurrency}\n\n`;
+            if (processStatus.running > 0) {
+                message += `🔄 ${processStatus.running} task(s) currently running\n\n`;
+            }
+            if (processStatus.queued > 0) {
+                message += `⏳ ${processStatus.queued} task(s) queued\n\n`;
+            }
         }
-        // Add usage tips
-        message += `\n**Available Tools** (13 total):\n`;
-        message += `\n**Local CLI Execution**:\n`;
-        message += `- \`codex_run\` - Execute read-only tasks (analysis, tests)\n`;
-        message += `- \`codex_plan\` - Preview changes without executing\n`;
-        message += `- \`codex_apply\` - Apply file modifications (requires confirm=true)\n`;
-        message += `- \`codex_status\` - View this status\n`;
-        message += `\n**Local SDK Execution** (streaming, thread persistence):\n`;
-        message += `- \`codex_local_exec\` - Real-time streaming execution with thread ID\n`;
-        message += `- \`codex_local_resume\` - Resume previous thread for follow-up tasks\n`;
-        message += `\n**Cloud Execution** (background, sandboxed):\n`;
-        message += `- \`codex_cloud_submit\` - Submit task to Codex Cloud\n`;
-        message += `- \`codex_cloud_list_tasks\` - List all tracked cloud tasks\n`;
-        message += `- \`codex_cloud_status\` - Check cloud task status\n`;
-        message += `- \`codex_cloud_results\` - Get cloud task results\n`;
-        message += `- \`codex_cloud_check_reminder\` - Check for pending cloud tasks\n`;
-        message += `\n**Configuration & Setup**:\n`;
-        message += `- \`codex_list_environments\` - List available Codex Cloud environments\n`;
-        message += `- \`codex_github_setup_guide\` - Generate GitHub integration guide\n`;
+        // ========================================
+        // SECTION 2: Task Registry (Persistent)
+        // ========================================
+        message += `### Task Registry (Persistent)\n\n`;
+        const allTasksInWorkingDir = localTaskRegistry.getAllTasks(workingDir);
+        const tasks = showAll ? localTaskRegistry.getAllTasks() : allTasksInWorkingDir;
+        if (tasks.length === 0) {
+            message += showAll
+                ? `No tasks found in registry.\n\n`
+                : `No tasks found for current directory.\n\n💡 Use \`showAll: true\` to see all tasks.\n\n`;
+        }
+        else {
+            message += `**Working Dir**: ${workingDir}\n\n`;
+            const runningTasks = tasks.filter((t) => t.status === 'running');
+            const completedTasks = tasks.filter((t) => t.status === 'completed').slice(-10); // Last 10
+            const failedTasks = tasks.filter((t) => t.status === 'failed').slice(-5); // Last 5
+            message += `**Running**: ${runningTasks.length}\n`;
+            message += `**Completed**: ${tasks.filter((t) => t.status === 'completed').length} (showing last ${Math.min(completedTasks.length, 10)})\n`;
+            message += `**Failed**: ${tasks.filter((t) => t.status === 'failed').length} (showing last ${Math.min(failedTasks.length, 5)})\n\n`;
+            // Running tasks
+            if (runningTasks.length > 0) {
+                message += `#### 🔄 Running Tasks\n\n`;
+                for (const task of runningTasks) {
+                    const elapsed = Math.floor((Date.now() - new Date(task.submittedAt).getTime()) / 1000);
+                    message += `**${task.taskId}**:\n`;
+                    message += `- Task: ${task.task.substring(0, 80)}${task.task.length > 80 ? '...' : ''}\n`;
+                    message += `- Mode: ${task.mode || 'N/A'}\n`;
+                    message += `- Elapsed: ${elapsed}s ago\n`;
+                    message += '\n';
+                }
+            }
+            // Recently completed tasks
+            if (completedTasks.length > 0) {
+                message += `#### ✅ Recently Completed\n\n`;
+                for (const task of completedTasks) {
+                    const ago = this.formatTimeAgo(new Date(task.submittedAt));
+                    message += `- **${task.taskId}**: ${task.task.substring(0, 60)}${task.task.length > 60 ? '...' : ''} (${ago})\n`;
+                }
+                message += '\n';
+            }
+            // Failed tasks
+            if (failedTasks.length > 0) {
+                message += `#### ❌ Recent Failures\n\n`;
+                for (const task of failedTasks) {
+                    const ago = this.formatTimeAgo(new Date(task.submittedAt));
+                    message += `- **${task.taskId}**: ${task.task.substring(0, 60)}${task.task.length > 60 ? '...' : ''} (${ago})\n`;
+                    if (task.error) {
+                        message += `  Error: ${task.error.substring(0, 100)}\n`;
+                    }
+                }
+                message += '\n';
+            }
+        }
+        // ========================================
+        // SECTION 3: Usage Tips
+        // ========================================
+        message += `### 💡 Usage Tips\n\n`;
+        message += `- **Check results**: Use \`codex_local_results\` with task ID\n`;
+        message += `- **See all tasks**: Set \`showAll: true\` parameter\n`;
+        message += `- **Cloud tasks**: Use \`codex_cloud_check_reminder\` for cloud status\n`;
         return {
             content: [
                 {
@@ -113,17 +103,33 @@ export class StatusTool {
             ],
         };
     }
-    /**
-     * Get tool schema for MCP registration
-     */
+    formatTimeAgo(date) {
+        const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (seconds < 60)
+            return `${seconds}s ago`;
+        if (seconds < 3600)
+            return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400)
+            return `${Math.floor(seconds / 3600)}h ago`;
+        return `${Math.floor(seconds / 86400)}d ago`;
+    }
     static getSchema() {
         return {
             name: 'codex_status',
-            description: 'Get status of Codex Control MCP server, including active processes and queue status',
+            description: 'Check unified Codex execution status: active processes (PIDs, queue, concurrency) AND task registry (running, completed, failed tasks). Consolidates process manager and persistent task tracking in one view.',
             inputSchema: {
                 type: 'object',
-                properties: {},
-                required: [],
+                properties: {
+                    workingDir: {
+                        type: 'string',
+                        description: 'Working directory to filter tasks by. Defaults to current directory. Only affects task registry section.',
+                    },
+                    showAll: {
+                        type: 'boolean',
+                        default: false,
+                        description: 'Show all tasks from all directories (default: false, shows only current directory tasks)',
+                    },
+                },
             },
         };
     }

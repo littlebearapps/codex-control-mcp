@@ -96,6 +96,12 @@ export class CloudTaskRegistry {
         return updated;
     }
     /**
+     * Update progress for a task
+     */
+    async updateProgress(taskId, progress) {
+        return this.updateTask(taskId, { progress });
+    }
+    /**
      * Get a specific task by ID
      */
     async getTask(taskId) {

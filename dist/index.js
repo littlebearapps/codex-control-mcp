@@ -9,18 +9,19 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 import { ProcessManager } from './executor/process_manager.js';
-import { RunTool } from './tools/cli_run.js';
-import { PlanTool } from './tools/cli_plan.js';
-import { ApplyTool } from './tools/cli_apply.js';
-import { StatusTool } from './tools/cli_status.js';
-import { CloudSubmitTool, CloudStatusTool, CloudResultsTool, CloudListTasksTool, } from './tools/cloud.js';
+import { LocalRunTool } from './tools/local_run.js';
+import { LocalStatusTool } from './tools/local_status.js';
+import { CloudSubmitTool, CloudStatusTool, CloudResultsTool, } from './tools/cloud.js';
 import { GitHubSetupTool } from './tools/github_setup.js';
 import { LocalExecTool } from './tools/local_exec.js';
 import { LocalResumeTool } from './tools/local_resume.js';
-import { CloudCheckReminderTool } from './tools/cloud_check_reminder.js';
 import { ListEnvironmentsTool } from './tools/list_environments.js';
-import { LocalStatusTool } from './tools/local_status.js';
 import { LocalResultsTool } from './tools/local_results.js';
+import { LocalWaitTool } from './tools/local_wait.js';
+import { LocalCancelTool } from './tools/local_cancel.js';
+import { CloudWaitTool } from './tools/cloud_wait.js';
+import { CloudCancelTool } from './tools/cloud_cancel.js';
+import { CodexTool } from './tools/codex.js';
 import { templates } from './resources/environment_templates.js';
 /**
  * Server Configuration
@@ -34,40 +35,58 @@ const SERVER_VERSION = '2.1.1';
 class CodexControlServer {
     server;
     processManager;
-    runTool;
-    planTool;
-    applyTool;
-    statusTool;
+    // Unified user-facing tool
+    codexTool;
+    // Hidden primitive tools
+    localRunTool;
+    localStatusTool;
+    localExecTool;
+    localResumeTool;
+    localResultsTool;
+    localWaitTool;
+    localCancelTool;
     cloudSubmitTool;
     cloudStatusTool;
     cloudResultsTool;
-    cloudListTasksTool;
-    githubSetupTool;
-    localExecTool;
-    localResumeTool;
-    cloudCheckReminderTool;
+    cloudWaitTool;
+    cloudCancelTool;
     listEnvironmentsTool;
-    localStatusTool;
-    localResultsTool;
+    githubSetupTool;
     constructor() {
         // Initialize process manager
         this.processManager = new ProcessManager(MAX_CONCURRENCY);
-        // Initialize tools
-        this.runTool = new RunTool(this.processManager);
-        this.planTool = new PlanTool(this.processManager);
-        this.applyTool = new ApplyTool(this.processManager);
-        this.statusTool = new StatusTool(this.processManager);
+        // Initialize hidden primitive tools
+        this.localRunTool = new LocalRunTool(this.processManager);
+        this.localStatusTool = new LocalStatusTool(this.processManager);
+        this.localExecTool = new LocalExecTool();
+        this.localResumeTool = new LocalResumeTool();
+        this.localResultsTool = new LocalResultsTool();
+        this.localWaitTool = new LocalWaitTool();
+        this.localCancelTool = new LocalCancelTool();
         this.cloudSubmitTool = new CloudSubmitTool();
         this.cloudStatusTool = new CloudStatusTool();
         this.cloudResultsTool = new CloudResultsTool();
-        this.cloudListTasksTool = new CloudListTasksTool();
-        this.githubSetupTool = new GitHubSetupTool();
-        this.localExecTool = new LocalExecTool();
-        this.localResumeTool = new LocalResumeTool();
-        this.cloudCheckReminderTool = new CloudCheckReminderTool();
+        this.cloudWaitTool = new CloudWaitTool();
+        this.cloudCancelTool = new CloudCancelTool();
         this.listEnvironmentsTool = new ListEnvironmentsTool();
-        this.localStatusTool = new LocalStatusTool();
-        this.localResultsTool = new LocalResultsTool();
+        this.githubSetupTool = new GitHubSetupTool();
+        // Initialize unified tool with primitive dependencies
+        this.codexTool = new CodexTool({
+            _codex_local_run: this.localRunTool,
+            _codex_local_status: this.localStatusTool,
+            _codex_local_exec: this.localExecTool,
+            _codex_local_resume: this.localResumeTool,
+            _codex_local_results: this.localResultsTool,
+            _codex_local_wait: this.localWaitTool,
+            _codex_local_cancel: this.localCancelTool,
+            _codex_cloud_submit: this.cloudSubmitTool,
+            _codex_cloud_status: this.cloudStatusTool,
+            _codex_cloud_results: this.cloudResultsTool,
+            _codex_cloud_wait: this.cloudWaitTool,
+            _codex_cloud_cancel: this.cloudCancelTool,
+            _codex_cloud_list_environments: this.listEnvironmentsTool,
+            _codex_cloud_github_setup: this.githubSetupTool,
+        });
         // Create MCP server
         this.server = new Server({
             name: SERVER_NAME,
@@ -91,21 +110,23 @@ class CodexControlServer {
         this.server.setRequestHandler(ListToolsRequestSchema, async () => {
             return {
                 tools: [
-                    RunTool.getSchema(),
-                    PlanTool.getSchema(),
-                    ApplyTool.getSchema(),
-                    StatusTool.getSchema(),
+                    // Primary unified tool (user-facing)
+                    CodexTool.getSchema(),
+                    // Hidden primitives (14 tools with _ prefix)
+                    LocalRunTool.getSchema(),
+                    LocalStatusTool.getSchema(),
+                    LocalExecTool.getSchema(),
+                    LocalResumeTool.getSchema(),
+                    LocalResultsTool.getSchema(),
+                    LocalWaitTool.getSchema(),
+                    LocalCancelTool.getSchema(),
                     CloudSubmitTool.getSchema(),
                     CloudStatusTool.getSchema(),
                     CloudResultsTool.getSchema(),
-                    CloudListTasksTool.getSchema(),
-                    GitHubSetupTool.getSchema(),
-                    LocalExecTool.getSchema(),
-                    LocalResumeTool.getSchema(),
-                    CloudCheckReminderTool.getSchema(),
+                    CloudWaitTool.getSchema(),
+                    CloudCancelTool.getSchema(),
                     ListEnvironmentsTool.getSchema(),
-                    LocalStatusTool.getSchema(),
-                    LocalResultsTool.getSchema(),
+                    GitHubSetupTool.getSchema(),
                 ],
             };
         });
@@ -114,36 +135,38 @@ class CodexControlServer {
             const { name, arguments: args } = request.params;
             try {
                 switch (name) {
-                    case 'codex_cli_run':
-                        return await this.runTool.execute(args);
-                    case 'codex_cli_plan':
-                        return await this.planTool.execute(args);
-                    case 'codex_cli_apply':
-                        return await this.applyTool.execute(args);
-                    case 'codex_cli_status':
-                        return await this.statusTool.execute(args);
-                    case 'codex_cloud_submit':
-                        return await this.cloudSubmitTool.execute(args);
-                    case 'codex_cloud_status':
-                        return await this.cloudStatusTool.execute(args);
-                    case 'codex_cloud_results':
-                        return await this.cloudResultsTool.execute(args);
-                    case 'codex_cloud_list_tasks':
-                        return await this.cloudListTasksTool.execute(args);
-                    case 'codex_github_setup_guide':
-                        return await this.githubSetupTool.execute(args);
-                    case 'codex_local_exec':
-                        return await this.localExecTool.execute(args);
-                    case 'codex_local_resume':
-                        return await this.localResumeTool.execute(args);
-                    case 'codex_cloud_check_reminder':
-                        return await this.cloudCheckReminderTool.execute();
-                    case 'codex_list_environments':
-                        return await this.listEnvironmentsTool.execute();
-                    case 'codex_local_status':
+                    // Unified user-facing tool
+                    case 'codex':
+                        return await this.codexTool.execute(args);
+                    // Hidden primitive tools (14 tools with _ prefix)
+                    case '_codex_local_run':
+                        return await this.localRunTool.execute(args);
+                    case '_codex_local_status':
                         return await this.localStatusTool.execute(args);
-                    case 'codex_local_results':
+                    case '_codex_local_exec':
+                        return await this.localExecTool.execute(args);
+                    case '_codex_local_resume':
+                        return await this.localResumeTool.execute(args);
+                    case '_codex_local_results':
                         return await this.localResultsTool.execute(args);
+                    case '_codex_local_wait':
+                        return await this.localWaitTool.execute(args);
+                    case '_codex_local_cancel':
+                        return await this.localCancelTool.execute(args);
+                    case '_codex_cloud_submit':
+                        return await this.cloudSubmitTool.execute(args);
+                    case '_codex_cloud_status':
+                        return await this.cloudStatusTool.execute(args);
+                    case '_codex_cloud_results':
+                        return await this.cloudResultsTool.execute(args);
+                    case '_codex_cloud_wait':
+                        return await this.cloudWaitTool.execute(args);
+                    case '_codex_cloud_cancel':
+                        return await this.cloudCancelTool.execute(args);
+                    case '_codex_cloud_list_environments':
+                        return await this.listEnvironmentsTool.execute();
+                    case '_codex_cloud_github_setup':
+                        return await this.githubSetupTool.execute(args);
                     default:
                         return {
                             content: [
@@ -225,7 +248,7 @@ class CodexControlServer {
         console.error(`[CodexControl] Name: ${SERVER_NAME}`);
         console.error(`[CodexControl] Version: ${SERVER_VERSION}`);
         console.error(`[CodexControl] Max Concurrency: ${MAX_CONCURRENCY}`);
-        console.error(`[CodexControl] Tools: codex_cli_run, codex_cli_plan, codex_cli_apply, codex_cli_status, codex_cloud_submit, codex_cloud_status, codex_cloud_results, codex_cloud_list_tasks, codex_github_setup_guide, codex_local_exec, codex_local_resume, codex_cloud_check_reminder, codex_list_environments, codex_local_status, codex_local_results`);
+        console.error(`[CodexControl] Tools: 15 total (1 unified 'codex' + 14 hidden primitives with _ prefix)`);
         console.error(`[CodexControl] Resources: ${templates.length} environment templates`);
     }
 }

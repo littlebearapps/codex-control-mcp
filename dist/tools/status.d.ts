@@ -1,13 +1,13 @@
 /**
- * Status Tool - Monitor Active Codex Sessions
+ * Unified Status Tool - Process Manager + Task Registry
  *
- * Provides information about:
- * - Active Codex processes (CLI-based and SDK-based)
- * - Process queue status
- * - System-wide process detection
+ * Shows both real-time process state AND persistent task history.
+ * Consolidates codex_cli_status and codex_local_status into one tool.
  */
 import { ProcessManager } from '../executor/process_manager.js';
 export interface StatusToolInput {
+    workingDir?: string;
+    showAll?: boolean;
 }
 export interface StatusToolResult {
     content: Array<{
@@ -18,25 +18,24 @@ export interface StatusToolResult {
 export declare class StatusTool {
     private processManager;
     constructor(processManager: ProcessManager);
-    /**
-     * Detect all codex processes running on the system
-     * Includes both ProcessManager-tracked and SDK-spawned processes
-     */
-    private detectSystemProcesses;
-    /**
-     * Execute the status tool
-     */
-    execute(_input: StatusToolInput): Promise<StatusToolResult>;
-    /**
-     * Get tool schema for MCP registration
-     */
+    execute(input: StatusToolInput): Promise<StatusToolResult>;
+    private formatTimeAgo;
     static getSchema(): {
         name: string;
         description: string;
         inputSchema: {
             type: string;
-            properties: {};
-            required: never[];
+            properties: {
+                workingDir: {
+                    type: string;
+                    description: string;
+                };
+                showAll: {
+                    type: string;
+                    default: boolean;
+                    description: string;
+                };
+            };
         };
     };
 }

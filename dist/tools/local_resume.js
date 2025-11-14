@@ -10,8 +10,8 @@ const LocalResumeInputSchema = z.object({
 export class LocalResumeTool {
     static getSchema() {
         return {
-            name: 'codex_local_resume',
-            description: 'Resume a previous local Codex thread with follow-up tasks. Preserves conversation context for iterative workflows. Threads are persisted in ~/.codex/sessions and can be resumed across Claude Code restarts.',
+            name: '_codex_local_resume',
+            description: 'Continue a previous conversation - like replying to an email thread. Takes a thread ID from _codex_local_exec and lets you ask follow-ups while keeping full context. The beauty: Codex remembers everything from the previous analysis, so you get 45-93% token savings from caching. Use this when: you want to refine previous work, ask "now fix the bugs you found", or iterate on a design. Think of it as the "reply" button for Codex conversations. Works across Claude Code restarts (threads saved to ~/.codex/sessions). Perfect for: multi-step refactoring, iterative debugging, "show me, then do it" workflows. Requires: thread ID from previous _codex_local_exec call. Avoid for: starting new unrelated tasks (use _codex_local_exec instead).',
             inputSchema: {
                 type: 'object',
                 properties: {

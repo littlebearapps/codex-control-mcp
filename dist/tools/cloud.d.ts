@@ -12,7 +12,12 @@ export interface CloudSubmitInput {
 }
 export interface CloudStatusInput {
     taskId?: string;
-    showAll?: boolean;
+    list?: boolean;
+    workingDir?: string;
+    envId?: string;
+    status?: 'submitted' | 'completed' | 'failed' | 'cancelled';
+    limit?: number;
+    showStats?: boolean;
 }
 export interface CloudResultsInput {
     taskId: string;
@@ -70,9 +75,34 @@ export declare class CloudSubmitTool {
 }
 export declare class CloudStatusTool {
     /**
-     * Check status of cloud tasks
+     * Unified cloud task status checking
+     *
+     * Modes:
+     * 1. No params → Show pending tasks (check_reminder)
+     * 2. taskId → Show specific task status
+     * 3. list: true → List all tasks with optional filters
      */
-    execute(input: CloudStatusInput): Promise<CloudToolResult>;
+    execute(input?: CloudStatusInput): Promise<CloudToolResult>;
+    /**
+     * MODE 1: Show pending (submitted) tasks
+     */
+    private showPendingTasks;
+    /**
+     * MODE 2: Show specific task status
+     */
+    private showSpecificTask;
+    /**
+     * MODE 3: List all tasks with optional filtering
+     */
+    private listAllTasks;
+    /**
+     * Get status emoji for visual clarity
+     */
+    private getStatusEmoji;
+    /**
+     * Get human-readable relative time
+     */
+    private getRelativeTime;
     /**
      * Get tool schema for MCP registration
      */
@@ -86,7 +116,30 @@ export declare class CloudStatusTool {
                     type: string;
                     description: string;
                 };
-                showAll: {
+                list: {
+                    type: string;
+                    description: string;
+                    default: boolean;
+                };
+                workingDir: {
+                    type: string;
+                    description: string;
+                };
+                envId: {
+                    type: string;
+                    description: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    description: string;
+                };
+                limit: {
+                    type: string;
+                    description: string;
+                    default: number;
+                };
+                showStats: {
                     type: string;
                     description: string;
                     default: boolean;
@@ -115,62 +168,6 @@ export declare class CloudResultsTool {
                 };
             };
             required: string[];
-        };
-    };
-}
-export interface CloudListTasksInput {
-    workingDir?: string;
-    envId?: string;
-    status?: 'submitted' | 'completed' | 'failed' | 'cancelled';
-    limit?: number;
-    showStats?: boolean;
-}
-export declare class CloudListTasksTool {
-    /**
-     * List tracked cloud tasks with optional filtering
-     */
-    execute(input?: CloudListTasksInput): Promise<CloudToolResult>;
-    /**
-     * Get status emoji for visual clarity
-     */
-    private getStatusEmoji;
-    /**
-     * Get human-readable relative time
-     */
-    private getRelativeTime;
-    /**
-     * Get tool schema for MCP registration
-     */
-    static getSchema(): {
-        name: string;
-        description: string;
-        inputSchema: {
-            type: string;
-            properties: {
-                workingDir: {
-                    type: string;
-                    description: string;
-                };
-                envId: {
-                    type: string;
-                    description: string;
-                };
-                status: {
-                    type: string;
-                    enum: string[];
-                    description: string;
-                };
-                limit: {
-                    type: string;
-                    description: string;
-                    default: number;
-                };
-                showStats: {
-                    type: string;
-                    description: string;
-                    default: boolean;
-                };
-            };
         };
     };
 }

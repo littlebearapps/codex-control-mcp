@@ -140,8 +140,8 @@ export class LocalResultsTool {
 
   static getSchema() {
     return {
-      name: 'codex_local_results',
-      description: 'Get results from completed async local Codex task. Returns full output and analysis.',
+      name: '_codex_local_results',
+      description: 'Retrieve finished async task results - like checking your completed downloads. When you run a local task asynchronously (rare, as most local tasks are synchronous), use this to fetch the final output. Think of it as collecting your package from the post office after getting the "ready for pickup" notification. Use this when: you have a task ID from an async local execution and want the full results. Returns: complete output, analysis, and any generated artifacts. Perfect for: background local tasks that finished while you were doing other work. Avoid for: checking status of running tasks (use _codex_local_status), or most local tasks (which return results immediately).',
       inputSchema: {
         type: 'object',
         properties: {

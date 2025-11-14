@@ -5,6 +5,7 @@
  * Similar to CloudTaskRegistry but for local execution.
  */
 import { CodexProcessResult } from '../executor/process_manager.js';
+import { ProgressSummary } from '../executor/progress_inference.js';
 export interface LocalTask {
     taskId: string;
     task: string;
@@ -15,6 +16,7 @@ export interface LocalTask {
     status: 'running' | 'completed' | 'failed';
     result?: CodexProcessResult;
     error?: string;
+    progress?: ProgressSummary;
 }
 export declare class LocalTaskRegistry {
     private registryPath;
@@ -49,6 +51,10 @@ export declare class LocalTaskRegistry {
      * Get task result (if completed)
      */
     getResult(taskId: string): CodexProcessResult | undefined;
+    /**
+     * Update progress for a running task
+     */
+    updateProgress(taskId: string, progress: ProgressSummary): void;
     /**
      * Clear completed tasks older than specified age (default: 24 hours)
      */

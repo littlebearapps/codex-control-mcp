@@ -94,6 +94,16 @@ export class LocalTaskRegistry {
         return task?.result;
     }
     /**
+     * Update progress for a running task
+     */
+    updateProgress(taskId, progress) {
+        const task = this.tasks.get(taskId);
+        if (task && task.status === 'running') {
+            task.progress = progress;
+            this.save();
+        }
+    }
+    /**
      * Clear completed tasks older than specified age (default: 24 hours)
      */
     clearOldTasks(maxAgeMs = 24 * 60 * 60 * 1000) {

@@ -131,8 +131,8 @@ export class StatusTool {
     message += `- \`codex_cloud_results\` - Get cloud task results\n`;
     message += `- \`codex_cloud_check_reminder\` - Check for pending cloud tasks\n`;
     message += `\n**Configuration & Setup**:\n`;
-    message += `- \`codex_list_environments\` - List available Codex Cloud environments\n`;
-    message += `- \`codex_github_setup_guide\` - Generate GitHub integration guide\n`;
+    message += `- \`codex_cloud_list_environments\` - List available Codex Cloud environments\n`;
+    message += `- \`codex_cloud_github_setup\` - Generate GitHub integration guide\n`;
 
     return {
       content: [

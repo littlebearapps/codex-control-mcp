@@ -1,29 +1,32 @@
 /**
- * Local Status Tool - Check Async Task Status
+ * Unified Status Tool - Process Manager + Task Registry
  *
- * Check status of async local Codex tasks (CLI/SDK).
- * Shows running and recently completed tasks.
+ * Shows both real-time process state AND persistent task history.
+ * Consolidates codex_cli_status and codex_local_status into one tool.
  */
-export interface LocalStatusInput {
-    taskId?: string;
+import { ProcessManager } from '../executor/process_manager.js';
+export interface LocalStatusToolInput {
+    workingDir?: string;
     showAll?: boolean;
 }
-export interface LocalStatusResult {
+export interface LocalStatusToolResult {
     content: Array<{
         type: 'text';
         text: string;
     }>;
 }
 export declare class LocalStatusTool {
-    execute(input?: LocalStatusInput): Promise<LocalStatusResult>;
-    private getElapsedTime;
+    private processManager;
+    constructor(processManager: ProcessManager);
+    execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult>;
+    private formatTimeAgo;
     static getSchema(): {
         name: string;
         description: string;
         inputSchema: {
             type: string;
             properties: {
-                taskId: {
+                workingDir: {
                     type: string;
                     description: string;
                 };

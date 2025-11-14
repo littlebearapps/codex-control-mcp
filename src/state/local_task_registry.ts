@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { CodexProcessResult } from '../executor/process_manager.js';
+import { ProgressSummary } from '../executor/progress_inference.js';
 
 export interface LocalTask {
   taskId: string;
@@ -20,6 +21,7 @@ export interface LocalTask {
   status: 'running' | 'completed' | 'failed';
   result?: CodexProcessResult;
   error?: string;
+  progress?: ProgressSummary;
 }
 
 export class LocalTaskRegistry {
@@ -128,6 +130,17 @@ export class LocalTaskRegistry {
   getResult(taskId: string): CodexProcessResult | undefined {
     const task = this.tasks.get(taskId);
     return task?.result;
+  }
+
+  /**
+   * Update progress for a running task
+   */
+  updateProgress(taskId: string, progress: ProgressSummary): void {
+    const task = this.tasks.get(taskId);
+    if (task && task.status === 'running') {
+      task.progress = progress;
+      this.save();
+    }
   }
 
   /**

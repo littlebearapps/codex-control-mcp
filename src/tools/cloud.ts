@@ -19,7 +19,12 @@ export interface CloudSubmitInput {
 
 export interface CloudStatusInput {
   taskId?: string;
-  showAll?: boolean;
+  list?: boolean;
+  workingDir?: string;
+  envId?: string;
+  status?: 'submitted' | 'completed' | 'failed' | 'cancelled';
+  limit?: number;
+  showStats?: boolean;
 }
 
 export interface CloudResultsInput {
@@ -247,40 +252,8 @@ export class CloudSubmitTool {
    */
   static getSchema() {
     return {
-      name: 'codex_cloud_submit',
-      description: `Submit a task to Codex Cloud for background execution. Task runs in sandboxed cloud container and continues even if Claude Code closes.
-
-PREREQUISITES:
-- Environment configured at https://chatgpt.com/codex/settings/environments
-- Environment must have repository URL and default branch
-- For GitHub operations: GITHUB_TOKEN secret configured (see MCP resources for setup templates)
-
-WORKFLOW:
-1. Get environment ID from user or list environments with codex_cloud_list_tasks
-2. Write detailed task description:
-   - Specify exact branch name (e.g., "feature/user-authentication")
-   - List testing requirements explicitly
-   - Define success criteria
-   - Include PR title and description if creating PR
-3. Submit task (takes 1-5 seconds, then runs in background)
-4. Task continues even if Claude Code closes (5-30 min typical)
-5. Check results with codex_cloud_list_tasks or codex_cloud_status
-
-TASK DESCRIPTION BEST PRACTICES:
-✓ "Create feature branch 'feature/add-auth' from main, implement JWT authentication, add tests, create PR titled 'Add JWT Authentication'"
-✗ "Add authentication" (too vague)
-
-GITHUB CAPABILITIES (with proper setup):
-✓ Read repository code
-✓ Create feature branches
-✓ Commit and push changes
-✓ Create and update pull requests
-✓ View CI test results
-✗ Merge PRs (requires manual approval)
-
-SETUP GITHUB (one-time per environment):
-- Visit environment settings to configure GITHUB_TOKEN secret
-- Test with simple branch creation task`,
+      name: '_codex_cloud_submit',
+      description: 'Fire-and-forget background execution - like starting a build server job. Submit a task to Codex Cloud and it keeps running even if you close Claude Code. Perfect for: comprehensive test suites (30-60 min), full refactorings, or creating GitHub PRs automatically. The magic: runs in a sandboxed container with your repo, can make commits and open PRs, continues while you work on other things. Use when: tasks take >30 minutes, you need GitHub integration (branch creation, commits, PRs), or want device independence. Returns: task ID immediately (<5 sec), then task runs in background (5-60 min typical). Check progress with _codex_cloud_status or the Web UI. Requires: environment ID (from Codex Cloud settings) with repo URL configured. Be specific in task descriptions - "Create feature branch \'feat/auth\', add JWT auth, test, create PR" beats "add authentication". Avoid for: quick local tasks (<5 min, use _codex_local_exec), or tasks needing real-time feedback.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -312,73 +285,32 @@ SETUP GITHUB (one-time per environment):
 
 export class CloudStatusTool {
   /**
-   * Check status of cloud tasks
+   * Unified cloud task status checking
+   *
+   * Modes:
+   * 1. No params → Show pending tasks (check_reminder)
+   * 2. taskId → Show specific task status
+   * 3. list: true → List all tasks with optional filters
    */
-  async execute(input: CloudStatusInput): Promise<CloudToolResult> {
+  async execute(input: CloudStatusInput = {}): Promise<CloudToolResult> {
     try {
-      let message = `📊 Codex Cloud Task Status\n\n`;
-
-      if (input.taskId) {
-        // Try to get task from registry
-        const task = await globalTaskRegistry.getTask(input.taskId);
-
-        if (task) {
-          message += `**Task ID**: ${input.taskId}\n`;
-          message += `**Status**: ${task.status} (last tracked)\n\n`;
-
-          message += `**Registry Information**:\n`;
-          message += `- **Task**: ${task.task}\n`;
-          message += `- **Environment**: ${task.envId}\n`;
-          message += `- **Submitted**: ${new Date(task.timestamp).toLocaleString()}\n`;
-          message += `- **Working Directory**: ${task.workingDir}\n`;
-
-          if (task.model) {
-            message += `- **Model**: ${task.model}\n`;
-          }
-
-          if (task.lastCheckedStatus) {
-            message += `- **Last Manual Check**: ${task.lastCheckedStatus}\n`;
-          }
-
-          if (task.notes) {
-            message += `- **Notes**: ${task.notes}\n`;
-          }
-
-          message += `\n`;
-        } else {
-          message += `**Task ID**: ${input.taskId}\n`;
-          message += `⚠️ Task not found in local registry (may have been submitted elsewhere)\n\n`;
-        }
-
-        message += `**Check Real-Time Status**:\n`;
-        message += `1. **Web UI**: https://chatgpt.com/codex/tasks/${input.taskId}\n`;
-        message += `2. **CLI**: Run \`codex cloud\` and search for task ID\n`;
-        message += `3. **Mobile**: Open ChatGPT app → Codex → Tasks\n\n`;
-      } else {
-        message += `**View All Tasks**:\n`;
-        message += `1. **Tracked Locally**: Use \`codex_cloud_list_tasks\`\n`;
-        message += `2. **Web UI**: https://chatgpt.com/codex\n`;
-        message += `3. **CLI**: Run \`codex cloud\` (interactive browser)\n`;
-        message += `4. **Mobile**: ChatGPT app → Codex → Tasks\n\n`;
+      // MODE 1: Show pending tasks (default behavior, like check_reminder)
+      if (!input.taskId && !input.list) {
+        return await this.showPendingTasks();
       }
 
-      message += `**Task States**:\n`;
-      message += `- 🟡 **Queued**: Waiting to start\n`;
-      message += `- 🔵 **Running**: Currently executing\n`;
-      message += `- 🟢 **Completed**: Finished successfully\n`;
-      message += `- 🔴 **Failed**: Encountered errors\n\n`;
+      // MODE 2: Show specific task
+      if (input.taskId) {
+        return await this.showSpecificTask(input.taskId);
+      }
 
-      message += `**Note**: Codex Cloud TUI is interactive and not yet scriptable via MCP.\n`;
-      message += `Use web UI for programmatic status checks until SDK support is added.\n`;
+      // MODE 3: List all tasks with filtering
+      if (input.list) {
+        return await this.listAllTasks(input);
+      }
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: message,
-          },
-        ],
-      };
+      // Fallback (shouldn't reach here)
+      return await this.showPendingTasks();
     } catch (error) {
       return {
         content: [
@@ -393,42 +325,267 @@ export class CloudStatusTool {
   }
 
   /**
+   * MODE 1: Show pending (submitted) tasks
+   */
+  private async showPendingTasks(): Promise<CloudToolResult> {
+    const filter: CloudTaskFilter = {
+      status: 'submitted',
+      limit: 50,
+    };
+
+    const tasks = await globalTaskRegistry.listTasks(filter);
+
+    if (tasks.length === 0) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: '✅ No pending Cloud tasks. All submitted tasks have been checked or completed.',
+          },
+        ],
+      };
+    }
+
+    let message = `## ⏳ Pending Cloud Tasks\n\n`;
+    message += `**Count**: ${tasks.length} task${tasks.length === 1 ? '' : 's'}\n\n`;
+    message += `### Tasks:\n\n`;
+
+    for (const task of tasks) {
+      const submittedTime = new Date(task.timestamp);
+      const now = new Date();
+      const minutesAgo = Math.floor((now.getTime() - submittedTime.getTime()) / 60000);
+      const timeAgo =
+        minutesAgo < 60
+          ? `${minutesAgo}m ago`
+          : `${Math.floor(minutesAgo / 60)}h ${minutesAgo % 60}m ago`;
+
+      message += `**${task.taskId}**\n`;
+      message += `- Environment: ${task.envId}\n`;
+      message += `- Task: ${task.task.substring(0, 100)}${task.task.length > 100 ? '...' : ''}\n`;
+      message += `- Submitted: ${timeAgo}\n`;
+      message += `- Check Status: https://chatgpt.com/codex/tasks/${task.taskId}\n\n`;
+    }
+
+    message += `\n💡 Click the links above to check task status in Codex Cloud Web UI.\n`;
+    message += `💡 Use \`list: true\` parameter to see all tasks (not just pending).\n`;
+
+    return {
+      content: [{ type: 'text', text: message }],
+    };
+  }
+
+  /**
+   * MODE 2: Show specific task status
+   */
+  private async showSpecificTask(taskId: string): Promise<CloudToolResult> {
+    let message = `📊 Codex Cloud Task Status\n\n`;
+
+    const task = await globalTaskRegistry.getTask(taskId);
+
+    if (task) {
+      message += `**Task ID**: ${taskId}\n`;
+      message += `**Status**: ${this.getStatusEmoji(task.status)} ${task.status} (last tracked)\n\n`;
+
+      message += `**Registry Information**:\n`;
+      message += `- **Task**: ${task.task}\n`;
+      message += `- **Environment**: ${task.envId}\n`;
+      message += `- **Submitted**: ${new Date(task.timestamp).toLocaleString()}\n`;
+      message += `- **Working Directory**: ${task.workingDir}\n`;
+
+      if (task.model) {
+        message += `- **Model**: ${task.model}\n`;
+      }
+
+      if (task.lastCheckedStatus) {
+        message += `- **Last Manual Check**: ${task.lastCheckedStatus}\n`;
+      }
+
+      if (task.notes) {
+        message += `- **Notes**: ${task.notes}\n`;
+      }
+
+      message += `\n`;
+    } else {
+      message += `**Task ID**: ${taskId}\n`;
+      message += `⚠️ Task not found in local registry (may have been submitted elsewhere)\n\n`;
+    }
+
+    message += `**Check Real-Time Status**:\n`;
+    message += `1. **Web UI**: https://chatgpt.com/codex/tasks/${taskId}\n`;
+    message += `2. **CLI**: Run \`codex cloud\` and search for task ID\n`;
+    message += `3. **Mobile**: Open ChatGPT app → Codex → Tasks\n\n`;
+
+    message += `**Task States**:\n`;
+    message += `- 🟡 **Queued**: Waiting to start\n`;
+    message += `- 🔵 **Running**: Currently executing\n`;
+    message += `- 🟢 **Completed**: Finished successfully\n`;
+    message += `- 🔴 **Failed**: Encountered errors\n\n`;
+
+    message += `**Note**: Codex Cloud TUI is interactive and not yet scriptable via MCP.\n`;
+    message += `Use web UI for programmatic status checks until SDK support is added.\n`;
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: message,
+        },
+      ],
+    };
+  }
+
+  /**
+   * MODE 3: List all tasks with optional filtering
+   */
+  private async listAllTasks(input: CloudStatusInput): Promise<CloudToolResult> {
+    const filter: CloudTaskFilter = {
+      workingDir: input.workingDir || process.cwd(),
+      envId: input.envId,
+      status: input.status,
+      limit: input.limit || 50,
+    };
+
+    const tasks = await globalTaskRegistry.listTasks(filter);
+
+    let message = `📋 Codex Cloud Tasks\n\n`;
+
+    if (input.showStats) {
+      const stats = await globalTaskRegistry.getStats();
+      message += `**Total Tasks**: ${stats.total}\n`;
+      message += `**By Status**: ${Object.entries(stats.byStatus)
+        .map(([status, count]) => `${status} (${count})`)
+        .join(', ')}\n\n`;
+    }
+
+    message += `**Filtered Results**: ${tasks.length} task${tasks.length !== 1 ? 's' : ''}\n`;
+    message += `**Working Directory**: ${input.workingDir || process.cwd()}\n\n`;
+
+    if (tasks.length === 0) {
+      message += `No tasks found matching the filters.\n\n`;
+      message += `**Tip**: Submit a new task with \`codex_cloud_submit\`\n`;
+    } else {
+      message += `---\n\n`;
+
+      for (const task of tasks) {
+        const date = new Date(task.timestamp);
+        const relativeTime = this.getRelativeTime(date);
+
+        message += `### ${task.taskId}\n\n`;
+        message += `- **Task**: ${task.task.length > 80 ? task.task.substring(0, 80) + '...' : task.task}\n`;
+        message += `- **Environment**: ${task.envId}\n`;
+        message += `- **Status**: ${this.getStatusEmoji(task.status)} ${task.status}\n`;
+        message += `- **Submitted**: ${relativeTime} (${date.toLocaleString()})\n`;
+
+        if (task.model) {
+          message += `- **Model**: ${task.model}\n`;
+        }
+
+        if (task.lastCheckedStatus) {
+          message += `- **Last Check**: ${task.lastCheckedStatus}\n`;
+        }
+
+        if (task.notes) {
+          message += `- **Notes**: ${task.notes}\n`;
+        }
+
+        message += `- **Web UI**: https://chatgpt.com/codex/tasks/${task.taskId}\n`;
+        message += `\n`;
+      }
+
+      message += `---\n\n`;
+      message += `**Actions**:\n`;
+      message += `- Check specific task: Provide \`taskId\` parameter\n`;
+      message += `- Get results: Use \`codex_cloud_results\` with taskId\n`;
+      message += `- Filter by status: Add \`status\` parameter\n`;
+      message += `- View stats: Add \`showStats: true\`\n`;
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: message,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Get status emoji for visual clarity
+   */
+  private getStatusEmoji(status: string): string {
+    switch (status) {
+      case 'submitted':
+        return '🟡';
+      case 'completed':
+        return '🟢';
+      case 'failed':
+        return '🔴';
+      case 'cancelled':
+        return '⚫';
+      default:
+        return '⚪';
+    }
+  }
+
+  /**
+   * Get human-readable relative time
+   */
+  private getRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+
+    return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? 's' : ''} ago`;
+  }
+
+  /**
    * Get tool schema for MCP registration
    */
   static getSchema() {
     return {
-      name: 'codex_cloud_status',
-      description: `Check status of Codex Cloud tasks. Provides links to web UI and instructions for viewing task status.
-
-USAGE:
-- Check specific task: Provide taskId from codex_cloud_submit
-- Check all tasks: Set showAll=true to see task list
-
-WORKFLOW:
-1. Get task ID from codex_cloud_submit response
-2. Check status to see if task is still running
-3. View results with codex_cloud_results when completed
-
-STATUS VALUES:
-- "submitted": Task is queued or running
-- "completed": Task finished successfully
-- "failed": Task encountered error
-- "cancelled": Task was manually stopped
-
-WEB UI:
-- View task details at https://chatgpt.com/codex
-- See full logs, diffs, and PR links (if created)
-- Monitor real-time progress`,
+      name: '_codex_cloud_status',
+      description: 'Check cloud task status - like tracking a package shipment. Three modes: (1) No params = show pending tasks (what\'s still running), (2) taskId = get specific task details with Web UI link, (3) list=true = full task history with filtering. Use this when: you want to check if your overnight refactoring finished, find a task ID you forgot, or see all completed work from last week. Think of it as your cloud dashboard. Returns: task states (submitted/completed/failed/cancelled), timing info, Web UI links. Perfect for: periodic "are we there yet?" checks, finding task IDs, debugging why something failed. The smart default (no params) shows only pending tasks - your "what\'s cooking?" view. Avoid for: local task status (use _codex_local_status).',
       inputSchema: {
         type: 'object',
         properties: {
           taskId: {
             type: 'string',
-            description: 'Specific task ID to check (from codex_cloud_submit)',
+            description: 'Check specific task by ID (MODE 2)',
           },
-          showAll: {
+          list: {
             type: 'boolean',
-            description: 'Show all tasks instead of specific task',
+            description: 'Show all tasks with filtering options (MODE 3)',
+            default: false,
+          },
+          workingDir: {
+            type: 'string',
+            description: 'Filter by working directory (defaults to current directory, MODE 3 only)',
+          },
+          envId: {
+            type: 'string',
+            description: 'Filter by Codex Cloud environment ID (MODE 3 only)',
+          },
+          status: {
+            type: 'string',
+            enum: ['submitted', 'completed', 'failed', 'cancelled'],
+            description: 'Filter by task status (MODE 3 only)',
+          },
+          limit: {
+            type: 'number',
+            description: 'Maximum number of tasks to return (default: 50, MODE 3 only)',
+            default: 50,
+          },
+          showStats: {
+            type: 'boolean',
+            description: 'Include statistics about all tasks (MODE 3 only)',
             default: false,
           },
         },
@@ -521,34 +678,8 @@ export class CloudResultsTool {
    */
   static getSchema() {
     return {
-      name: 'codex_cloud_results',
-      description: `Get results of a completed Codex Cloud task. Provides links to view output, diffs, and PRs created by the task.
-
-USAGE:
-- Get task ID from codex_cloud_submit response
-- Check status with codex_cloud_status to verify completion
-- Retrieve results once status is "completed"
-
-RESULTS INCLUDE:
-- Task summary (what was accomplished)
-- Files modified (with diffs if available)
-- Commands executed
-- Pull request links (if PR was created)
-- CI test results (if tests were run)
-- Error messages (if task failed)
-
-GITHUB PR WORKFLOW:
-1. Task creates feature branch
-2. Code changes are committed
-3. PR is created automatically
-4. View PR link in results
-5. Check CI status in results
-6. Manually review and merge PR
-
-WEB UI:
-- Full results at https://chatgpt.com/codex/tasks/{taskId}
-- View complete logs, file diffs, and output
-- Download artifacts if available`,
+      name: '_codex_cloud_results',
+      description: 'Retrieve completed cloud task results - like downloading your build artifacts. Once a cloud task finishes (check with _codex_cloud_status first), use this to get the full output: what changed, which files were modified, PR links if created, CI results, error messages if failed. Think of it as unboxing your finished work. Use when: status shows "completed" or "failed" and you want detailed results beyond the summary. Returns: task summary, file diffs, commands executed, GitHub PR links (with CI status), error details. Perfect for: reviewing what Codex accomplished, getting that PR link to merge, debugging failures. The Web UI link (https://chatgpt.com/codex/tasks/{taskId}) shows pretty diffs and logs. Avoid for: checking if task is done yet (use _codex_cloud_status), or tasks still running.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -563,209 +694,3 @@ WEB UI:
   }
 }
 
-export interface CloudListTasksInput {
-  workingDir?: string;
-  envId?: string;
-  status?: 'submitted' | 'completed' | 'failed' | 'cancelled';
-  limit?: number;
-  showStats?: boolean;
-}
-
-export class CloudListTasksTool {
-  /**
-   * List tracked cloud tasks with optional filtering
-   */
-  async execute(input: CloudListTasksInput = {}): Promise<CloudToolResult> {
-    try {
-      const filter: CloudTaskFilter = {
-        workingDir: input.workingDir || process.cwd(), // Default to current directory
-        envId: input.envId,
-        status: input.status,
-        limit: input.limit || 50,
-      };
-
-      const tasks = await globalTaskRegistry.listTasks(filter);
-
-      let message = `📋 Codex Cloud Tasks\n\n`;
-
-      if (input.showStats) {
-        const stats = await globalTaskRegistry.getStats();
-        message += `**Total Tasks**: ${stats.total}\n`;
-        message += `**By Status**: ${Object.entries(stats.byStatus)
-          .map(([status, count]) => `${status} (${count})`)
-          .join(', ')}\n\n`;
-      }
-
-      message += `**Filtered Results**: ${tasks.length} task${tasks.length !== 1 ? 's' : ''}\n`;
-      message += `**Working Directory**: ${input.workingDir || process.cwd()}\n\n`;
-
-      if (tasks.length === 0) {
-        message += `No tasks found matching the filters.\n\n`;
-        message += `**Tip**: Submit a new task with \`codex_cloud_submit\`\n`;
-      } else {
-        message += `---\n\n`;
-
-        for (const task of tasks) {
-          const date = new Date(task.timestamp);
-          const relativeTime = this.getRelativeTime(date);
-
-          message += `### ${task.taskId}\n\n`;
-          message += `- **Task**: ${task.task.length > 80 ? task.task.substring(0, 80) + '...' : task.task}\n`;
-          message += `- **Environment**: ${task.envId}\n`;
-          message += `- **Status**: ${this.getStatusEmoji(task.status)} ${task.status}\n`;
-          message += `- **Submitted**: ${relativeTime} (${date.toLocaleString()})\n`;
-
-          if (task.model) {
-            message += `- **Model**: ${task.model}\n`;
-          }
-
-          if (task.lastCheckedStatus) {
-            message += `- **Last Check**: ${task.lastCheckedStatus}\n`;
-          }
-
-          if (task.notes) {
-            message += `- **Notes**: ${task.notes}\n`;
-          }
-
-          message += `- **Web UI**: https://chatgpt.com/codex/tasks/${task.taskId}\n`;
-          message += `\n`;
-        }
-
-        message += `---\n\n`;
-        message += `**Actions**:\n`;
-        message += `- Check status: \`codex_cloud_status\` with taskId\n`;
-        message += `- Get results: \`codex_cloud_results\` with taskId\n`;
-        message += `- Filter by status: Add \`status\` parameter\n`;
-        message += `- View stats: Add \`showStats: true\`\n`;
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: message,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `❌ Unexpected Error\n\n${error instanceof Error ? error.message : String(error)}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
-  /**
-   * Get status emoji for visual clarity
-   */
-  private getStatusEmoji(status: string): string {
-    switch (status) {
-      case 'submitted':
-        return '🟡';
-      case 'completed':
-        return '🟢';
-      case 'failed':
-        return '🔴';
-      case 'cancelled':
-        return '⚫';
-      default:
-        return '⚪';
-    }
-  }
-
-  /**
-   * Get human-readable relative time
-   */
-  private getRelativeTime(date: Date): string {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-
-    return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? 's' : ''} ago`;
-  }
-
-  /**
-   * Get tool schema for MCP registration
-   */
-  static getSchema() {
-    return {
-      name: 'codex_cloud_list_tasks',
-      description: `List all tracked Codex Cloud tasks. Automatically filters by current working directory. Shows task history with status, timestamps, and web UI links. Tasks persist across Claude Code restarts.
-
-USAGE:
-- List all tasks: Call without parameters
-- Filter by project: Set workingDir to specific project path
-- Filter by environment: Set envId
-- Filter by status: Use "submitted", "completed", "failed", or "cancelled"
-- Show statistics: Set showStats=true for aggregate metrics
-
-FILTERING OPTIONS:
-- workingDir: See tasks for specific project (defaults to current directory)
-- envId: See tasks for specific Codex Cloud environment
-- status: See only tasks in specific state
-- limit: Control how many tasks to return (default: 50)
-
-TASK INFORMATION INCLUDES:
-- Task ID (for codex_cloud_status and codex_cloud_results)
-- Submit timestamp
-- Current status
-- Environment ID
-- Task description
-- Web UI link
-
-USE CASES:
-- Check recent task submissions
-- Find task ID for follow-up queries
-- Monitor task completion rates
-- Debug failed tasks
-- Track project activity
-
-STATISTICS (showStats=true):
-- Total tasks submitted
-- Completion rate
-- Average execution time
-- Failed task count`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          workingDir: {
-            type: 'string',
-            description:
-              'Filter by working directory. Defaults to current directory. Use to see tasks from specific projects.',
-          },
-          envId: {
-            type: 'string',
-            description: 'Filter by Codex Cloud environment ID.',
-          },
-          status: {
-            type: 'string',
-            enum: ['submitted', 'completed', 'failed', 'cancelled'],
-            description: 'Filter by task status.',
-          },
-          limit: {
-            type: 'number',
-            description: 'Maximum number of tasks to return (default: 50).',
-            default: 50,
-          },
-          showStats: {
-            type: 'boolean',
-            description: 'Include statistics about all tracked tasks (default: false).',
-            default: false,
-          },
-        },
-      },
-    };
-  }
-}

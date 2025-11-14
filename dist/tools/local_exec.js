@@ -12,58 +12,8 @@ const LocalExecInputSchema = z.object({
 export class LocalExecTool {
     static getSchema() {
         return {
-            name: 'codex_local_exec',
-            description: `Execute a Codex task locally with real-time status tracking via TypeScript SDK. Runs on your Mac, uses local filesystem, provides full event stream visibility. Perfect for: tasks needing status tracking, iterative development, local service integration. Returns: thread ID for resumption, all events, final response, token usage.
-
-EXECUTION MODES - Choose based on desired behavior:
-
-1. 'read-only' (DEFAULT - Safest, Most Common):
-   - Codex ANALYZES code and PROPOSES changes but DOES NOT modify files
-   - Returns: Complete patch/diff with exact code to apply
-   - Use when: You want to review changes before applying, learning what Codex suggests, or unsure about modifications
-   - Thread resumption: Use codex_local_resume with thread ID for follow-up questions
-   - How to apply: Codex provides exact commands and file contents - review and apply manually
-   - Best practice: Start with read-only, review output, then decide on next steps
-
-2. 'workspace-write' (Caution - Direct Modifications):
-   - Codex CAN create branches, edit files, run commands, commit changes
-   - Returns: Actual filesystem changes + thread ID + event log
-   - Use when: You trust Codex to make changes directly, iterative development in safe branches
-   - Requires: Git repository (trusted directory)
-   - Risk: Codex makes real changes - ensure you can review/revert (use feature branches!)
-   - Best practice: Only use in feature branches, never on main/production
-
-3. 'danger-full-access' (High Risk - Unrestricted):
-   - Codex has UNRESTRICTED access - can modify ANY file, run ANY command
-   - Returns: Any filesystem modifications + thread ID + event log
-   - Use when: Codex needs system-level access, infrastructure changes, or you need maximum flexibility
-   - Requires: Full understanding of what Codex will do
-   - Risk: HIGH - Codex can modify critical files, delete data, run dangerous commands
-   - Best practice: Only use when absolutely necessary, in isolated test environments
-
-THREAD PERSISTENCE & RESUMPTION:
-- Thread ID returned enables RESUMPTION with codex_local_resume
-- Threads preserve full conversation context across sessions
-- Cache benefits: 45-93% cache rates on resumed threads (significant cost savings)
-- Use cases: Multi-step refactoring, iterative debugging, follow-up questions
-
-WORKFLOW RECOMMENDATIONS:
-
-For Code Improvements:
-1. Start: codex_local_exec with mode='read-only'
-2. Review: Examine Codex's proposed changes
-3. If approved: Apply manually OR re-run with mode='workspace-write' in feature branch
-4. Follow-up: Use codex_local_resume with thread ID for refinements
-
-For Iterative Development:
-1. Start: codex_local_exec with mode='workspace-write' in feature branch
-2. Iterate: Use codex_local_resume for follow-up changes
-3. Benefit: High cache rates (45-93%) reduce costs and latency
-
-For Analysis Only:
-1. Use: codex_local_exec with mode='read-only'
-2. Get: Comprehensive analysis, suggestions, patches
-3. No risk: No files modified, safe to run anytime`,
+            name: '_codex_local_exec',
+            description: `Advanced local execution with real-time progress - like having a conversation with Codex. Unlike the simple one-shot _codex_local_run, this gives you a thread ID that preserves context for follow-up questions. Think of it as opening a chat window vs sending a single message. Use this when: you want iterative development, need to ask follow-ups, or want to see live progress updates. The magic: 45-93% token cache rates on resumed threads = huge cost savings. Three modes: 'read-only' (safe, just analysis), 'workspace-write' (direct file changes in git repos), 'danger-full-access' (unrestricted - use with extreme caution). Returns: thread ID (use with _codex_local_resume), real-time events, final output, token usage. Perfect for: "analyze this, then if you find bugs, fix them" workflows. Avoid for: simple one-off tasks (use _codex_local_run), or tasks over 30 minutes (use _codex_cloud_submit).`,
             inputSchema: {
                 type: 'object',
                 properties: {

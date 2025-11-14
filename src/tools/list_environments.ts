@@ -21,8 +21,8 @@ export interface ListEnvironmentsResult {
 export class ListEnvironmentsTool {
   static getSchema() {
     return {
-      name: 'codex_list_environments',
-      description: 'List available Codex Cloud environments from local configuration. Reads from ~/.config/codex-control/environments.json (user-maintained). Returns environment IDs, names, repo URLs, and tech stacks. Note: No programmatic API exists for environment discovery - this uses local config.',
+      name: '_codex_cloud_list_environments',
+      description: 'List your Codex Cloud environments - like checking which servers you have access to. Reads from local config file (~/.config/codex-control/environments.json) since there\'s no API for environment discovery. Use this when: you need an environment ID for _codex_cloud_submit, want to see which repos are configured, or are setting up a new project. Returns: environment IDs, names, repository URLs, tech stacks. Perfect for: "which environment should I use?", documentation of your setup, or finding that environment ID you forgot. This is local-only data you maintain manually. Avoid if: you just want to submit a task and already know the environment ID.',
       inputSchema: {
         type: 'object',
         properties: {},
@@ -44,7 +44,7 @@ export class ListEnvironmentsTool {
           content: [
             {
               type: 'text',
-              text: `⚠️  No environments configured in local config.\n\n**Config Path**: ${ENVIRONMENTS_CONFIG_PATH}\n\n**Setup**: Create this file with your Codex Cloud environments. Use \`codex_github_setup_guide\` for examples.`,
+              text: `⚠️  No environments configured in local config.\n\n**Config Path**: ${ENVIRONMENTS_CONFIG_PATH}\n\n**Setup**: Create this file with your Codex Cloud environments. Use \`codex_cloud_github_setup\` for examples.`,
             },
           ],
         };
@@ -79,7 +79,7 @@ export class ListEnvironmentsTool {
           content: [
             {
               type: 'text',
-              text: `⚠️  Environment config not found.\n\n**Expected Path**: ${ENVIRONMENTS_CONFIG_PATH}\n\n**Setup**: Create this file to define Codex Cloud environments. Use \`codex_github_setup_guide\` to generate setup instructions.\n\n**Example**:\n\`\`\`json\n${ListEnvironmentsTool.getExampleConfig()}\n\`\`\``,
+              text: `⚠️  Environment config not found.\n\n**Expected Path**: ${ENVIRONMENTS_CONFIG_PATH}\n\n**Setup**: Create this file to define Codex Cloud environments. Use \`codex_cloud_github_setup\` to generate setup instructions.\n\n**Example**:\n\`\`\`json\n${ListEnvironmentsTool.getExampleConfig()}\n\`\`\``,
             },
           ],
         };
