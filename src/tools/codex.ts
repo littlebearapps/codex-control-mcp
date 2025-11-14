@@ -7,6 +7,7 @@
 
 import { createRouter, RouterInput } from '../router/router.js';
 import { IntentHints } from '../router/intent_parser.js';
+import { extractMetadata, type CodexMetadata } from '../utils/metadata_extractor.js';
 
 /**
  * Codex tool input schema
@@ -90,6 +91,9 @@ export interface CodexToolResponse {
     message: string;
     retry_after_ms?: number;
   };
+
+  // Structured metadata for AI agents (extracted from output)
+  metadata?: CodexMetadata;
 }
 
 /**
@@ -224,9 +228,7 @@ function convertPrimitiveResult(
   const response: CodexToolResponse = {
     acknowledged: !isError,
     action: mapIntentToAction(routing.intent.type),
-    user_message: isError
-      ? `Primitive execution failed: ${textContent}`
-      : `Executed ${routing.primitive} successfully`,
+    user_message: textContent,  // Pass through primitive results (fixed: was discarding success results)
     decision_trace: includeTrace ? routing.decisionTrace : undefined,
   };
 
@@ -244,6 +246,27 @@ function convertPrimitiveResult(
       code: 'PRIMITIVE_ERROR',
       message: textContent,
     };
+  }
+
+  // Extract structured metadata for AI agents
+  try {
+    const exitCode = primitiveResult.exit_code ||
+                     primitiveResult.exitCode ||
+                     (isError ? 1 : 0);
+    const threadId = primitiveResult.thread_id ||
+                     primitiveResult.threadId ||
+                     routing.threadId;
+    const taskId = routing.taskId;
+
+    response.metadata = extractMetadata(
+      textContent,
+      exitCode,
+      threadId,
+      taskId
+    );
+  } catch (metadataError) {
+    // Silently fail metadata extraction - don't break the tool
+    // Metadata is optional enhancement, not critical functionality
   }
 
   return response;

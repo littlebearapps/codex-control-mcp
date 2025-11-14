@@ -32,7 +32,8 @@ See detailed documentation in `quickrefs/`:
 - `npx ts-node test-codex-simple.ts` - Core E2E tests (14 tests)
 - `npx ts-node test-codex-comprehensive.ts` - Natural language tests (51 tests)
 - `npx ts-node test-codex-errors.ts` - Error case tests (26 tests)
-- Check `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive test results (91 tests, 100%)
+- `npx ts-node test-metadata-extraction.ts` - Metadata extraction tests (7 tests)
+- Check `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive test results (98 tests, 100%)
 
 ### MCP Server Management
 - MCP config location: `~/.claude/config/.mcp.json`
@@ -56,7 +57,8 @@ See detailed documentation in `quickrefs/`:
 
 ### File Organization
 - Tools go in `src/tools/` (one file per tool)
-- Utilities in `src/executor/` and `src/security/`
+- Utilities in `src/executor/`, `src/security/`, and `src/utils/`
+- Metadata extraction in `src/utils/metadata_extractor.ts`
 - MCP server entry in `src/index.ts`
 - Build output to `dist/` (gitignored)
 
@@ -285,25 +287,36 @@ npm run build
 
 ## Current Focus (2025-11-14)
 
-- ✅ **v3.0.0 - Unified Natural Language Interface Complete** (Week 5)
+- ✅ **v3.0.0 - Unified Natural Language Interface + Metadata Extraction Complete**
   - Single `codex` tool with natural language routing
-  - Automatic detection: local vs cloud, threading vs one-shot
-  - 91 comprehensive tests, 100% pass rate
+  - Structured metadata extraction for AI agent decision-making
+  - Actionable error suggestions (e.g., "Start investigation at utils.ts:42")
+  - 98 comprehensive tests (91 routing + 7 metadata), 100% pass rate
   - Production-ready across all use cases
 
 - ✅ **Test Validation** (100% Pass Rate):
   - Core E2E: 14/14 tests (all primitive routing paths)
   - Natural Language: 51/51 tests (50+ variations)
   - Error Cases: 26/26 tests (edge cases, validation)
-  - **Total: 91/91 tests passing**
+  - Metadata Extraction: 7/7 tests (test results, errors, files, threads)
+  - **Total: 98/98 tests passing**
+
+- ✅ **Metadata Extraction Features**:
+  - Test results (passed/failed counts, failed test names)
+  - File operations (modified/added/deleted, lines changed)
+  - Thread info (cache hit rates, token usage)
+  - Error context with actionable suggestions
+  - Task status tracking
+  - See `METADATA-EXTRACTION-COMPLETION.md` for details
 
 - ✅ **Documentation Complete**:
-  - README.md updated to v3.0.0
-  - WEEK-5-COMPLETION-SUMMARY.md (comprehensive journey)
+  - README.md updated with metadata extraction
+  - METADATA-EXTRACTION-COMPLETION.md (implementation report)
+  - WEEK-5-COMPLETION-SUMMARY.md (v3.0.0 journey)
+  - V3.0.0-CERTIFICATION.md (production certification)
   - All quickrefs updated
-  - Natural language examples documented
 
-- 🎯 **Status**: Production-ready with comprehensive validation
+- 🎯 **Status**: Production-ready with enhanced AI agent capabilities
   - Hidden primitives: 14 tools (internal implementation)
-  - User-facing: Single unified `codex` tool
-  - Natural language → automatic routing → execution
+  - User-facing: Single unified `codex` tool with structured metadata
+  - Natural language → routing → execution → metadata extraction

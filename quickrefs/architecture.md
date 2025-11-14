@@ -51,6 +51,8 @@ codex-control/
 │   ├── security/
 │   │   ├── input_validator.ts    # Input sanitization
 │   │   └── redactor.ts           # Secret scrubbing
+│   ├── utils/
+│   │   └── metadata_extractor.ts # Structured metadata extraction 🆕
 │   └── tools/
 │       ├── run.ts                # codex_run (local CLI)
 │       ├── plan.ts               # codex_plan (local CLI)
@@ -189,6 +191,55 @@ OPENAI_API_KEY=sk-***REDACTED***
 
 ---
 
+### 6. Metadata Extractor (`utils/metadata_extractor.ts`) 🆕
+
+**Purpose**: Extract structured metadata from Codex output text for AI agent decision-making.
+
+**What It Extracts**:
+- **Test Results**: Passed/failed/skipped counts, failed test names (Jest, Pytest, Mocha)
+- **File Operations**: Modified/added/deleted files, lines changed (Git diff-style)
+- **Thread Info**: Thread ID, cache hit rate (e.g., 96.8%), token usage
+- **Task Status**: pending/running/completed/failed/canceled
+- **Error Context**: Error message, type, failed files, locations with **actionable suggestions**
+- **Duration**: Execution time in seconds
+
+**Actionable Suggestions**:
+```typescript
+// AI agents get specific guidance
+error_context: {
+  error_message: "Cannot read property 'name' of null",
+  error_type: "TypeError",
+  failed_files: ["utils.ts", "api.ts"],
+  error_locations: [
+    { file: "utils.ts", line: 42, column: 15 }
+  ],
+  suggestions: [
+    "Start investigation at utils.ts:42",
+    "Check variable types and null/undefined values",
+    "Run failing tests individually to isolate issues"
+  ]
+}
+```
+
+**Integration**:
+- Automatically called in `convertPrimitiveResult()` (src/tools/codex.ts)
+- Added to `CodexToolResponse.metadata` field
+- Graceful failure - won't break tool if extraction fails
+- Zero token cost - extraction is local regex-based parsing
+
+**Pattern Matching Examples**:
+```typescript
+// Jest: "Tests: 2 failed, 45 passed, 47 total"
+// Pytest: "30 passed, 1 failed in 8.23s"
+// Git: "modified: src/api.ts"
+// Tokens: "input_tokens": 11373, "cached_input_tokens": 11008
+// Error: "at processUser (utils.ts:42:15)"
+```
+
+**Test Coverage**: 7/7 tests (100% pass rate) - see `test-metadata-extraction.ts`
+
+---
+
 ## Data Flow
 
 ### Local CLI Execution (codex_run)
@@ -208,9 +259,11 @@ OPENAI_API_KEY=sk-***REDACTED***
    ↓
 7. Error Mapper converts errors to MCP format
    ↓
-8. MCP Server sends CallToolResponse
+8. Metadata Extractor extracts structured metadata 🆕
    ↓
-9. Claude Code receives result
+9. MCP Server sends CallToolResponse (with metadata)
+   ↓
+10. Claude Code receives result
 ```
 
 ### Local SDK Execution (codex_local_exec)

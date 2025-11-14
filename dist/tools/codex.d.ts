@@ -5,6 +5,7 @@
  * Routes natural language instructions to appropriate hidden primitives.
  */
 import { IntentHints } from '../router/intent_parser.js';
+import { type CodexMetadata } from '../utils/metadata_extractor.js';
 /**
  * Codex tool input schema
  */
@@ -69,6 +70,7 @@ export interface CodexToolResponse {
         message: string;
         retry_after_ms?: number;
     };
+    metadata?: CodexMetadata;
 }
 /**
  * Codex tool handler
