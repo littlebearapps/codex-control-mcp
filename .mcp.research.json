@@ -3,7 +3,7 @@
     "codex-control": {
       "command": "node",
       "args": [
-        "/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js"
+        "/Users/nathanschram/claude-code-tools/mcp/codex-control/dist/index.js"
       ],
       "env": {
         "CODEX_MAX_CONCURRENCY": "2"

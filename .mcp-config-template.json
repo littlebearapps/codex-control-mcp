@@ -3,13 +3,13 @@
     "codex-control": {
       "command": "node",
       "args": [
-        "/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js"
+        "/Users/nathanschram/claude-code-tools/mcp/codex-control/dist/index.js"
       ],
       "env": {
         "CODEX_MAX_CONCURRENCY": "2"
       },
-      "description": "Programmatic control of OpenAI Codex for build/test/debug/review tasks",
-      "tools": ["codex_run", "codex_plan", "codex_apply", "codex_status"]
+      "description": "Unified natural language interface to OpenAI Codex with automatic routing",
+      "tools": ["codex"]
     }
   }
 }
