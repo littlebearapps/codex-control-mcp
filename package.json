@@ -1,24 +1,51 @@
 {
-  "name": "codex-control-mcp",
-  "version": "2.1.1",
-  "description": "MCP server for dual-mode Codex execution (local SDK + Cloud) with async/non-blocking support and real-time status tracking",
+  "name": "@littlebearapps/codex-control-mcp",
+  "version": "3.0.1",
+  "description": "MCP server exposing 14 hidden primitives for OpenAI Codex operations (local SDK + Cloud) with async/non-blocking support and unified task tracking",
   "main": "dist/index.js",
   "type": "module",
+  "bin": {
+    "codex-control-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "quickrefs/",
+    "README.md",
+    "CLAUDE.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "start": "node dist/index.js",
-    "dev": "tsc --watch & node --watch dist/index.js"
+    "dev": "tsc --watch & node --watch dist/index.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "codex",
     "openai",
-    "claude-code"
+    "claude-code",
+    "ai-agent",
+    "development-tools",
+    "code-generation",
+    "automation",
+    "cli",
+    "openai-codex",
+    "mcp-server"
   ],
-  "author": "Nathan Schram",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/littlebearapps/codex-control-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/littlebearapps/codex-control-mcp/issues"
+  },
+  "homepage": "https://github.com/littlebearapps/codex-control-mcp#readme",
+  "author": "Nathan Schram <nathan@littlebearapps.com>",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",

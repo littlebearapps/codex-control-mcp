@@ -1,89 +1,60 @@
 # Codex Control MCP Server
 
-**Version**: 3.0.0 🎉
-**Status**: ✅ Production Ready - Fully Validated (100% test pass rate)
+**Version**: 3.0.1
+**Package**: `@littlebearapps/codex-control-mcp`
+**Status**: ✅ Production Ready - Publish-Ready npm Package
 **Repository**: [github.com/littlebearapps/codex-control-mcp](https://github.com/littlebearapps/codex-control-mcp)
-**Purpose**: Natural language interface to OpenAI Codex with automatic routing and dual execution modes
+**Purpose**: 14 hidden primitives for OpenAI Codex operations (local SDK + Cloud) with async support
 
 ---
 
 ## Overview
 
-The Codex Control MCP Server provides a **single unified `codex` tool** that accepts natural language instructions and automatically routes to the appropriate backend operation.
+The Codex Control MCP Server provides **14 hidden primitive tools** for OpenAI Codex operations. Claude Code's native NLP selects the appropriate primitive based on your natural language instructions.
 
-**🚀 v3.0.0 - Unified Natural Language Interface + Structured Metadata**:
-- 🎯 **One Tool for Everything**: Single `codex` tool replaces 13 separate tools
-- 💬 **Natural Language**: Just describe what you want - no need to remember tool names
-- 🧠 **Smart Routing**: Automatic detection of local vs cloud, threading needs, task IDs
+**🚀 v3.0.1 - Production-Ready npm Package**:
+- 📦 **Scoped Package**: `@littlebearapps/codex-control-mcp` ready for npm publish
+- 🔗 **npm link Development**: Instant change propagation via global symlink
+- 🛡️ **Publishing Safety**: Files whitelist, prepublishOnly script, .npmignore
 - 📊 **Structured Metadata**: AI agents get machine-readable test results, errors, suggestions
 - 🎯 **Actionable Guidance**: Error context with specific investigation suggestions
-- ✅ **Extensively Tested**: 98 test cases (91 routing + 7 metadata) - 100% pass rate
+- ✅ **All Primitives Working**: 14 tools tested and verified (100% functional)
 
-**Example Usage**:
-```typescript
-// Simple execution
-{ "request": "run tests" }
-→ Routes to local execution
+**How It Works**:
+```
+User: "Use codex control to run tests"
+  ↓
+Claude Code's NLP selects: _codex_local_run
+  ↓
+Result returned to user
 
-// Cloud submission
-{ "request": "run tests in the cloud" }
-→ Routes to cloud execution
+User: "Use codex control to run tests in the cloud"
+  ↓
+Claude Code's NLP selects: _codex_cloud_submit
+  ↓
+Task submitted, ID returned
 
-// Status check with task ID
-{ "request": "check status of T-local-abc123" }
-→ Routes to status primitive, extracts task ID
-
-// Real-time execution
-{ "request": "analyze codebase with progress" }
-→ Routes to SDK execution with streaming
+User: "Use codex control to check status of T-local-abc123"
+  ↓
+Claude Code's NLP selects: _codex_local_status
+  ↓
+Status returned
 ```
 
+**Pattern**: Users describe what they want naturally → Claude Code selects appropriate primitive → Results returned
+
 **Previous Milestones**:
-- ✅ **v2.1.0 - Dual Execution Modes**: Local SDK + Cloud execution
-- ✅ **v2.0.0 - GitHub PR Automation**: Complete PR workflow support
-- ✅ **v1.3.0 - Task Persistence**: Automatic tracking across sessions
+- ✅ **v3.0.1 - npm Package Ready**: Scoped package with publishing safety
+- ✅ **v3.0.0 - Unified Interface**: Removed in favor of hidden primitives
+- ✅ **v2.1.0 - Dual Execution**: Local SDK + Cloud execution
+- ✅ **v2.0.0 - GitHub PRs**: Complete PR workflow support
+- ✅ **v1.3.0 - Task Persistence**: Tracking across sessions
 
 ## Features
 
-### 🎯 Unified `codex` Tool
+### 🔧 14 Hidden Primitive Tools
 
-**Single natural language interface for all Codex operations**:
-
-```typescript
-// Usage
-{
-  "request": "your natural language instruction",
-  "dry_run": false,   // Optional: route only, don't execute
-  "explain": false,   // Optional: include decision trace
-  // ... other optional parameters
-}
-```
-
-**What it does**:
-- 🧠 **Intent Parsing**: Extracts intent type (execute, status, wait, cancel, fetch, setup)
-- 🔍 **Task ID Extraction**: Automatically finds `T-local-*` or `T-cloud-*` task IDs
-- 🌐 **Mode Inference**: Detects local vs cloud context from keywords
-- ⚡ **Threading Detection**: Identifies real-time vs one-shot execution needs
-- 🎯 **Smart Routing**: Maps to one of 14 hidden primitive tools
-- ✅ **Validation**: 91 test cases covering all variations
-
-**Natural Language Examples**:
-
-| Request | Routes To | Purpose |
-|---------|-----------|---------|
-| "run tests" | Local execution | Quick task |
-| "analyze code with progress" | SDK execution | Real-time visibility |
-| "run tests in the cloud" | Cloud submission | Long-running |
-| "check status of T-local-abc123" | Status check | Monitor task |
-| "wait for T-cloud-xyz789" | Cloud wait | Block until complete |
-| "get results for T-local-abc123" | Results fetch | Retrieve output |
-| "cancel T-cloud-def456" | Cloud cancel | Stop task |
-| "list environments" | List config | Show environments |
-| "setup github for https://github.com/user/repo" | GitHub setup | Integration guide |
-
-### 🔧 Hidden Primitive Tools (14)
-
-The unified `codex` tool routes to these backend primitives (not directly exposed):
+**Claude Code's NLP selects from these primitives based on your natural language instructions**:
 
 **Local Execution**:
 - `_codex_local_run` - Simple CLI execution (read-only/write)

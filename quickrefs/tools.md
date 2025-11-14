@@ -1,101 +1,105 @@
-# Tools Quick Reference (v3.0.0)
+# Tools Quick Reference (v3.0.1)
 
-Complete guide to the unified Codex Control MCP interface.
+Complete guide to Codex Control MCP's 14 hidden primitives.
 
 ---
 
-## Unified Natural Language Interface
+## How It Works
 
-### Primary Tool
+**Pattern**: Users describe tasks naturally → Claude Code's NLP selects appropriate primitive → Results returned
 
-**`codex`** - Single tool accepting natural language instructions
+### Architecture
 
-**How It Works**:
-1. Describe what you want in natural language
-2. Router automatically detects intent and execution mode
-3. Appropriate backend primitive is invoked
-4. Result returned with automatic routing details
+**14 Hidden Primitives** (all prefixed with `_`):
+- Not directly exposed to users
+- Claude Code's native NLP selects the right one
+- Similar to zen MCP pattern
+
+**User Experience**:
+```
+User: "Use codex control to run tests"
+  ↓
+Claude Code analyzes intent
+  ↓
+Selects: _codex_local_run
+  ↓
+Executes and returns results
+```
 
 **No Need to Choose**:
-- ❌ Don't pick from 14 separate tools
+- ❌ Don't manually select from 14 primitives
 - ✅ Just describe what you want naturally
 
 ---
 
-## Natural Language Examples
+## Usage Examples
 
 ### Local Execution (Quick Tasks)
 
-```typescript
-// Simple analysis
-{ "request": "run tests" }
-// → Routes to _codex_local_run (read-only)
+```
+User: "Use codex control to run tests"
+→ Claude Code selects: _codex_local_run
 
-{ "request": "analyze code for bugs" }
-// → Routes to _codex_local_run (read-only)
+User: "Use codex control to analyze code for bugs"
+→ Claude Code selects: _codex_local_run
 
-{ "request": "fix the error in utils.ts" }
-// → Routes to _codex_local_run (workspace-write)
+User: "Use codex control to fix the error in utils.ts"
+→ Claude Code selects: _codex_local_run (workspace-write mode)
 ```
 
 ### Threading (Iterative Development)
 
-```typescript
-// Real-time progress
-{ "request": "analyze code with progress" }
-// → Routes to _codex_local_exec (streaming)
+```
+User: "Use codex control to analyze code with real-time progress"
+→ Claude Code selects: _codex_local_exec
 
-{ "request": "start new task with progress updates" }
-// → Routes to _codex_local_exec (returns thread ID)
+User: "Use codex control to start a task with progress updates"
+→ Claude Code selects: _codex_local_exec (returns thread ID)
 
-{ "request": "debug this issue step by step" }
-// → Routes to _codex_local_exec (thread persistence)
+User: "Use codex control to debug this issue step by step"
+→ Claude Code selects: _codex_local_exec (thread persistence)
 ```
 
 ### Cloud Execution (Long-Running)
 
-```typescript
-// Cloud submission
-{ "request": "run tests in the cloud" }
-// → Routes to _codex_cloud_submit
+```
+User: "Use codex control to run tests in the cloud"
+→ Claude Code selects: _codex_cloud_submit
 
-{ "request": "run comprehensive test suite on cloud" }
-// → Routes to _codex_cloud_submit
+User: "Use codex control to run comprehensive test suite on cloud"
+→ Claude Code selects: _codex_cloud_submit
 
-{ "request": "create feature branch and PR in cloud" }
-// → Routes to _codex_cloud_submit
+User: "Use codex control to create feature branch and PR in cloud"
+→ Claude Code selects: _codex_cloud_submit
 ```
 
 ### Task Management
 
-```typescript
-// Check status
-{ "request": "check status of T-local-abc123" }
-// → Routes to _codex_local_status
+```
+User: "Use codex control to check status of T-local-abc123"
+→ Claude Code selects: _codex_local_status
 
-{ "request": "wait for T-cloud-xyz789" }
-// → Routes to _codex_cloud_wait
+User: "Use codex control to wait for T-cloud-xyz789"
+→ Claude Code selects: _codex_cloud_wait
 
-{ "request": "cancel T-local-def456" }
-// → Routes to _codex_local_cancel
+User: "Use codex control to cancel T-local-def456"
+→ Claude Code selects: _codex_local_cancel
 
-{ "request": "get results for T-cloud-ghi012" }
-// → Routes to _codex_cloud_results
+User: "Use codex control to get results for T-cloud-ghi012"
+→ Claude Code selects: _codex_cloud_results
 ```
 
 ### Configuration
 
-```typescript
-// List environments
-{ "request": "list environments" }
-// → Routes to _codex_cloud_list_environments
+```
+User: "Use codex control to list environments"
+→ Claude Code selects: _codex_cloud_list_environments
 
-{ "request": "show available environments" }
-// → Routes to _codex_cloud_list_environments
+User: "Use codex control to show available environments"
+→ Claude Code selects: _codex_cloud_list_environments
 
-// GitHub setup
-{ "request": "setup github for https://github.com/myorg/repo" }
-// → Routes to _codex_cloud_github_setup
+User: "Use codex control to setup GitHub for https://github.com/myorg/repo"
+→ Claude Code selects: _codex_cloud_github_setup
 ```
 
 ---
@@ -140,72 +144,9 @@ Complete guide to the unified Codex Control MCP interface.
 
 ---
 
-## Smart Routing Features
-
-### Automatic Mode Detection
-
-**Local vs Cloud**:
-- "run tests" → Local
-- "run tests in the cloud" → Cloud
-- "run tests on cloud" → Cloud
-
-**Threading vs One-Shot**:
-- "analyze code" → One-shot
-- "analyze code with progress" → Threading
-- "debug step by step" → Threading
-
-**Task ID Extraction**:
-- "check T-local-abc123" → Extracts task ID automatically
-- "wait for cloud task T-cloud-xyz789" → Extracts and routes to cloud
-
----
-
-## Advanced Parameters
-
-### Context and Preferences
-
-```typescript
-{
-  "request": "run tests in the cloud",
-  "context": {
-    "working_dir": "/path/to/project",
-    "repo_root": "/path/to/repo"
-  },
-  "preference": {
-    "mode": "cloud",  // Force cloud execution
-    "timeout_ms": 300000
-  }
-}
-```
-
-### Structured Hints (Fast-Path)
-
-```typescript
-{
-  "request": "check my task",
-  "hints": {
-    "operation": "check",       // Bypass natural language parsing
-    "taskId": "T-local-abc123", // Explicit task ID
-    "mode": "local"             // Explicit mode
-  }
-}
-```
-
-### Debugging
-
-```typescript
-{
-  "request": "run tests",
-  "dry_run": true,   // Show routing decision without executing
-  "explain": true    // Include decision trace
-}
-```
-
----
-
 ## Hidden Implementation (14 Primitives)
 
-These primitives are automatically invoked by the router. You don't need to call them directly.
+These primitives are automatically selected by Claude Code's NLP. Users don't call them directly.
 
 ### Local Execution (7 tools)
 - `_codex_local_run` - Simple one-shot execution
@@ -275,40 +216,60 @@ These primitives are automatically invoked by the router. You don't need to call
 - ✅ Long tasks (> 30 min): Add "in the cloud"
 
 ### Error Handling
-- ✅ Use `dry_run: true` to preview routing
-- ✅ Check task IDs are valid format (T-local-* or T-cloud-*)
-- ✅ Include enough context in natural language
+- ✅ Be specific in your natural language requests
+- ✅ Task IDs must be valid format (T-local-* or T-cloud-*)
+- ✅ Include enough context for Claude Code to select the right primitive
 
 ---
 
 ## Testing & Validation
 
-**v3.0.0 Test Results**:
+**v3.0.1 Status**:
+- ✅ All 14 primitives working and verified
+- ✅ npm link deployment tested
+- ✅ Async workflow validated
+- ✅ Parameter bug fix confirmed (_codex_local_results)
+- ✅ Change propagation verified
+
+**v3.0.0 (Unified Tool - Removed)**:
 - Core E2E: 14/14 tests (100%)
 - Natural Language: 51/51 tests (100%)
 - Error Cases: 26/26 tests (100%)
-- **Total: 91/91 tests (100%)**
+- Unified tool removed in v3.0.1 due to intermittent hanging issues
 
-See `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive test documentation.
+See `ASYNC-COMPREHENSIVE-TEST-RESULTS.md` for latest validation.
 
 ---
 
-## Migration from v2.x
+## Evolution
 
-### Before (v2.x - 13 separate tools)
+### v3.0.1 (Current)
+```
+User: "Use codex control to run tests"
+  ↓
+Claude Code's NLP selects primitive
+  ↓
+_codex_local_run executes
+```
+
+**Pattern**: Natural language → Claude Code selects → Primitive executes
+
+### v3.0.0 (Removed)
+```
+{ "request": "run tests" }
+  ↓
+Unified tool routes
+  ↓
+Primitive executes
+```
+
+**Issue**: Intermittent hanging, removed unified tool in v3.0.1
+
+### v2.x (Legacy)
 ```typescript
-// Had to choose the right tool manually
 codex_run({ task: "run tests", mode: "read-only" })
-codex_local_exec({ task: "analyze", mode: "read-only" })
+codex_local_exec({ task: "analyze" })
 codex_cloud_submit({ task: "run tests", envId: "env_123" })
 ```
 
-### After (v3.0.0 - unified interface)
-```typescript
-// Just describe what you want
-{ "request": "run tests" }
-{ "request": "analyze with progress" }
-{ "request": "run tests in the cloud" }
-```
-
-**Backward Compatibility**: Hidden primitives still available for advanced use cases.
+**Issue**: Had to manually select from 13 tools

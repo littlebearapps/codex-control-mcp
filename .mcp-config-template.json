@@ -1,15 +1,11 @@
 {
   "mcpServers": {
     "codex-control": {
-      "command": "node",
-      "args": [
-        "/Users/nathanschram/claude-code-tools/mcp/codex-control/dist/index.js"
-      ],
+      "command": "codex-control-mcp",
       "env": {
         "CODEX_MAX_CONCURRENCY": "2"
       },
-      "description": "Unified natural language interface to OpenAI Codex with automatic routing",
-      "tools": ["codex"]
+      "description": "Hidden primitives for OpenAI Codex operations (local + cloud)"
     }
   }
 }

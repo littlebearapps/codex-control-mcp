@@ -1,40 +1,75 @@
 # Codex Control MCP Server - Claude Code Memory
 
-**Version**: 3.0.0
-**Purpose**: Unified natural language interface to OpenAI Codex with automatic routing
-**Status**: ✅ Production Ready - 100% Test Validated
+**Version**: 3.0.1
+**Purpose**: Hidden primitives for OpenAI Codex operations (local + cloud)
+**Status**: ✅ Production Ready - All 14 primitives working
 
 ---
 
 ## Quick Reference
 
 See detailed documentation in `quickrefs/`:
-- @quickrefs/tools.md - All tools with examples (updated for v3.0.0)
+- @quickrefs/tools.md - All tools with examples (updated for v3.0.1)
 - @quickrefs/architecture.md - System design and components
 - @quickrefs/workflows.md - Common development workflows
 - @quickrefs/security.md - Security features and best practices
 - @quickrefs/troubleshooting.md - Common issues and solutions
 
-**Latest Test Results**: See `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive v3.0.0 validation (91 tests, 100% pass rate)
+**Latest Test Results**: See `ASYNC-COMPREHENSIVE-TEST-RESULTS.md` for v3.0.1 validation (all 14 primitives working)
 
 ---
 
-## Production Deployment
+## Production Deployment (npm link)
 
-**⚠️ TEMPORARY DEPLOYMENT**: This MCP server is deployed to `/Users/nathanschram/claude-code-tools/mcp/codex-control/` for production use by all Claude Code working directories. This is a temporary solution until we package codex-control as an npm package or Homebrew formula.
+**✅ PRODUCTION READY**: This MCP server uses **npm link** for seamless development and deployment across all Claude Code working directories.
 
-**Directory Structure**:
-- **Development** (where you edit): `/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/`
-- **Production** (where MCP configs point): `/Users/nathanschram/claude-code-tools/mcp/codex-control/`
+**How It Works**:
+- Global symlink: `/opt/homebrew/bin/codex-control-mcp`
+- Points to: `/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js`
+- All MCP configs use: `"command": "codex-control-mcp"`
+- Changes propagate automatically after rebuild!
 
-**Deployment Process**:
-1. Make changes in development directory
+**Development Workflow**:
+1. Edit files in `src/`
 2. Build with `npm run build`
-3. Test locally with `node dist/index.js`
-4. Copy to production: `cp -r dist /Users/nathanschram/claude-code-tools/mcp/codex-control/`
-5. Restart Claude Code in all working directories
+3. **That's it!** Changes propagate to all projects
+4. Restart Claude Code to pick up changes
 
-**Future**: Will be packaged as `@littlebearapps/codex-control-mcp` on npm or via Homebrew for easier installation and updates.
+**Setup** (Already Done! ✅):
+```bash
+./setup-npm-link.sh  # Creates global symlink
+```
+
+**Benefits**:
+- ✅ No manual copying needed
+- ✅ Single source of truth (no version drift)
+- ✅ Portable MCP configs (no hard-coded paths)
+- ✅ Prepares for npm publish (when ready)
+
+**See**: `NPM-LINK-SETUP.md` for complete documentation
+
+### npm Package (Publish-Ready)
+
+**Package Name**: `@littlebearapps/codex-control-mcp`
+**Status**: ✅ Ready for npm publish (when desired)
+
+**Improvements**:
+- ✅ Scoped package name (@littlebearapps/codex-control-mcp)
+- ✅ Files whitelist (only ships dist/, docs/, LICENSE)
+- ✅ prepublishOnly script (safety check before publish)
+- ✅ Enhanced keywords for npm discoverability
+- ✅ Repository URLs for GitHub integration
+- ✅ MIT License file included
+- ✅ .npmignore to exclude development files
+
+**Publishing**:
+```bash
+npm publish --access public
+```
+
+**Note**: Scoped packages default to private access. Use `--access public` for free accounts.
+
+**See**: `NPM-PACKAGE-IMPROVEMENTS.md` for complete details
 
 ---
 
@@ -205,12 +240,13 @@ claude
 
 ## Key Decisions & Rationale
 
-### Why Unified Natural Language Interface? (v3.0.0)
-- **User Experience**: Single tool vs 14 separate tools (simpler mental model)
-- **Automatic Routing**: Claude Code doesn't need to choose the right primitive
-- **Natural Expression**: "run tests in the cloud" vs explicit tool selection
-- **Backward Compatible**: Hidden primitives remain for advanced use cases
-- **Extensively Validated**: 91 tests covering all routing paths (100% pass rate)
+### Why Remove Unified Natural Language Interface? (v3.0.1)
+- **Problem**: Unified `codex` tool caused intermittent hanging issues
+- **Root Cause**: Complex routing layer duplicated Claude Code's native NLP capabilities
+- **Solution**: Removed unified tool, expose only 14 hidden primitives
+- **Pattern**: Claude Code's native NLP selects appropriate primitive (like zen MCP)
+- **Benefits**: Simpler code (~300 lines removed), no hanging issues, follows best practices
+- **Previous Version (v3.0.0)**: Had unified tool with 91 routing tests (100% pass), but intermittent hangs in production
 
 ### Why Three Execution Modes?
 - **Local CLI**: Legacy compatibility, simple one-shot tasks
@@ -306,36 +342,41 @@ npm run build
 
 ## Current Focus (2025-11-14)
 
-- ✅ **v3.0.0 - Unified Natural Language Interface + Metadata Extraction Complete**
-  - Single `codex` tool with natural language routing
-  - Structured metadata extraction for AI agent decision-making
-  - Actionable error suggestions (e.g., "Start investigation at utils.ts:42")
-  - 98 comprehensive tests (91 routing + 7 metadata), 100% pass rate
-  - Production-ready across all use cases
+- ✅ **v3.0.1 - npm Package Ready + Bug Fixes**
+  - Scoped package name: `@littlebearapps/codex-control-mcp`
+  - npm link deployment: Global symlink for instant change propagation
+  - Publishing safety: Files whitelist, prepublishOnly, .npmignore
+  - Fixed critical bug: `_codex_local_results` parameter consistency
+  - Removed unified tool (was causing intermittent hangs)
+  - All 14 primitives working correctly
+  - See `NPM-PACKAGE-IMPROVEMENTS.md`, `NPM-LINK-SETUP.md`
 
-- ✅ **Test Validation** (100% Pass Rate):
-  - Core E2E: 14/14 tests (all primitive routing paths)
-  - Natural Language: 51/51 tests (50+ variations)
-  - Error Cases: 26/26 tests (edge cases, validation)
-  - Metadata Extraction: 7/7 tests (test results, errors, files, threads)
-  - **Total: 98/98 tests passing**
+- ✅ **npm Package Features**:
+  - **Scoped Name**: `@littlebearapps/codex-control-mcp`
+  - **Files Whitelist**: Only ships dist/, quickrefs/, docs, LICENSE
+  - **prepublishOnly**: Safety check before publishing
+  - **Enhanced Keywords**: Better npm discoverability (12 keywords)
+  - **Repository Metadata**: GitHub integration URLs
+  - **MIT License**: Standard open source license
+  - **Ready to Publish**: `npm publish --access public`
 
-- ✅ **Metadata Extraction Features**:
-  - Test results (passed/failed counts, failed test names)
-  - File operations (modified/added/deleted, lines changed)
-  - Thread info (cache hit rates, token usage)
-  - Error context with actionable suggestions
-  - Task status tracking
-  - See `METADATA-EXTRACTION-COMPLETION.md` for details
+- ✅ **Architecture** (v3.0.1):
+  - **14 hidden primitives** (all prefixed with `_`)
+  - **Pattern**: Users say "use codex control to run tests" → Claude Code selects primitive
+  - **No unified tool**: Removed in v3.0.1 (was causing intermittent hangs)
+  - **Consistent parameters**: All tools use snake_case (task_id, thread_id, etc.)
+  - **Similar to zen MCP**: Claude Code's native NLP handles selection
 
-- ✅ **Documentation Complete**:
-  - README.md updated with metadata extraction
-  - METADATA-EXTRACTION-COMPLETION.md (implementation report)
-  - WEEK-5-COMPLETION-SUMMARY.md (v3.0.0 journey)
-  - V3.0.0-CERTIFICATION.md (production certification)
-  - All quickrefs updated
+- ✅ **Comprehensive Testing**:
+  - All 14 primitives tested and verified ✅
+  - npm link deployment validated ✅
+  - Async workflow validated ✅
+  - Parameter bug fix confirmed ✅
+  - Change propagation verified ✅
+  - Documentation: `ASYNC-COMPREHENSIVE-TEST-RESULTS.md`, `NPM-LINK-VERIFICATION-COMPLETE.md`
 
-- 🎯 **Status**: Production-ready with enhanced AI agent capabilities
-  - Hidden primitives: 14 tools (internal implementation)
-  - User-facing: Single unified `codex` tool with structured metadata
-  - Natural language → routing → execution → metadata extraction
+- 🎯 **Status**: Production-ready, publish-ready npm package
+  - 14 hidden primitives (all working correctly)
+  - npm link active (instant change propagation)
+  - Ready for npm publish when desired
+  - Claude Code's native NLP handles tool selection

@@ -7,13 +7,13 @@ import { globalTaskRegistry } from '../state/task_registry.js';
 import { globalRedactor } from '../security/redactor.js';
 export class LocalResultsTool {
     async execute(input) {
-        const task = globalTaskRegistry.getTask(input.taskId);
+        const task = globalTaskRegistry.getTask(input.task_id);
         if (!task) {
             return {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Task Not Found\n\n**Task ID**: \`${input.taskId}\`\n\nTask not found in registry.`,
+                        text: `❌ Task Not Found\n\n**Task ID**: \`${input.task_id}\`\n\nTask not found in registry.`,
                     },
                 ],
                 isError: true,
@@ -25,7 +25,7 @@ export class LocalResultsTool {
                 content: [
                     {
                         type: 'text',
-                        text: `⏳ Task Still Running\n\n**Task ID**: \`${input.taskId}\`\n\n**Task**: ${task.instruction}\n\n**Started**: ${new Date(task.createdAt).toLocaleString()}\n\n💡 Check back later with \`_codex_local_status\` or wait for completion.`,
+                        text: `⏳ Task Still Running\n\n**Task ID**: \`${input.task_id}\`\n\n**Task**: ${task.instruction}\n\n**Started**: ${new Date(task.createdAt).toLocaleString()}\n\n💡 Check back later with \`_codex_local_status\` or wait for completion.`,
                     },
                 ],
             };
@@ -36,7 +36,7 @@ export class LocalResultsTool {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Task Failed\n\n**Task ID**: \`${input.taskId}\`\n\n**Error**: ${task.error || 'Unknown error'}\n\n**Task**: ${task.instruction}`,
+                        text: `❌ Task Failed\n\n**Task ID**: \`${input.task_id}\`\n\n**Error**: ${task.error || 'Unknown error'}\n\n**Task**: ${task.instruction}`,
                     },
                 ],
                 isError: true,
@@ -49,7 +49,7 @@ export class LocalResultsTool {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ No Results Available\n\n**Task ID**: \`${input.taskId}\`\n\nTask completed but results not available.`,
+                        text: `❌ No Results Available\n\n**Task ID**: \`${input.task_id}\`\n\nTask completed but results not available.`,
                     },
                 ],
                 isError: true,
@@ -65,7 +65,7 @@ export class LocalResultsTool {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Invalid Result Format\n\n**Task ID**: \`${input.taskId}\`\n\nCould not parse task result.`,
+                        text: `❌ Invalid Result Format\n\n**Task ID**: \`${input.task_id}\`\n\nCould not parse task result.`,
                     },
                 ],
                 isError: true,
@@ -73,7 +73,7 @@ export class LocalResultsTool {
         }
         // Build result message for SDK execution
         let message = `✅ Codex SDK Task Completed\n\n`;
-        message += `**Task ID**: \`${input.taskId}\`\n\n`;
+        message += `**Task ID**: \`${input.task_id}\`\n\n`;
         message += `**Task**: ${task.instruction}\n\n`;
         if (resultData.threadId) {
             message += `**Thread ID**: \`${resultData.threadId}\`\n\n`;
@@ -108,12 +108,12 @@ export class LocalResultsTool {
             inputSchema: {
                 type: 'object',
                 properties: {
-                    taskId: {
+                    task_id: {
                         type: 'string',
                         description: 'Task ID from codex_run async execution',
                     },
                 },
-                required: ['taskId'],
+                required: ['task_id'],
             },
         };
     }

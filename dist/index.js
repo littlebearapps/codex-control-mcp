@@ -21,22 +21,19 @@ import { LocalWaitTool } from './tools/local_wait.js';
 import { LocalCancelTool } from './tools/local_cancel.js';
 import { CloudWaitTool } from './tools/cloud_wait.js';
 import { CloudCancelTool } from './tools/cloud_cancel.js';
-import { CodexTool } from './tools/codex.js';
 import { templates } from './resources/environment_templates.js';
 /**
  * Server Configuration
  */
 const MAX_CONCURRENCY = parseInt(process.env.CODEX_MAX_CONCURRENCY || '2', 10);
 const SERVER_NAME = 'codex-control';
-const SERVER_VERSION = '2.1.1';
+const SERVER_VERSION = '3.0.1';
 /**
  * Main Server Class
  */
 class CodexControlServer {
     server;
     processManager;
-    // Unified user-facing tool
-    codexTool;
     // Hidden primitive tools
     localRunTool;
     localStatusTool;
@@ -70,23 +67,6 @@ class CodexControlServer {
         this.cloudCancelTool = new CloudCancelTool();
         this.listEnvironmentsTool = new ListEnvironmentsTool();
         this.githubSetupTool = new GitHubSetupTool();
-        // Initialize unified tool with primitive dependencies
-        this.codexTool = new CodexTool({
-            _codex_local_run: this.localRunTool,
-            _codex_local_status: this.localStatusTool,
-            _codex_local_exec: this.localExecTool,
-            _codex_local_resume: this.localResumeTool,
-            _codex_local_results: this.localResultsTool,
-            _codex_local_wait: this.localWaitTool,
-            _codex_local_cancel: this.localCancelTool,
-            _codex_cloud_submit: this.cloudSubmitTool,
-            _codex_cloud_status: this.cloudStatusTool,
-            _codex_cloud_results: this.cloudResultsTool,
-            _codex_cloud_wait: this.cloudWaitTool,
-            _codex_cloud_cancel: this.cloudCancelTool,
-            _codex_cloud_list_environments: this.listEnvironmentsTool,
-            _codex_cloud_github_setup: this.githubSetupTool,
-        });
         // Create MCP server
         this.server = new Server({
             name: SERVER_NAME,
@@ -110,8 +90,6 @@ class CodexControlServer {
         this.server.setRequestHandler(ListToolsRequestSchema, async () => {
             return {
                 tools: [
-                    // Primary unified tool (user-facing)
-                    CodexTool.getSchema(),
                     // Hidden primitives (14 tools with _ prefix)
                     LocalRunTool.getSchema(),
                     LocalStatusTool.getSchema(),
@@ -135,9 +113,6 @@ class CodexControlServer {
             const { name, arguments: args } = request.params;
             try {
                 switch (name) {
-                    // Unified user-facing tool
-                    case 'codex':
-                        return await this.codexTool.execute(args);
                     // Hidden primitive tools (14 tools with _ prefix)
                     case '_codex_local_run':
                         return await this.localRunTool.execute(args);
@@ -244,11 +219,11 @@ class CodexControlServer {
     async start() {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
-        console.error(`[CodexControl] Server started successfully`);
+        console.error(`[CodexControl] Server started successfully via npm link ✅`);
         console.error(`[CodexControl] Name: ${SERVER_NAME}`);
         console.error(`[CodexControl] Version: ${SERVER_VERSION}`);
         console.error(`[CodexControl] Max Concurrency: ${MAX_CONCURRENCY}`);
-        console.error(`[CodexControl] Tools: 15 total (1 unified 'codex' + 14 hidden primitives with _ prefix)`);
+        console.error(`[CodexControl] Tools: 14 hidden primitives (all with _ prefix)`);
         console.error(`[CodexControl] Resources: ${templates.length} environment templates`);
     }
 }

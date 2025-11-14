@@ -1,0 +1,49 @@
+# Source files (only ship compiled dist/)
+src/
+test/
+tests/
+
+# Development files
+*.test.ts
+*.spec.ts
+test-*.ts
+debug-*.ts
+jest.config.js
+tsconfig.json
+.eslintrc.*
+
+# Build artifacts
+*.tsbuildinfo
+*.log
+.DS_Store
+
+# Development docs (CLAUDE.md and README.md are included via files array)
+NPM-LINK-*.md
+ASYNC-*.md
+PRODUCTION-*.md
+TASK-*.md
+UNIFIED-*.md
+WEEK-*.md
+TEST-*.md
+
+# Git
+.git/
+.gitignore
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# npm link artifacts
+node_modules/
+package-lock.json
+
+# Scripts (except setup-npm-link.sh if we want to include it)
+scripts/
+
+# Other
+coverage/
+.nyc_output/

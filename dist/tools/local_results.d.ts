@@ -4,7 +4,7 @@
  * Retrieve results from completed async local Codex tasks.
  */
 export interface LocalResultsInput {
-    taskId: string;
+    task_id: string;
 }
 export interface LocalResultsResult {
     content: Array<{
@@ -21,7 +21,7 @@ export declare class LocalResultsTool {
         inputSchema: {
             type: string;
             properties: {
-                taskId: {
+                task_id: {
                     type: string;
                     description: string;
                 };
