@@ -1,21 +1,21 @@
 # Codex Control MCP Server - Claude Code Memory
 
-**Version**: 2.1.1
-**Purpose**: Dual-mode Codex execution (local SDK + cloud) via MCP with async/non-blocking support
-**Status**: Production Ready
+**Version**: 3.0.0
+**Purpose**: Unified natural language interface to OpenAI Codex with automatic routing
+**Status**: ✅ Production Ready - 100% Test Validated
 
 ---
 
 ## Quick Reference
 
 See detailed documentation in `quickrefs/`:
-- @quickrefs/tools.md - All 15 tools with examples
+- @quickrefs/tools.md - All tools with examples (updated for v3.0.0)
 - @quickrefs/architecture.md - System design and components
 - @quickrefs/workflows.md - Common development workflows
 - @quickrefs/security.md - Security features and best practices
 - @quickrefs/troubleshooting.md - Common issues and solutions
 
-**Latest Test Results**: See `ASYNC-TEST-RESULTS.md` for comprehensive async validation
+**Latest Test Results**: See `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive v3.0.0 validation (91 tests, 100% pass rate)
 
 ---
 
@@ -29,8 +29,10 @@ See detailed documentation in `quickrefs/`:
 
 ### Testing & Validation
 - `node dist/index.js` - Test MCP server manually
-- `ts-node test-v2.1.0.ts` - Run validation suite
-- Check `TEST-RESULTS-v2.1.0.md` for latest validation results
+- `npx ts-node test-codex-simple.ts` - Core E2E tests (14 tests)
+- `npx ts-node test-codex-comprehensive.ts` - Natural language tests (51 tests)
+- `npx ts-node test-codex-errors.ts` - Error case tests (26 tests)
+- Check `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive test results (91 tests, 100%)
 
 ### MCP Server Management
 - MCP config location: `~/.claude/config/.mcp.json`
@@ -105,9 +107,9 @@ claude
 ## Key Architecture Points
 
 ### Execution Modes
-- **Local CLI** (Tools 1-4): Async-capable CLI-based execution with task tracking
-- **Local SDK** (Tools 5-6): Always async, thread persistence, token tracking
-- **Cloud** (Tools 7-11): Background execution, sandboxed containers
+- **Local Execution** (5 tools): Simple one-shot + advanced SDK with thread persistence
+- **Cloud Execution** (3 tools): Background execution, sandboxed containers
+- **Configuration** (2 tools): Setup helpers
 
 **All tools now support non-blocking async execution** - Claude Code never freezes waiting for Codex!
 
@@ -147,34 +149,47 @@ claude
 
 ---
 
-## Tool Categories (15 Tools)
+## Unified Tool Interface (v3.0.0)
 
-### Local CLI Execution (4 tools)
-- `codex_cli_run` - Read-only analysis, tests (async-capable)
-- `codex_cli_plan` - Preview changes without executing (async-capable)
-- `codex_cli_apply` - Apply mutations with confirmation (async-capable)
-- `codex_cli_status` - Server status and queue info
+### User-Facing Tool
+- **`codex`** - Single unified tool accepting natural language instructions
+  - Automatically routes to appropriate backend primitive
+  - Detects local vs cloud execution mode
+  - Handles threading vs one-shot execution
+  - See README.md for natural language examples
 
-### Local SDK Execution (4 tools) 🔥 Always Async
-- `codex_local_exec` - Async execution with task tracking
-- `codex_local_resume` - Resume threads with context preservation
-- `codex_local_status` - Check local task status
-- `codex_local_results` - Get local task results
+### Hidden Implementation (14 Primitives)
 
-### Cloud Execution (5 tools)
-- `codex_cloud_submit` - Background task submission
-- `codex_cloud_status` - Task status checking
-- `codex_cloud_results` - Retrieve task results
-- `codex_cloud_list_tasks` - Persistent task registry
-- `codex_cloud_check_reminder` - Pending task reminder
+**Local Execution** (7 primitives):
+- `_codex_local_run` - Simple one-shot execution
+- `_codex_local_exec` - SDK execution with threading
+- `_codex_local_resume` - Resume threaded conversations
+- `_codex_local_status` - Process and task status
+- `_codex_local_results` - Get task results
+- `_codex_local_wait` - Wait for task completion
+- `_codex_local_cancel` - Cancel running tasks
 
-### Configuration & Setup (2 tools)
-- `codex_list_environments` - Local environment registry
-- `codex_github_setup_guide` - GitHub integration helper
+**Cloud Execution** (5 primitives):
+- `_codex_cloud_submit` - Background task submission
+- `_codex_cloud_status` - Cloud task status
+- `_codex_cloud_results` - Retrieve cloud results
+- `_codex_cloud_wait` - Wait for cloud completion
+- `_codex_cloud_cancel` - Cancel cloud tasks
+
+**Configuration** (2 primitives):
+- `_codex_cloud_list_environments` - List environments
+- `_codex_cloud_github_setup` - GitHub integration guide
 
 ---
 
 ## Key Decisions & Rationale
+
+### Why Unified Natural Language Interface? (v3.0.0)
+- **User Experience**: Single tool vs 14 separate tools (simpler mental model)
+- **Automatic Routing**: Claude Code doesn't need to choose the right primitive
+- **Natural Expression**: "run tests in the cloud" vs explicit tool selection
+- **Backward Compatible**: Hidden primitives remain for advanced use cases
+- **Extensively Validated**: 91 tests covering all routing paths (100% pass rate)
 
 ### Why Three Execution Modes?
 - **Local CLI**: Legacy compatibility, simple one-shot tasks
@@ -185,7 +200,7 @@ claude
 - Cloud tasks continue after Claude Code restarts
 - Users need visibility into task history
 - Multi-instance isolation prevents task collisions
-- Enables `codex_cloud_check_reminder` tool
+- Enables unified `codex_cloud_status` tool (pending, specific, or list mode)
 
 ### Why Thread Persistence in Local SDK?
 - Enables iterative development (analyze → fix → test)
@@ -268,31 +283,27 @@ npm run build
 
 ---
 
-## Current Focus (2025-11-12)
+## Current Focus (2025-11-14)
 
-- ✅ **v2.1.1 - Async Implementation Complete**
-  - All tools now support non-blocking async execution
-  - CLI tools renamed to `codex_cli_*` for clarity
-  - SDK tools always async with proper task ID tracking
-  - No more blocking behavior - Claude Code stays responsive!
+- ✅ **v3.0.0 - Unified Natural Language Interface Complete** (Week 5)
+  - Single `codex` tool with natural language routing
+  - Automatic detection: local vs cloud, threading vs one-shot
+  - 91 comprehensive tests, 100% pass rate
+  - Production-ready across all use cases
 
-- ✅ **Bug Fixes Completed**:
-  - Fixed SDK thread ID null bug (now returns proper task IDs)
-  - CLI tools renamed: `codex_run` → `codex_cli_run`, etc.
-  - Updated all tool routing and registrations
-  - Fixed LocalTaskRegistry integration for SDK tools
+- ✅ **Test Validation** (100% Pass Rate):
+  - Core E2E: 14/14 tests (all primitive routing paths)
+  - Natural Language: 51/51 tests (50+ variations)
+  - Error Cases: 26/26 tests (edge cases, validation)
+  - **Total: 91/91 tests passing**
 
-- ✅ **Production Testing Completed**:
-  - Local SDK execution: ✅ Returns task ID immediately
-  - Local CLI execution: ✅ Returns task ID immediately (async mode)
-  - Status tracking: ✅ Shows running/completed tasks correctly
-  - Results retrieval: ✅ Full output captured and retrievable
-  - See `ASYNC-TEST-RESULTS.md` for complete validation
+- ✅ **Documentation Complete**:
+  - README.md updated to v3.0.0
+  - WEEK-5-COMPLETION-SUMMARY.md (comprehensive journey)
+  - All quickrefs updated
+  - Natural language examples documented
 
-- ✅ **Documentation Updated**:
-  - CLAUDE.md updated with async details (15 tools)
-  - All quickrefs updated with new tool names
-  - Async workflow examples added
-  - Test results documented
-
-- 🎯 **Ready for Deployment**: All 15 tools production-ready across all projects
+- 🎯 **Status**: Production-ready with comprehensive validation
+  - Hidden primitives: 14 tools (internal implementation)
+  - User-facing: Single unified `codex` tool
+  - Natural language → automatic routing → execution

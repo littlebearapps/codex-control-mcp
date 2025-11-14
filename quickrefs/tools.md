@@ -1,489 +1,314 @@
-# Tools Quick Reference
+# Tools Quick Reference (v3.0.0)
 
-Complete guide to all 13 Codex Control MCP tools.
-
----
-
-## Tool Categories
-
-### Local Execution (CLI-based)
-1. `codex_run` - Read-only execution
-2. `codex_plan` - Preview changes
-3. `codex_apply` - Apply mutations
-4. `codex_status` - Server status
-
-### Local Execution (SDK-based) 🆕
-5. `codex_local_exec` - Real-time streaming execution
-6. `codex_local_resume` - Resume threads
-
-### Cloud Execution
-7. `codex_cloud_submit` - Submit background tasks
-8. `codex_cloud_list_tasks` - List task registry
-9. `codex_cloud_status` - Check task status
-10. `codex_cloud_results` - Get task results
-11. `codex_cloud_check_reminder` - Pending task reminder
-
-### Configuration & Setup
-12. `codex_list_environments` - List environments
-13. `codex_github_setup_guide` - GitHub integration guide
+Complete guide to the unified Codex Control MCP interface.
 
 ---
 
-## When to Use Which Tool
+## Unified Natural Language Interface
+
+### Primary Tool
+
+**`codex`** - Single tool accepting natural language instructions
+
+**How It Works**:
+1. Describe what you want in natural language
+2. Router automatically detects intent and execution mode
+3. Appropriate backend primitive is invoked
+4. Result returned with automatic routing details
+
+**No Need to Choose**:
+- ❌ Don't pick from 14 separate tools
+- ✅ Just describe what you want naturally
+
+---
+
+## Natural Language Examples
+
+### Local Execution (Quick Tasks)
+
+```typescript
+// Simple analysis
+{ "request": "run tests" }
+// → Routes to _codex_local_run (read-only)
+
+{ "request": "analyze code for bugs" }
+// → Routes to _codex_local_run (read-only)
+
+{ "request": "fix the error in utils.ts" }
+// → Routes to _codex_local_run (workspace-write)
+```
+
+### Threading (Iterative Development)
+
+```typescript
+// Real-time progress
+{ "request": "analyze code with progress" }
+// → Routes to _codex_local_exec (streaming)
+
+{ "request": "start new task with progress updates" }
+// → Routes to _codex_local_exec (returns thread ID)
+
+{ "request": "debug this issue step by step" }
+// → Routes to _codex_local_exec (thread persistence)
+```
+
+### Cloud Execution (Long-Running)
+
+```typescript
+// Cloud submission
+{ "request": "run tests in the cloud" }
+// → Routes to _codex_cloud_submit
+
+{ "request": "run comprehensive test suite on cloud" }
+// → Routes to _codex_cloud_submit
+
+{ "request": "create feature branch and PR in cloud" }
+// → Routes to _codex_cloud_submit
+```
+
+### Task Management
+
+```typescript
+// Check status
+{ "request": "check status of T-local-abc123" }
+// → Routes to _codex_local_status
+
+{ "request": "wait for T-cloud-xyz789" }
+// → Routes to _codex_cloud_wait
+
+{ "request": "cancel T-local-def456" }
+// → Routes to _codex_local_cancel
+
+{ "request": "get results for T-cloud-ghi012" }
+// → Routes to _codex_cloud_results
+```
+
+### Configuration
+
+```typescript
+// List environments
+{ "request": "list environments" }
+// → Routes to _codex_cloud_list_environments
+
+{ "request": "show available environments" }
+// → Routes to _codex_cloud_list_environments
+
+// GitHub setup
+{ "request": "setup github for https://github.com/myorg/repo" }
+// → Routes to _codex_cloud_github_setup
+```
+
+---
+
+## When to Use Each Pattern
 
 ### Quick Analysis (1-5 minutes)
-→ Use `codex_run` with `mode='read-only'`
-- Code analysis, security audits
-- Running tests (read-only)
-- No file modifications
+**Pattern**: Simple action verbs
+```
+"run tests"
+"analyze code"
+"check for bugs"
+```
+**Routes to**: Local execution (one-shot)
 
 ### Iterative Development (5-30 minutes)
-→ Use `codex_local_exec` + `codex_local_resume`
-- Real-time progress visibility
-- Follow-up questions
-- Thread persistence across sessions
-- Token tracking and caching
+**Pattern**: Include progress/threading keywords
+```
+"analyze with progress"
+"debug step by step"
+"investigate with real-time updates"
+```
+**Routes to**: Local SDK (threaded)
 
 ### Long-Running Tasks (30+ minutes)
-→ Use `codex_cloud_submit`
-- Full test suites, builds
-- Comprehensive refactoring
-- Fire-and-forget execution
-- Device independence
+**Pattern**: Include cloud context
+```
+"run tests in the cloud"
+"comprehensive refactoring on cloud"
+"create PR via cloud"
+```
+**Routes to**: Cloud submission
 
-### Preview Before Apply
-→ Use `codex_plan` then `codex_apply`
-- See proposed changes first
-- Confirm before mutations
-- Review diffs
+### Task Operations
+**Pattern**: Action + Task ID
+```
+"check status of T-local-abc123"
+"wait for T-cloud-xyz789"
+"cancel T-local-def456"
+```
+**Routes to**: Appropriate task operation
 
 ---
 
-## Execution Mode Comparison
+## Smart Routing Features
 
-| Mode | Tool | Visibility | Persistence | Best For |
-|------|------|------------|-------------|----------|
-| **Local CLI** | `codex_run` | ❌ Blocking | ❌ No | Quick tasks |
-| **Local SDK** | `codex_local_exec` | ✅ Streaming | ✅ Threads | Iterative dev |
-| **Cloud** | `codex_cloud_submit` | ❌ Background | ✅ Tasks | Long-running |
+### Automatic Mode Detection
 
----
+**Local vs Cloud**:
+- "run tests" → Local
+- "run tests in the cloud" → Cloud
+- "run tests on cloud" → Cloud
 
-## Tool Details
+**Threading vs One-Shot**:
+- "analyze code" → One-shot
+- "analyze code with progress" → Threading
+- "debug step by step" → Threading
 
-### 1. codex_run (Local CLI)
-
-**Purpose**: Execute read-only tasks without file modifications.
-
-**Parameters**:
-```typescript
-{
-  task: string;           // Required: Task description
-  mode?: string;          // Optional: 'read-only' (default)
-  model?: string;         // Optional: OpenAI model
-  workingDir?: string;    // Optional: Working directory
-  envPolicy?: string;     // Optional: 'inherit-none' (default)
-  envAllowList?: string[]; // Optional: Allowed env vars
-}
-```
-
-**Example**:
-```typescript
-{
-  "task": "Analyze main.ts for bugs and security issues",
-  "mode": "read-only"
-}
-```
-
-**Use When**:
-- ✅ Quick analysis (1-5 minutes)
-- ✅ Running tests (read-only)
-- ✅ Code reviews
-- ✅ Security audits
+**Task ID Extraction**:
+- "check T-local-abc123" → Extracts task ID automatically
+- "wait for cloud task T-cloud-xyz789" → Extracts and routes to cloud
 
 ---
 
-### 2. codex_plan (Local CLI)
+## Advanced Parameters
 
-**Purpose**: Preview what Codex would do without executing.
+### Context and Preferences
 
-**Parameters**:
 ```typescript
 {
-  task: string;        // Required: Task to preview
-  model?: string;      // Optional: OpenAI model
-  workingDir?: string; // Optional: Working directory
-}
-```
-
-**Example**:
-```typescript
-{
-  "task": "Add error handling to all API endpoints"
-}
-```
-
-**Use When**:
-- ✅ Before `codex_apply` to review changes
-- ✅ Learning what Codex would suggest
-- ✅ Understanding impact before mutations
-
----
-
-### 3. codex_apply (Local CLI)
-
-**Purpose**: Execute file-modifying tasks with confirmation.
-
-**Parameters**:
-```typescript
-{
-  task: string;        // Required: Task description
-  confirm: boolean;    // Required: Must be true
-  mode?: string;       // Optional: 'workspace-write' (default)
-  model?: string;      // Optional: OpenAI model
-  workingDir?: string; // Optional: Working directory
-}
-```
-
-**Example**:
-```typescript
-{
-  "task": "Add TypeScript types to utils.ts",
-  "confirm": true,
-  "mode": "workspace-write"
-}
-```
-
-**Use When**:
-- ✅ Applying changes after `codex_plan`
-- ✅ One-shot mutations
-- ✅ Not needing thread persistence
-
----
-
-### 4. codex_status (Local CLI)
-
-**Purpose**: Get server status and queue information.
-
-**Parameters**: None
-
-**Example**: `{}`
-
-**Use When**:
-- ✅ Checking active processes
-- ✅ Debugging concurrency issues
-- ✅ Monitoring queue status
-
----
-
-### 5. codex_local_exec (Local SDK) 🆕
-
-**Purpose**: Execute tasks locally with real-time event streaming.
-
-**Parameters**:
-```typescript
-{
-  task: string;              // Required: Task description
-  workingDir?: string;       // Optional: Working directory
-  mode?: string;             // Optional: 'read-only' (default)
-  outputSchema?: object;     // Optional: JSON Schema
-  skipGitRepoCheck?: boolean; // Optional: Skip git check
-  model?: string;            // Optional: OpenAI model
-}
-```
-
-**Example**:
-```typescript
-{
-  "task": "Find all TODO comments and list them",
-  "mode": "read-only",
-  "outputSchema": {
-    "type": "object",
-    "properties": {
-      "todos": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "file": { "type": "string" },
-            "line": { "type": "number" },
-            "text": { "type": "string" }
-          }
-        }
-      }
-    }
+  "request": "run tests in the cloud",
+  "context": {
+    "working_dir": "/path/to/project",
+    "repo_root": "/path/to/repo"
+  },
+  "preference": {
+    "mode": "cloud",  // Force cloud execution
+    "timeout_ms": 300000
   }
 }
 ```
 
-**Use When**:
-- ✅ Iterative development (5-30 minutes)
-- ✅ Want real-time progress visibility
-- ✅ Need thread persistence for follow-ups
-- ✅ Want token tracking and caching
+### Structured Hints (Fast-Path)
 
-**Returns**: Thread ID for use with `codex_local_resume`
+```typescript
+{
+  "request": "check my task",
+  "hints": {
+    "operation": "check",       // Bypass natural language parsing
+    "taskId": "T-local-abc123", // Explicit task ID
+    "mode": "local"             // Explicit mode
+  }
+}
+```
+
+### Debugging
+
+```typescript
+{
+  "request": "run tests",
+  "dry_run": true,   // Show routing decision without executing
+  "explain": true    // Include decision trace
+}
+```
 
 ---
 
-### 6. codex_local_resume (Local SDK) 🆕
+## Hidden Implementation (14 Primitives)
 
-**Purpose**: Resume previous thread with follow-up tasks.
+These primitives are automatically invoked by the router. You don't need to call them directly.
 
-**Parameters**:
-```typescript
-{
-  threadId: string;       // Required: From codex_local_exec
-  task: string;           // Required: Follow-up task
-  mode?: string;          // Optional: Inherits from thread
-  outputSchema?: object;  // Optional: JSON Schema
-}
-```
+### Local Execution (7 tools)
+- `_codex_local_run` - Simple one-shot execution
+- `_codex_local_exec` - SDK execution with threading
+- `_codex_local_resume` - Resume threaded conversations
+- `_codex_local_status` - Process and task status
+- `_codex_local_results` - Get task results
+- `_codex_local_wait` - Wait for task completion
+- `_codex_local_cancel` - Cancel running tasks
 
-**Example**:
-```typescript
-{
-  "threadId": "thread_abc123xyz",
-  "task": "Now fix the most critical bug from the analysis"
-}
-```
+### Cloud Execution (5 tools)
+- `_codex_cloud_submit` - Background task submission
+- `_codex_cloud_status` - Cloud task status
+- `_codex_cloud_results` - Retrieve cloud results
+- `_codex_cloud_wait` - Wait for cloud completion
+- `_codex_cloud_cancel` - Cancel cloud tasks
 
-**Use When**:
-- ✅ Continuing previous analysis
-- ✅ Iterative refactoring
-- ✅ Follow-up questions
-- ✅ Multi-step workflows
-
-**Note**: Requires git repository (or use `skipGitRepoCheck` in initial exec)
-
----
-
-### 7. codex_cloud_submit (Cloud)
-
-**Purpose**: Submit tasks to Codex Cloud for background execution.
-
-**Parameters**:
-```typescript
-{
-  task: string;      // Required: Task description
-  envId: string;     // Required: Environment ID
-  attempts?: number; // Optional: Best-of-N (default: 1)
-  model?: string;    // Optional: OpenAI model
-}
-```
-
-**Example**:
-```typescript
-{
-  "task": "Run full test suite and fix any failures",
-  "envId": "env_abc123xyz",
-  "attempts": 3
-}
-```
-
-**Use When**:
-- ✅ Long-running tasks (30+ minutes)
-- ✅ Fire-and-forget execution
-- ✅ Sandboxed environment needed
-- ✅ Device independence required
-
-**Auto-Tracked**: Task ID stored in `~/.config/codex-control/cloud-tasks.json`
-
----
-
-### 8. codex_cloud_list_tasks (Cloud) 🆕
-
-**Purpose**: List all tracked cloud tasks with filtering.
-
-**Parameters**:
-```typescript
-{
-  workingDir?: string;  // Optional: Filter by directory
-  envId?: string;       // Optional: Filter by environment
-  status?: string;      // Optional: Filter by status
-  limit?: number;       // Optional: Max results (default: 50)
-  showStats?: boolean;  // Optional: Include stats (default: false)
-}
-```
-
-**Example**:
-```typescript
-{
-  "status": "submitted",
-  "limit": 10
-}
-```
-
-**Use When**:
-- ✅ Reviewing task history
-- ✅ Finding task IDs
-- ✅ Checking project activity
-- ✅ Debugging task issues
-
----
-
-### 9. codex_cloud_status (Cloud)
-
-**Purpose**: Check status of cloud tasks.
-
-**Parameters**:
-```typescript
-{
-  taskId?: string;   // Optional: Specific task
-  showAll?: boolean; // Optional: Show all tasks
-}
-```
-
-**Example**:
-```typescript
-{
-  "taskId": "task-2025-11-11-abc123"
-}
-```
-
-**Use When**:
-- ✅ Checking if task is complete
-- ✅ Getting Web UI links
-- ✅ Monitoring progress
-
----
-
-### 10. codex_cloud_results (Cloud)
-
-**Purpose**: Get results of completed cloud tasks.
-
-**Parameters**:
-```typescript
-{
-  taskId: string; // Required: Task ID
-}
-```
-
-**Example**:
-```typescript
-{
-  "taskId": "task-2025-11-11-abc123"
-}
-```
-
-**Use When**:
-- ✅ Task is marked as complete
-- ✅ Need to view output
-- ✅ Want to apply changes locally
-
----
-
-### 11. codex_cloud_check_reminder (Cloud) 🆕
-
-**Purpose**: Check for pending cloud tasks and get Web UI links.
-
-**Parameters**: None
-
-**Example**: `{}`
-
-**Use When**:
-- ✅ Periodic checks during development
-- ✅ Morning review of overnight tasks
-- ✅ Before submitting new tasks
-- ✅ After long breaks
-
----
-
-### 12. codex_list_environments (Config) 🆕
-
-**Purpose**: List available Codex Cloud environments.
-
-**Parameters**: None
-
-**Example**: `{}`
-
-**Use When**:
-- ✅ Starting new project
-- ✅ Reviewing configured environments
-- ✅ Planning task submissions
-- ✅ Documentation of environment structure
-
-**Setup**: Create `~/.config/codex-control/environments.json`
-
----
-
-### 13. codex_github_setup_guide (Config)
-
-**Purpose**: Generate custom GitHub integration guide.
-
-**Parameters**:
-```typescript
-{
-  repoUrl: string;       // Required: GitHub repo URL
-  stack: string;         // Required: 'node', 'python', 'go', 'rust'
-  gitUserName?: string;  // Optional: Git user name
-  gitUserEmail?: string; // Optional: Git user email
-}
-```
-
-**Example**:
-```typescript
-{
-  "repoUrl": "https://github.com/myorg/my-project",
-  "stack": "node",
-  "gitUserName": "Your Name",
-  "gitUserEmail": "your@email.com"
-}
-```
-
-**Use When**:
-- ✅ Setting up GitHub integration
-- ✅ Need repository-specific instructions
-- ✅ Want pre-filled setup scripts
-- ✅ Testing autonomous PR workflows
+### Configuration (2 tools)
+- `_codex_cloud_list_environments` - List environments
+- `_codex_cloud_github_setup` - GitHub integration guide
 
 ---
 
 ## Common Workflows
 
 ### Workflow 1: Quick Analysis
-```
-codex_run → Review output → Done
-```
-
-### Workflow 2: Preview and Apply
-```
-codex_plan → Review → codex_apply (confirm=true) → Done
+```typescript
+// Single request, automatic routing
+{ "request": "run tests" }
 ```
 
-### Workflow 3: Iterative Development
-```
-codex_local_exec → Review thread → codex_local_resume → Repeat
+### Workflow 2: Iterative Development
+```typescript
+// Step 1: Start with progress
+{ "request": "analyze code with progress" }
+// Returns: { "thread_id": "thread_abc123", ... }
+
+// Step 2: Continue (manual resume)
+// Use _codex_local_resume with thread ID
 ```
 
-### Workflow 4: Long-Running Task
-```
-codex_cloud_submit → codex_cloud_check_reminder → codex_cloud_results
-```
+### Workflow 3: Cloud Task
+```typescript
+// Step 1: Submit
+{ "request": "run comprehensive tests in the cloud" }
+// Returns: { "task_id": "T-cloud-abc123", ... }
 
-### Workflow 5: GitHub Setup
-```
-codex_github_setup_guide → Follow guide → Test with cloud_submit
+// Step 2: Check status
+{ "request": "check status of T-cloud-abc123" }
+
+// Step 3: Get results
+{ "request": "get results for T-cloud-abc123" }
 ```
 
 ---
 
 ## Best Practices
 
-### Always
-- ✅ Use `mode='read-only'` first to review
-- ✅ Check git status before mutations
-- ✅ Use descriptive task descriptions
-- ✅ Specify working directory when not in cwd
+### Natural Language Tips
+- ✅ Be specific: "run unit tests" vs "run tests"
+- ✅ Include context: "in the cloud", "with progress"
+- ✅ Use task IDs when available: "check T-local-abc123"
 
-### Never
-- ❌ Use `danger-full-access` without understanding risks
-- ❌ Skip `codex_plan` for large mutations
-- ❌ Ignore error messages
-- ❌ Commit without reviewing changes
+### Execution Mode Selection
+- ✅ Quick tasks (< 5 min): Default (no keywords)
+- ✅ Iterative work: Add "with progress" or "step by step"
+- ✅ Long tasks (> 30 min): Add "in the cloud"
 
-### For Best Results
-- 🎯 Be specific in task descriptions
-- 🎯 Use `outputSchema` for structured data
-- 🎯 Leverage thread persistence for multi-step tasks
-- 🎯 Monitor token usage with local SDK tools
+### Error Handling
+- ✅ Use `dry_run: true` to preview routing
+- ✅ Check task IDs are valid format (T-local-* or T-cloud-*)
+- ✅ Include enough context in natural language
+
+---
+
+## Testing & Validation
+
+**v3.0.0 Test Results**:
+- Core E2E: 14/14 tests (100%)
+- Natural Language: 51/51 tests (100%)
+- Error Cases: 26/26 tests (100%)
+- **Total: 91/91 tests (100%)**
+
+See `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive test documentation.
+
+---
+
+## Migration from v2.x
+
+### Before (v2.x - 13 separate tools)
+```typescript
+// Had to choose the right tool manually
+codex_run({ task: "run tests", mode: "read-only" })
+codex_local_exec({ task: "analyze", mode: "read-only" })
+codex_cloud_submit({ task: "run tests", envId: "env_123" })
+```
+
+### After (v3.0.0 - unified interface)
+```typescript
+// Just describe what you want
+{ "request": "run tests" }
+{ "request": "analyze with progress" }
+{ "request": "run tests in the cloud" }
+```
+
+**Backward Compatibility**: Hidden primitives still available for advanced use cases.
