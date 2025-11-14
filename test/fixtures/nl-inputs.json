@@ -1,0 +1,143 @@
+{
+  "positive_cases": {
+    "_codex_local_run": [
+      "Analyze main.ts for bugs",
+      "Check code quality in utils.ts",
+      "Run the test suite",
+      "Scan for security issues"
+    ],
+    "_codex_local_status": [
+      "What's currently running?",
+      "Show me local task status",
+      "Check the queue",
+      "What tasks are active?"
+    ],
+    "_codex_local_exec": [
+      "Start analyzing the codebase",
+      "Begin refactoring auth.ts with progress tracking",
+      "Execute a comprehensive security audit"
+    ],
+    "_codex_local_resume": [
+      "Continue the previous analysis",
+      "Resume thread_abc123",
+      "Keep working on that refactoring",
+      "Proceed with the last task"
+    ],
+    "_codex_local_results": [
+      "Get results for task T-local-abc123",
+      "Show me what completed",
+      "Results for T-local-def456"
+    ],
+    "_codex_local_wait": [
+      "Wait for task T-local-abc123 to finish",
+      "Poll until the analysis completes",
+      "Monitor task T-local-xyz789"
+    ],
+    "_codex_local_cancel": [
+      "Cancel task T-local-abc123",
+      "Stop the running analysis",
+      "Abort task T-local-def456"
+    ],
+    "_codex_cloud_submit": [
+      "Run the full test suite in the cloud",
+      "Create a PR for this feature",
+      "Submit analysis to cloud",
+      "Run tests in background and create PR if passing"
+    ],
+    "_codex_cloud_status": [
+      "Check cloud task status",
+      "What's running in Codex Cloud?",
+      "Show cloud tasks"
+    ],
+    "_codex_cloud_results": [
+      "Get results for cloud task T-cloud-def456",
+      "Show me the PR that was created",
+      "Cloud results for T-cloud-abc123"
+    ],
+    "_codex_cloud_wait": [
+      "Wait for cloud task to complete",
+      "Poll until the PR is ready",
+      "Monitor cloud task T-cloud-xyz789"
+    ],
+    "_codex_cloud_cancel": [
+      "Cancel cloud task T-cloud-def456",
+      "Stop the cloud execution",
+      "Abort cloud task T-cloud-abc123"
+    ],
+    "_codex_cloud_list_environments": [
+      "List my Codex environments",
+      "Show available environments",
+      "What environments do I have?"
+    ],
+    "_codex_cloud_github_setup": [
+      "Set up GitHub integration for https://github.com/myorg/myrepo",
+      "Generate GitHub setup guide for my repo",
+      "Configure GitHub integration"
+    ]
+  },
+  "negative_cases": [
+    "",
+    "asdfghjkl",
+    "do something",
+    "What's the weather?",
+    "run tests and also cancel them",
+    "submit to cloud",
+    "get results for abc",
+    "wait but don't wait",
+    "analyze",
+    "analyser le code"
+  ],
+  "disambiguation_cases": [
+    {
+      "input": "Run something",
+      "expected_matches": ["_codex_local_run", "_codex_cloud_submit"],
+      "should_disambiguate": true
+    },
+    {
+      "input": "Check status",
+      "expected_matches": ["_codex_local_status", "_codex_cloud_status"],
+      "should_disambiguate": true
+    },
+    {
+      "input": "Get results",
+      "expected_matches": ["_codex_local_results", "_codex_cloud_results"],
+      "should_disambiguate": true
+    },
+    {
+      "input": "Wait for completion",
+      "expected_matches": ["_codex_local_wait", "_codex_cloud_wait"],
+      "should_disambiguate": true
+    },
+    {
+      "input": "Cancel task",
+      "expected_matches": ["_codex_local_cancel", "_codex_cloud_cancel"],
+      "should_disambiguate": true
+    }
+  ],
+  "parameter_extraction": [
+    {
+      "input": "Get results for T-local-abc123",
+      "expected_params": {
+        "task_id": "T-local-abc123"
+      }
+    },
+    {
+      "input": "Resume thread_xyz789",
+      "expected_params": {
+        "threadId": "xyz789"
+      }
+    },
+    {
+      "input": "Set up GitHub for https://github.com/myorg/myrepo",
+      "expected_params": {
+        "repoUrl": "https://github.com/myorg/myrepo"
+      }
+    },
+    {
+      "input": "Submit to env_illustrations",
+      "expected_params": {
+        "envId": "env_illustrations"
+      }
+    }
+  ]
+}

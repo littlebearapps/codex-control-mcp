@@ -4,7 +4,7 @@
  * Shows both real-time process state AND persistent task history.
  * Consolidates codex_cli_status and codex_local_status into one tool.
  */
-import { localTaskRegistry } from '../state/local_task_registry.js';
+import { globalTaskRegistry } from '../state/task_registry.js';
 export class LocalStatusTool {
     processManager;
     constructor(processManager) {
@@ -38,8 +38,10 @@ export class LocalStatusTool {
         // SECTION 2: Task Registry (Persistent)
         // ========================================
         message += `### Task Registry (Persistent)\n\n`;
-        const allTasksInWorkingDir = localTaskRegistry.getAllTasks(workingDir);
-        const tasks = showAll ? localTaskRegistry.getAllTasks() : allTasksInWorkingDir;
+        const tasks = globalTaskRegistry.queryTasks({
+            origin: 'local',
+            workingDir: showAll ? undefined : workingDir
+        });
         if (tasks.length === 0) {
             message += showAll
                 ? `No tasks found in registry.\n\n`
@@ -47,7 +49,7 @@ export class LocalStatusTool {
         }
         else {
             message += `**Working Dir**: ${workingDir}\n\n`;
-            const runningTasks = tasks.filter((t) => t.status === 'running');
+            const runningTasks = tasks.filter((t) => t.status === 'working');
             const completedTasks = tasks.filter((t) => t.status === 'completed').slice(-10); // Last 10
             const failedTasks = tasks.filter((t) => t.status === 'failed').slice(-5); // Last 5
             message += `**Running**: ${runningTasks.length}\n`;
@@ -57,9 +59,9 @@ export class LocalStatusTool {
             if (runningTasks.length > 0) {
                 message += `#### 🔄 Running Tasks\n\n`;
                 for (const task of runningTasks) {
-                    const elapsed = Math.floor((Date.now() - new Date(task.submittedAt).getTime()) / 1000);
-                    message += `**${task.taskId}**:\n`;
-                    message += `- Task: ${task.task.substring(0, 80)}${task.task.length > 80 ? '...' : ''}\n`;
+                    const elapsed = Math.floor((Date.now() - task.createdAt) / 1000);
+                    message += `**${task.id}**:\n`;
+                    message += `- Task: ${task.instruction.substring(0, 80)}${task.instruction.length > 80 ? '...' : ''}\n`;
                     message += `- Mode: ${task.mode || 'N/A'}\n`;
                     message += `- Elapsed: ${elapsed}s ago\n`;
                     message += '\n';
@@ -69,8 +71,8 @@ export class LocalStatusTool {
             if (completedTasks.length > 0) {
                 message += `#### ✅ Recently Completed\n\n`;
                 for (const task of completedTasks) {
-                    const ago = this.formatTimeAgo(new Date(task.submittedAt));
-                    message += `- **${task.taskId}**: ${task.task.substring(0, 60)}${task.task.length > 60 ? '...' : ''} (${ago})\n`;
+                    const ago = this.formatTimeAgo(new Date(task.createdAt));
+                    message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? '...' : ''} (${ago})\n`;
                 }
                 message += '\n';
             }
@@ -78,8 +80,8 @@ export class LocalStatusTool {
             if (failedTasks.length > 0) {
                 message += `#### ❌ Recent Failures\n\n`;
                 for (const task of failedTasks) {
-                    const ago = this.formatTimeAgo(new Date(task.submittedAt));
-                    message += `- **${task.taskId}**: ${task.task.substring(0, 60)}${task.task.length > 60 ? '...' : ''} (${ago})\n`;
+                    const ago = this.formatTimeAgo(new Date(task.createdAt));
+                    message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? '...' : ''} (${ago})\n`;
                     if (task.error) {
                         message += `  Error: ${task.error.substring(0, 100)}\n`;
                     }

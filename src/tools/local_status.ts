@@ -6,8 +6,8 @@
  */
 
 import { ProcessManager } from '../executor/process_manager.js';
-import { localTaskRegistry } from '../state/local_task_registry.js';
-import { LocalTask } from '../state/local_task_registry.js';
+import { globalTaskRegistry } from '../state/task_registry.js';
+import type { Task } from '../state/task_registry.js';
 
 export interface LocalStatusToolInput {
   workingDir?: string;
@@ -63,8 +63,10 @@ export class LocalStatusTool {
     // ========================================
     message += `### Task Registry (Persistent)\n\n`;
 
-    const allTasksInWorkingDir = localTaskRegistry.getAllTasks(workingDir);
-    const tasks = showAll ? localTaskRegistry.getAllTasks() : allTasksInWorkingDir;
+    const tasks = globalTaskRegistry.queryTasks({
+      origin: 'local',
+      workingDir: showAll ? undefined : workingDir
+    });
 
     if (tasks.length === 0) {
       message += showAll
@@ -73,21 +75,21 @@ export class LocalStatusTool {
     } else {
       message += `**Working Dir**: ${workingDir}\n\n`;
 
-      const runningTasks = tasks.filter((t: LocalTask) => t.status === 'running');
-      const completedTasks = tasks.filter((t: LocalTask) => t.status === 'completed').slice(-10); // Last 10
-      const failedTasks = tasks.filter((t: LocalTask) => t.status === 'failed').slice(-5); // Last 5
+      const runningTasks = tasks.filter((t: Task) => t.status === 'working');
+      const completedTasks = tasks.filter((t: Task) => t.status === 'completed').slice(-10); // Last 10
+      const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5); // Last 5
 
       message += `**Running**: ${runningTasks.length}\n`;
-      message += `**Completed**: ${tasks.filter((t: LocalTask) => t.status === 'completed').length} (showing last ${Math.min(completedTasks.length, 10)})\n`;
-      message += `**Failed**: ${tasks.filter((t: LocalTask) => t.status === 'failed').length} (showing last ${Math.min(failedTasks.length, 5)})\n\n`;
+      message += `**Completed**: ${tasks.filter((t: Task) => t.status === 'completed').length} (showing last ${Math.min(completedTasks.length, 10)})\n`;
+      message += `**Failed**: ${tasks.filter((t: Task) => t.status === 'failed').length} (showing last ${Math.min(failedTasks.length, 5)})\n\n`;
 
       // Running tasks
       if (runningTasks.length > 0) {
         message += `#### 🔄 Running Tasks\n\n`;
         for (const task of runningTasks) {
-          const elapsed = Math.floor((Date.now() - new Date(task.submittedAt).getTime()) / 1000);
-          message += `**${task.taskId}**:\n`;
-          message += `- Task: ${task.task.substring(0, 80)}${task.task.length > 80 ? '...' : ''}\n`;
+          const elapsed = Math.floor((Date.now() - task.createdAt) / 1000);
+          message += `**${task.id}**:\n`;
+          message += `- Task: ${task.instruction.substring(0, 80)}${task.instruction.length > 80 ? '...' : ''}\n`;
           message += `- Mode: ${task.mode || 'N/A'}\n`;
           message += `- Elapsed: ${elapsed}s ago\n`;
           message += '\n';
@@ -98,8 +100,8 @@ export class LocalStatusTool {
       if (completedTasks.length > 0) {
         message += `#### ✅ Recently Completed\n\n`;
         for (const task of completedTasks) {
-          const ago = this.formatTimeAgo(new Date(task.submittedAt));
-          message += `- **${task.taskId}**: ${task.task.substring(0, 60)}${task.task.length > 60 ? '...' : ''} (${ago})\n`;
+          const ago = this.formatTimeAgo(new Date(task.createdAt));
+          message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? '...' : ''} (${ago})\n`;
         }
         message += '\n';
       }
@@ -108,8 +110,8 @@ export class LocalStatusTool {
       if (failedTasks.length > 0) {
         message += `#### ❌ Recent Failures\n\n`;
         for (const task of failedTasks) {
-          const ago = this.formatTimeAgo(new Date(task.submittedAt));
-          message += `- **${task.taskId}**: ${task.task.substring(0, 60)}${task.task.length > 60 ? '...' : ''} (${ago})\n`;
+          const ago = this.formatTimeAgo(new Date(task.createdAt));
+          message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? '...' : ''} (${ago})\n`;
           if (task.error) {
             message += `  Error: ${task.error.substring(0, 100)}\n`;
           }

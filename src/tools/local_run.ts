@@ -9,7 +9,7 @@ import { ProcessManager, CodexProcessOptions } from '../executor/process_manager
 import { ErrorMapper } from '../executor/error_mapper.js';
 import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
-import { localTaskRegistry } from '../state/local_task_registry.js';
+import { globalTaskRegistry } from '../state/task_registry.js';
 
 export interface LocalRunToolInput {
   task: string;
@@ -68,6 +68,7 @@ export class LocalRunTool {
       model: input.model,
       outputSchema: input.outputSchema,
       workingDir: input.workingDir,
+      confirm: input.confirm,
     });
 
     if (!validation.valid) {
@@ -96,22 +97,45 @@ export class LocalRunTool {
     try {
       // ASYNC MODE: Return immediately with task ID
       if (input.async) {
-        const taskId = `local-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-        const promise = this.processManager.execute(options);
-
-        // Register task for status tracking
-        localTaskRegistry.registerTask(taskId, input.task, promise, {
+        // Register task in unified SQLite registry BEFORE execution
+        const registeredTask = globalTaskRegistry.registerTask({
+          origin: 'local',
+          instruction: input.task,
+          workingDir: input.workingDir || process.cwd(),
           mode: actualMode,
           model: input.model,
-          workingDir: input.workingDir,
         });
+
+        const taskId = registeredTask.id;
+
+        // Update status to 'working'
+        globalTaskRegistry.updateStatus(taskId, 'working');
+
+        // Execute in background and update registry on completion
+        (async () => {
+          try {
+            const result = await this.processManager.execute(options);
+
+            // Update registry with success
+            globalTaskRegistry.updateTask(taskId, {
+              status: 'completed',
+              result: JSON.stringify(result),
+            });
+          } catch (error) {
+            // Update registry with failure
+            globalTaskRegistry.updateTask(taskId, {
+              status: 'failed',
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        })();
 
         const modeLabel = mode === 'preview' ? 'preview (read-only)' : mode;
         return {
           content: [
             {
               type: 'text',
-              text: `✅ Codex Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${input.task}\n\n**Mode**: ${modeLabel}\n\n**Status**: Running in background\n\n💡 Use \`codex_status\` to check progress and \`codex_local_results\` to get results when complete.`,
+              text: `✅ Codex Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${input.task}\n\n**Mode**: ${modeLabel}\n\n**Status**: Running in background\n\n💡 **Check Progress**:\n- Use \`_codex_local_wait\` to wait for completion: \`{ "task_id": "${taskId}" }\`\n- Use \`_codex_local_status\` to check status\n- Use \`_codex_local_results\` with task ID to get results when complete\n- Use \`_codex_local_cancel\` to cancel: \`{ "task_id": "${taskId}" }\`\n\n**Note**: Task tracked in unified SQLite registry.`,
             },
           ],
         };

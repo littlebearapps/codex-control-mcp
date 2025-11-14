@@ -3,12 +3,11 @@
  *
  * Retrieve results from completed async local Codex tasks.
  */
-import { localTaskRegistry } from '../state/local_task_registry.js';
-import { ErrorMapper } from '../executor/error_mapper.js';
+import { globalTaskRegistry } from '../state/task_registry.js';
 import { globalRedactor } from '../security/redactor.js';
 export class LocalResultsTool {
     async execute(input) {
-        const task = localTaskRegistry.getTask(input.taskId);
+        const task = globalTaskRegistry.getTask(input.taskId);
         if (!task) {
             return {
                 content: [
@@ -21,12 +20,12 @@ export class LocalResultsTool {
             };
         }
         // Check if still running
-        if (task.status === 'running') {
+        if (task.status === 'working') {
             return {
                 content: [
                     {
                         type: 'text',
-                        text: `⏳ Task Still Running\n\n**Task ID**: \`${input.taskId}\`\n\n**Task**: ${task.task}\n\n**Started**: ${new Date(task.submittedAt).toLocaleString()}\n\n💡 Check back later with \`codex_local_status\` or wait for completion.`,
+                        text: `⏳ Task Still Running\n\n**Task ID**: \`${input.taskId}\`\n\n**Task**: ${task.instruction}\n\n**Started**: ${new Date(task.createdAt).toLocaleString()}\n\n💡 Check back later with \`_codex_local_status\` or wait for completion.`,
                     },
                 ],
             };
@@ -37,15 +36,15 @@ export class LocalResultsTool {
                 content: [
                     {
                         type: 'text',
-                        text: `❌ Task Failed\n\n**Task ID**: \`${input.taskId}\`\n\n**Error**: ${task.error || 'Unknown error'}\n\n**Task**: ${task.task}`,
+                        text: `❌ Task Failed\n\n**Task ID**: \`${input.taskId}\`\n\n**Error**: ${task.error || 'Unknown error'}\n\n**Task**: ${task.instruction}`,
                     },
                 ],
                 isError: true,
             };
         }
         // Task completed - return results
-        const result = task.result;
-        if (!result) {
+        const resultStr = task.result;
+        if (!resultStr) {
             return {
                 content: [
                     {
@@ -56,48 +55,42 @@ export class LocalResultsTool {
                 isError: true,
             };
         }
-        // Redact secrets from output
-        const redactedOutput = globalRedactor.redactOutput({
-            stdout: result.stdout,
-            stderr: result.stderr,
-        });
-        // Extract meaningful information from events
-        const summary = ErrorMapper.extractSummary(result.events);
-        const fileChanges = ErrorMapper.extractFileChanges(result.events);
-        const commands = ErrorMapper.extractCommands(result.events);
-        // Build result message
-        let message = `✅ Codex Task Completed\n\n`;
+        // Parse result JSON from SQLite registry
+        let resultData;
+        try {
+            resultData = JSON.parse(resultStr);
+        }
+        catch (error) {
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: `❌ Invalid Result Format\n\n**Task ID**: \`${input.taskId}\`\n\nCould not parse task result.`,
+                    },
+                ],
+                isError: true,
+            };
+        }
+        // Build result message for SDK execution
+        let message = `✅ Codex SDK Task Completed\n\n`;
         message += `**Task ID**: \`${input.taskId}\`\n\n`;
-        message += `**Summary**: ${summary}\n\n`;
-        if (fileChanges.length > 0) {
-            message += `**File Changes** (${fileChanges.length}):\n`;
-            for (const change of fileChanges) {
-                message += `- ${change.operation}: \`${change.path}\`\n`;
-            }
-            message += '\n';
+        message += `**Task**: ${task.instruction}\n\n`;
+        if (resultData.threadId) {
+            message += `**Thread ID**: \`${resultData.threadId}\`\n\n`;
+            message += `💡 Use \`_codex_local_resume\` with this thread ID to continue work.\n\n`;
         }
-        if (commands.length > 0) {
-            message += `**Commands Executed** (${commands.length}):\n`;
-            for (const cmd of commands) {
-                message += `- \`${cmd.command}\` (exit ${cmd.exitCode})\n`;
-            }
-            message += '\n';
-        }
-        message += `**Events**: ${result.events.length} events captured\n`;
-        message += `**Exit Code**: ${result.exitCode}\n`;
-        // Include Codex output (analysis, explanations, etc.)
-        if (redactedOutput.stdout.trim()) {
-            const maxStdoutLength = 10000; // Prevent huge responses
-            const truncatedStdout = redactedOutput.stdout.substring(0, maxStdoutLength);
-            const wasTruncated = redactedOutput.stdout.length > maxStdoutLength;
-            message += `\n**Codex Output**:\n\`\`\`\n${truncatedStdout}\n\`\`\`\n`;
+        message += `**Status**: ${resultData.success ? '✅ Success' : '❌ Failed'}\n\n`;
+        message += `**Events Captured**: ${resultData.eventCount || 0}\n\n`;
+        // Include Codex output
+        if (resultData.finalOutput) {
+            const output = globalRedactor.redact(resultData.finalOutput);
+            const maxLength = 10000;
+            const truncated = output.substring(0, maxLength);
+            const wasTruncated = output.length > maxLength;
+            message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
             if (wasTruncated) {
-                message += `\n*(Output truncated - showing first ${maxStdoutLength} characters)*\n`;
+                message += `\n*(Output truncated - showing first ${maxLength} characters)*\n`;
             }
-        }
-        // Include stderr if present (warnings, debug info)
-        if (redactedOutput.stderr.trim()) {
-            message += `\n**Warnings/Debug Info**:\n\`\`\`\n${redactedOutput.stderr.substring(0, 1000)}\n\`\`\`\n`;
         }
         return {
             content: [

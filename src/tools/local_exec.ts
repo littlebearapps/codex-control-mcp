@@ -1,7 +1,6 @@
 import { Codex } from '@openai/codex-sdk';
 import { z } from 'zod';
-import { localTaskRegistry } from '../state/local_task_registry.js';
-import { CodexProcessResult } from '../executor/process_manager.js';
+import { globalTaskRegistry } from '../state/task_registry.js';
 
 const LocalExecInputSchema = z.object({
   task: z.string().describe('The task to execute locally'),
@@ -122,11 +121,24 @@ export class LocalExecTool {
       console.error('[LocalExec] Running task with options:', runOptions);
       console.error('[LocalExec] *** STARTING ASYNC EXECUTION (NON-BLOCKING) ***');
 
-      // Generate task ID for tracking
-      const taskId = `sdk-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      // Register task in unified SQLite registry BEFORE execution
+      const registeredTask = globalTaskRegistry.registerTask({
+        origin: 'local',
+        instruction: validated.task,
+        workingDir: validated.workingDir || process.cwd(),
+        mode: validated.mode,
+        model: validated.model,
+        threadId: thread.id || undefined, // Will be updated once available
+      });
 
-      // Create promise wrapper for SDK execution
-      const executionPromise = new Promise<CodexProcessResult>(async (resolve, reject) => {
+      const taskId = registeredTask.id;
+      console.error('[LocalExec] Registered task in SQLite registry:', taskId);
+
+      // Update status to 'working' immediately
+      globalTaskRegistry.updateStatus(taskId, 'working');
+
+      // Execute in background (fire and forget - updates registry on completion)
+      (async () => {
         try {
           const { events } = await thread.runStreamed(validated.task, runOptions);
 
@@ -159,33 +171,36 @@ export class LocalExecTool {
 
           console.error(`[LocalExec:${taskId}] ✅ Execution complete, ${eventCount} events, thread: ${threadId}`);
 
-          resolve({
-            success: true,
-            stdout: finalOutput || `SDK execution complete (${eventCount} events, thread: ${threadId})`,
-            stderr: '',
-            exitCode: 0,
-            signal: null,
-            events: eventLog,
+          // Update SQLite registry with success
+          globalTaskRegistry.updateTask(taskId, {
+            status: 'completed',
+            threadId: threadId,
+            result: JSON.stringify({
+              success: true,
+              eventCount,
+              threadId,
+              finalOutput: finalOutput || `SDK execution complete (${eventCount} events)`,
+            }),
           });
         } catch (error) {
           console.error(`[LocalExec:${taskId}] ❌ Error:`, error);
-          reject(error);
+
+          // Update SQLite registry with failure
+          globalTaskRegistry.updateTask(taskId, {
+            status: 'failed',
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
-      });
+      })(); // Execute immediately in background
 
-      // Register task in registry for status tracking
-      localTaskRegistry.registerTask(taskId, validated.task, executionPromise, {
-        mode: validated.mode,
-        model: validated.model,
-        workingDir: validated.workingDir,
-      });
+      // Task is now tracked in unified SQLite registry
 
-      // Return task ID immediately (non-blocking)
+      // Return unified registry task ID immediately (non-blocking)
       const mcpResponse = {
         content: [
           {
             type: 'text',
-            text: `✅ Codex SDK Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Working Directory**: ${validated.workingDir || process.cwd()}\n\n**Status**: Running in background\n\n💡 **Check Progress**:\n- Use \`codex_local_status\` to check status\n- Use \`codex_local_results\` with task ID to get results when complete\n- Thread data persists in \`~/.codex/sessions/\` for resumption\n\n**Note**: SDK execution continues in background. Results will include thread ID for use with \`codex_local_resume\`.`,
+            text: `✅ Codex SDK Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Working Directory**: ${validated.workingDir || process.cwd()}\n\n**Status**: Running in background\n\n💡 **Check Progress**:\n- Use \`_codex_local_wait\` to wait for completion: \`{ "task_id": "${taskId}" }\`\n- Use \`_codex_local_status\` to check status\n- Use \`_codex_local_results\` with task ID to get results when complete\n- Use \`_codex_local_cancel\` to cancel: \`{ "task_id": "${taskId}" }\`\n\n**Note**: Task tracked in unified SQLite registry. Thread data persists in \`~/.codex/sessions/\` for resumption with \`_codex_local_resume\`.`,
           },
         ],
       };
