@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Codex Control MCP Server
+ * MCP Delegator
  *
- * MCP server for programmatic control of OpenAI Codex via Claude Code.
- * Provides tools for executing, planning, and applying Codex tasks.
+ * Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more.
+ * Provides 14 hidden primitives for Codex operations (local SDK + Cloud) with async execution.
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -22,16 +22,17 @@ import { LocalCancelTool } from './tools/local_cancel.js';
 import { CloudWaitTool } from './tools/cloud_wait.js';
 import { CloudCancelTool } from './tools/cloud_cancel.js';
 import { templates } from './resources/environment_templates.js';
+import { globalLogger } from './utils/logger.js';
 /**
  * Server Configuration
  */
 const MAX_CONCURRENCY = parseInt(process.env.CODEX_MAX_CONCURRENCY || '2', 10);
-const SERVER_NAME = 'codex-control';
-const SERVER_VERSION = '3.0.1';
+const SERVER_NAME = 'mcp-delegator';
+const SERVER_VERSION = '3.2.0';
 /**
  * Main Server Class
  */
-class CodexControlServer {
+class MCPDelegatorServer {
     server;
     processManager;
     // Hidden primitive tools
@@ -111,55 +112,138 @@ class CodexControlServer {
         // Handle tool calls
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name, arguments: args } = request.params;
+            // Extract working directory for logging context
+            // Note: working_dir is rejected by validation below, only workingDir is accepted
+            const workingDir = args?.workingDir || process.cwd();
+            // Log tool start
+            globalLogger.toolStart(name, args, workingDir);
+            // Strict parameter validation - reject snake_case variants with helpful errors
+            const invalidParams = {
+                working_dir: 'workingDir',
+                skip_git_repo_check: 'skipGitRepoCheck',
+                env_policy: 'envPolicy',
+                env_allow_list: 'envAllowList',
+                output_schema: 'outputSchema',
+            };
+            // Exception: task_id is VALID for wait/results/cancel tools
+            const taskIdTools = [
+                '_codex_local_results',
+                '_codex_local_wait',
+                '_codex_local_cancel',
+                '_codex_cloud_results',
+                '_codex_cloud_wait',
+                '_codex_cloud_cancel',
+            ];
+            // For non-task-id tools, reject task_id (should use taskId instead)
+            if (!taskIdTools.includes(name) && args.task_id !== undefined) {
+                invalidParams.task_id = 'taskId';
+            }
+            // Check for invalid parameters
+            for (const [wrong, correct] of Object.entries(invalidParams)) {
+                if (args[wrong] !== undefined) {
+                    const errorMessage = `❌ Parameter Error\n\nUnknown parameter '${wrong}'.\n\n💡 Did you mean '${correct}'?\n\nCheck .codex-errors.log for details.`;
+                    globalLogger.error('Invalid parameter used', {
+                        tool: name,
+                        wrongParam: wrong,
+                        correctParam: correct,
+                        allParams: args ? Object.keys(args) : [],
+                    }, workingDir);
+                    return {
+                        content: [{
+                                type: 'text',
+                                text: errorMessage,
+                            }],
+                        isError: true,
+                    };
+                }
+            }
             try {
+                let result;
                 switch (name) {
                     // Hidden primitive tools (14 tools with _ prefix)
                     case '_codex_local_run':
-                        return await this.localRunTool.execute(args);
+                        result = await this.localRunTool.execute(args);
+                        break;
                     case '_codex_local_status':
-                        return await this.localStatusTool.execute(args);
+                        result = await this.localStatusTool.execute(args);
+                        break;
                     case '_codex_local_exec':
-                        return await this.localExecTool.execute(args);
+                        result = await this.localExecTool.execute(args);
+                        break;
                     case '_codex_local_resume':
-                        return await this.localResumeTool.execute(args);
+                        result = await this.localResumeTool.execute(args);
+                        break;
                     case '_codex_local_results':
-                        return await this.localResultsTool.execute(args);
+                        result = await this.localResultsTool.execute(args);
+                        break;
                     case '_codex_local_wait':
-                        return await this.localWaitTool.execute(args);
+                        result = await this.localWaitTool.execute(args);
+                        break;
                     case '_codex_local_cancel':
-                        return await this.localCancelTool.execute(args);
+                        result = await this.localCancelTool.execute(args);
+                        break;
                     case '_codex_cloud_submit':
-                        return await this.cloudSubmitTool.execute(args);
+                        result = await this.cloudSubmitTool.execute(args);
+                        break;
                     case '_codex_cloud_status':
-                        return await this.cloudStatusTool.execute(args);
+                        result = await this.cloudStatusTool.execute(args);
+                        break;
                     case '_codex_cloud_results':
-                        return await this.cloudResultsTool.execute(args);
+                        result = await this.cloudResultsTool.execute(args);
+                        break;
                     case '_codex_cloud_wait':
-                        return await this.cloudWaitTool.execute(args);
+                        result = await this.cloudWaitTool.execute(args);
+                        break;
                     case '_codex_cloud_cancel':
-                        return await this.cloudCancelTool.execute(args);
+                        result = await this.cloudCancelTool.execute(args);
+                        break;
                     case '_codex_cloud_list_environments':
-                        return await this.listEnvironmentsTool.execute();
+                        result = await this.listEnvironmentsTool.execute();
+                        break;
                     case '_codex_cloud_github_setup':
-                        return await this.githubSetupTool.execute(args);
+                        result = await this.githubSetupTool.execute(args);
+                        break;
                     default:
+                        globalLogger.error(`Unknown tool: ${name}`, { args }, workingDir);
                         return {
                             content: [
                                 {
                                     type: 'text',
-                                    text: `❌ Unknown tool: ${name}`,
+                                    text: `❌ Unknown tool: ${name}\n\nCheck .codex-errors.log for details.`,
                                 },
                             ],
                             isError: true,
                         };
                 }
+                // CRITICAL: Ensure result is never undefined
+                if (!result || !result.content) {
+                    globalLogger.error('Tool returned invalid result', {
+                        tool: name,
+                        hasResult: !!result,
+                        hasContent: result?.content !== undefined,
+                    }, workingDir);
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `❌ Internal Error: Tool "${name}" returned no result\n\nThis is a bug in the MCP server. Check .codex-errors.log for details.`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                // Log success
+                globalLogger.toolSuccess(name, result, workingDir);
+                return result;
             }
             catch (error) {
+                // Log failure
+                globalLogger.toolFailure(name, error instanceof Error ? error : String(error), args, workingDir);
                 return {
                     content: [
                         {
                             type: 'text',
-                            text: `❌ Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
+                            text: `❌ Tool execution failed: ${error instanceof Error ? error.message : String(error)}\n\nCheck .codex-errors.log for full stack trace.`,
                         },
                     ],
                     isError: true,
@@ -203,7 +287,7 @@ class CodexControlServer {
      */
     setupShutdown() {
         const shutdown = async () => {
-            console.error('[CodexControl] Shutting down...');
+            console.error('[MCPDelegator] Shutting down...');
             // Kill any running Codex processes
             this.processManager.killAll();
             // Close server
@@ -219,12 +303,12 @@ class CodexControlServer {
     async start() {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
-        console.error(`[CodexControl] Server started successfully via npm link ✅`);
-        console.error(`[CodexControl] Name: ${SERVER_NAME}`);
-        console.error(`[CodexControl] Version: ${SERVER_VERSION}`);
-        console.error(`[CodexControl] Max Concurrency: ${MAX_CONCURRENCY}`);
-        console.error(`[CodexControl] Tools: 14 hidden primitives (all with _ prefix)`);
-        console.error(`[CodexControl] Resources: ${templates.length} environment templates`);
+        console.error(`[MCPDelegator] Server started successfully via npm link ✅`);
+        console.error(`[MCPDelegator] Name: ${SERVER_NAME}`);
+        console.error(`[MCPDelegator] Version: ${SERVER_VERSION}`);
+        console.error(`[MCPDelegator] Max Concurrency: ${MAX_CONCURRENCY}`);
+        console.error(`[MCPDelegator] Tools: 14 Codex primitives (all with _ prefix)`);
+        console.error(`[MCPDelegator] Resources: ${templates.length} environment templates`);
     }
 }
 /**
@@ -232,11 +316,11 @@ class CodexControlServer {
  */
 async function main() {
     try {
-        const server = new CodexControlServer();
+        const server = new MCPDelegatorServer();
         await server.start();
     }
     catch (error) {
-        console.error('[CodexControl] Fatal error:', error);
+        console.error('[MCPDelegator] Fatal error:', error);
         process.exit(1);
     }
 }

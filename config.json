@@ -1,7 +1,7 @@
 {
-  "name": "codex-control",
-  "description": "MCP server for programmatic control of OpenAI Codex",
-  "version": "1.0.0",
+  "name": "mcp-delegator",
+  "description": "Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution",
+  "version": "3.2.0",
   "tools": [
     {
       "name": "codex_run",

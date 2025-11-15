@@ -1,49 +1,60 @@
-# Codex Control MCP Server
+# MCP Delegator
 
-**Version**: 3.0.1
-**Package**: `@littlebearapps/codex-control-mcp`
+**Version**: 3.2.0
+**Package**: `@littlebearapps/mcp-delegator`
 **Status**: ✅ Production Ready - Publish-Ready npm Package
-**Repository**: [github.com/littlebearapps/codex-control-mcp](https://github.com/littlebearapps/codex-control-mcp)
-**Purpose**: 14 hidden primitives for OpenAI Codex operations (local SDK + Cloud) with async support
+**Repository**: [github.com/littlebearapps/mcp-delegator](https://github.com/littlebearapps/mcp-delegator)
+**Purpose**: Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution
 
 ---
 
 ## Overview
 
-The Codex Control MCP Server provides **14 hidden primitive tools** for OpenAI Codex operations. Claude Code's native NLP selects the appropriate primitive based on your natural language instructions.
+**MCP Delegator** enables Claude Code to delegate tasks to multiple AI agents with async execution. Currently supports **14 Codex primitives** with future support for Claude Code (Anthropic Agent SDK) and other agents.
 
-**🚀 v3.0.1 - Production-Ready npm Package**:
-- 📦 **Scoped Package**: `@littlebearapps/codex-control-mcp` ready for npm publish
+**🚀 v3.2.0 - Renamed for Multi-Agent Support**:
+- 🎯 **NEW NAME**: `mcp-delegator` (was codex-control-mcp)
+- 🤖 **Multi-Agent Ready**: Codex + Claude Code (Agent SDK) + future agents
+- 📦 **Scoped Package**: `@littlebearapps/mcp-delegator` ready for npm publish
 - 🔗 **npm link Development**: Instant change propagation via global symlink
 - 🛡️ **Publishing Safety**: Files whitelist, prepublishOnly script, .npmignore
 - 📊 **Structured Metadata**: AI agents get machine-readable test results, errors, suggestions
 - 🎯 **Actionable Guidance**: Error context with specific investigation suggestions
-- ✅ **All Primitives Working**: 14 tools tested and verified (100% functional)
+- ✅ **All Codex Primitives Working**: 14 tools tested and verified (100% functional)
 
-**How It Works**:
+**Delegation Pattern**:
 ```
-User: "Use codex control to run tests"
+User: "Use mcp delegator to run tests"
   ↓
 Claude Code's NLP selects: _codex_local_run
   ↓
-Result returned to user
+Codex executes (async)
+  ↓
+Claude Code continues working
+  ↓
+Result returned when ready
 
-User: "Use codex control to run tests in the cloud"
+User: "Use mcp delegator to run tests in the cloud"
   ↓
 Claude Code's NLP selects: _codex_cloud_submit
   ↓
-Task submitted, ID returned
+Task submitted to Codex Cloud (background)
+  ↓
+Claude Code and user continue working
+  ↓
+Task ID returned immediately
 
-User: "Use codex control to check status of T-local-abc123"
+User: "Use mcp delegator to check status of T-local-abc123"
   ↓
 Claude Code's NLP selects: _codex_local_status
   ↓
 Status returned
 ```
 
-**Pattern**: Users describe what they want naturally → Claude Code selects appropriate primitive → Results returned
+**Pattern**: Claude Code delegates → Agent executes (async) → Claude Code continues → Results when ready
 
-**Previous Milestones**:
+**Version History**:
+- ✅ **v3.2.0 - Renamed to MCP Delegator**: Multi-agent delegation pattern
 - ✅ **v3.0.1 - npm Package Ready**: Scoped package with publishing safety
 - ✅ **v3.0.0 - Unified Interface**: Removed in favor of hidden primitives
 - ✅ **v2.1.0 - Dual Execution**: Local SDK + Cloud execution

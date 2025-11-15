@@ -1,6 +1,8 @@
 import { Codex } from '@openai/codex-sdk';
 import { z } from 'zod';
 import { globalTaskRegistry } from '../state/task_registry.js';
+import { verifyGitOperations, formatGitVerification } from '../utils/git_verifier.js';
+import { ProgressInferenceEngine } from '../executor/progress_inference.js';
 
 const LocalExecInputSchema = z.object({
   task: z.string().describe('The task to execute locally'),
@@ -30,7 +32,16 @@ export class LocalExecTool {
   static getSchema() {
     return {
       name: '_codex_local_exec',
-      description: `Advanced local execution with real-time progress - like having a conversation with Codex. Unlike the simple one-shot _codex_local_run, this gives you a thread ID that preserves context for follow-up questions. Think of it as opening a chat window vs sending a single message. Use this when: you want iterative development, need to ask follow-ups, or want to see live progress updates. The magic: 45-93% token cache rates on resumed threads = huge cost savings. Three modes: 'read-only' (safe, just analysis), 'workspace-write' (direct file changes in git repos), 'danger-full-access' (unrestricted - use with extreme caution). Returns: thread ID (use with _codex_local_resume), real-time events, final output, token usage. Perfect for: "analyze this, then if you find bugs, fix them" workflows. Avoid for: simple one-off tasks (use _codex_local_run), or tasks over 30 minutes (use _codex_cloud_submit).`,
+      description: `Advanced local execution with real-time progress - like having a conversation with Codex. Unlike the simple one-shot _codex_local_run, this gives you a thread ID that preserves context for follow-up questions. Think of it as opening a chat window vs sending a single message. Use this when: you want iterative development, need to ask follow-ups, or want to see live progress updates. The magic: 45-93% token cache rates on resumed threads = huge cost savings.
+
+🔒 **SANDBOX MODES** (CRITICAL - Controls file system access):
+• 'read-only' (DEFAULT): Analysis only, CANNOT create/modify files
+• 'workspace-write': CAN create/modify files, initialize git repos, write code
+• 'danger-full-access': Unrestricted access (use with extreme caution)
+
+⚠️ **IMPORTANT**: If you need to CREATE FILES, WRITE CODE, or INITIALIZE GIT REPOSITORIES, you MUST use mode='workspace-write' or 'danger-full-access'. The default 'read-only' mode will FAIL for any write operations.
+
+Returns: thread ID (use with _codex_local_resume), real-time events, final output, token usage. Perfect for: "analyze this, then if you find bugs, fix them" workflows. Avoid for: simple one-off tasks (use _codex_local_run), or tasks over 30 minutes (use _codex_cloud_submit).`,
       inputSchema: {
         type: 'object',
         properties: {
@@ -45,7 +56,7 @@ export class LocalExecTool {
           mode: {
             type: 'string',
             enum: ['read-only', 'workspace-write', 'danger-full-access'],
-            description: 'Execution mode: read-only (safe), workspace-write (can edit files), danger-full-access (unrestricted)',
+            description: 'Sandbox mode - controls file system access. read-only (DEFAULT - analysis only, CANNOT write files), workspace-write (CAN create/modify files, required for git init, file creation, code writing), danger-full-access (unrestricted access). ⚠️ Use workspace-write when creating files or repos!',
             default: 'read-only',
           },
           outputSchema: {
@@ -95,6 +106,8 @@ export class LocalExecTool {
       // Start thread with configuration
       const threadOptions: any = {
         skipGitRepoCheck: validated.skipGitRepoCheck,
+        sandboxMode: validated.mode,  // ✅ FIX: Pass sandbox mode in ThreadOptions
+        approvalPolicy: 'never',       // ✅ FIX: Enable automatic execution without prompts
       };
 
       if (validated.workingDir) {
@@ -109,10 +122,8 @@ export class LocalExecTool {
       const thread = codex.startThread(threadOptions);
       console.error('[LocalExec] Thread started with ID:', thread.id);
 
-      // Prepare run options
-      const runOptions: any = {
-        sandbox: validated.mode,
-      };
+      // Prepare run options (TurnOptions only has outputSchema)
+      const runOptions: any = {};
 
       if (validated.outputSchema) {
         runOptions.outputSchema = validated.outputSchema;
@@ -147,6 +158,9 @@ export class LocalExecTool {
           const eventLog: any[] = [];
           let finalOutput = '';
 
+          // Initialize progress tracking
+          const progressEngine = new ProgressInferenceEngine();
+
           console.error(`[LocalExec:${taskId}] Background execution started`);
 
           for await (const event of events) {
@@ -162,24 +176,76 @@ export class LocalExecTool {
             console.error(`[LocalExec:${taskId}] Event ${eventCount}:`, event.type);
 
             // Capture final output from various event types
-            if (event.type === 'turn.completed') {
-              finalOutput += `Turn completed\n`;
-            } else if (event.type === 'item.completed' && (event as any).output) {
-              finalOutput += JSON.stringify((event as any).output) + '\n';
+            if (event.type === 'item.completed') {
+              const item = (event as any).item;
+
+              // Capture command execution output (the actual work!)
+              if (item?.type === 'command_execution' && item.aggregated_output) {
+                finalOutput += item.aggregated_output + '\n';
+                console.error(`[LocalExec:${taskId}] Captured command output: ${item.aggregated_output.substring(0, 100)}...`);
+              }
+
+              // Capture Codex's reasoning/messages
+              else if (item?.type === 'agent_message' && item.text) {
+                finalOutput += item.text + '\n';
+                console.error(`[LocalExec:${taskId}] Captured agent message: ${item.text.substring(0, 100)}...`);
+              }
+            } else if (event.type === 'turn.completed') {
+              // Keep for completion marker
+              console.error(`[LocalExec:${taskId}] Turn completed`);
+            }
+
+            // Track progress for real-time visibility
+            progressEngine.processEvent(event);
+
+            // Update task registry with progress every 10 events (rate limiting)
+            if (eventCount % 10 === 0) {
+              const progress = progressEngine.getProgress();
+              globalTaskRegistry.updateProgress(taskId, progress);
+              console.error(`[LocalExec:${taskId}] Progress: ${progress.progressPercentage}% (${progress.currentAction || 'processing'})`);
             }
           }
 
           console.error(`[LocalExec:${taskId}] ✅ Execution complete, ${eventCount} events, thread: ${threadId}`);
 
-          // Update SQLite registry with success
+          // Run git verification to check if git operations actually succeeded
+          console.error(`[LocalExec:${taskId}] Running git verification...`);
+          const gitVerification = await verifyGitOperations(
+            validated.workingDir || process.cwd(),
+            validated.task
+          );
+
+          // Determine final status based on git verification
+          let finalStatus: 'completed' | 'completed_with_warnings' | 'completed_with_errors' = 'completed';
+          if (gitVerification.errors.length > 0) {
+            finalStatus = 'completed_with_errors';
+            console.error(`[LocalExec:${taskId}] ⚠️ Git verification found ${gitVerification.errors.length} errors`);
+          } else if (gitVerification.warnings.length > 0) {
+            finalStatus = 'completed_with_warnings';
+            console.error(`[LocalExec:${taskId}] ⚠️ Git verification found ${gitVerification.warnings.length} warnings`);
+          }
+
+          // Format verification results for user
+          const verificationOutput = formatGitVerification(gitVerification);
+
+          // Update SQLite registry with success + verification results
           globalTaskRegistry.updateTask(taskId, {
-            status: 'completed',
+            status: finalStatus,
             threadId: threadId,
             result: JSON.stringify({
-              success: true,
+              success: gitVerification.errors.length === 0,
               eventCount,
               threadId,
               finalOutput: finalOutput || `SDK execution complete (${eventCount} events)`,
+              gitVerification: {
+                errors: gitVerification.errors,
+                warnings: gitVerification.warnings,
+                recommendations: gitVerification.recommendations,
+                branchCreated: gitVerification.branchExists,
+                commitCreated: gitVerification.commitExists,
+                filesStaged: gitVerification.filesStaged,
+              },
+              verificationOutput,
             }),
           });
         } catch (error) {

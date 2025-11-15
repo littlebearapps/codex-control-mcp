@@ -83,12 +83,18 @@ export class ProgressInferenceEngine {
       ...Array.from(this.items.values()),
     ];
 
+    // Count completed steps as 1.0, in-progress steps as 0.5
     const completedSteps = allSteps.filter(
       (s) => s.status === 'completed'
     ).length;
+    const inProgressSteps = allSteps.filter(
+      (s) => s.status === 'started'
+    ).length;
     const totalSteps = allSteps.length || 1; // Avoid division by zero
 
-    const progressPercentage = Math.round((completedSteps / totalSteps) * 100);
+    // Calculate progress: completed items = 100%, in-progress = 50%
+    const weightedProgress = completedSteps + (inProgressSteps * 0.5);
+    const progressPercentage = Math.round((weightedProgress / totalSteps) * 100);
 
     // Find current action (last started item or turn)
     let currentAction: string | null = null;
@@ -191,6 +197,13 @@ export class ProgressInferenceEngine {
       description = event.data.description;
     }
 
+    // Increment counters immediately when work starts (not just when it completes)
+    if (itemType === 'file_change') {
+      this.fileChanges++;
+    } else if (itemType === 'command_execution') {
+      this.commandsExecuted++;
+    }
+
     this.items.set(itemId, {
       type: 'item',
       description,
@@ -209,13 +222,7 @@ export class ProgressInferenceEngine {
       existing.status = 'completed';
       existing.timestamp = event.timestamp;
 
-      // Track counters
-      const itemType = getItemType(event);
-      if (itemType === 'file_change') {
-        this.fileChanges++;
-      } else if (itemType === 'command_execution') {
-        this.commandsExecuted++;
-      }
+      // Counters are now incremented in handleItemStarted for real-time updates
     }
   }
 

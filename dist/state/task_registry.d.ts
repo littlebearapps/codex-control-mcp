@@ -13,9 +13,9 @@ import { ProgressSummary } from '../executor/progress_inference.js';
  */
 export type TaskOrigin = 'local' | 'cloud';
 /**
- * Task status (SEP-1391 aligned)
+ * Task status (SEP-1391 aligned + git verification statuses)
  */
-export type TaskStatus = 'pending' | 'working' | 'completed' | 'failed' | 'canceled' | 'unknown';
+export type TaskStatus = 'pending' | 'working' | 'completed' | 'completed_with_warnings' | 'completed_with_errors' | 'failed' | 'canceled' | 'unknown';
 /**
  * Unified task record
  */
@@ -65,6 +65,14 @@ export declare class TaskRegistry {
     private db;
     private dbPath;
     constructor(dbPath?: string);
+    /**
+     * Check and perform schema migrations
+     */
+    private migrateSchema;
+    /**
+     * Restore data from backup table after schema migration
+     */
+    private restoreFromBackup;
     /**
      * Initialize database schema
      */

@@ -1,16 +1,18 @@
 {
   "mcpServers": {
-    "codex-control": {
-      "command": "codex-control-mcp",
+    "mcp-delegator": {
+      "command": "mcp-delegator",
       "env": {
-        "CODEX_MAX_CONCURRENCY": "2"
+        "CODEX_MAX_CONCURRENCY": "2",
+        "CODEX_LOG_FILE": "${PWD}/.codex-errors.log",
+        "CODEX_LOG_LEVEL": "debug"
       }
     },
     "brave-search": {
       "command": "bash",
       "args": [
         "-c",
-        "source ~/bin/kc.sh && source ~/.config/kc/profiles.sh && load_mcp_secrets codex-control main && npx -y @modelcontextprotocol/server-brave-search"
+        "source ~/bin/kc.sh && source ~/.config/kc/profiles.sh && load_mcp_secrets mcp-delegator main && npx -y @modelcontextprotocol/server-brave-search"
       ]
     },
     "context7": {

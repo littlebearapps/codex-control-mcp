@@ -81,6 +81,35 @@ export class LocalResultsTool {
         }
         message += `**Status**: ${resultData.success ? '✅ Success' : '❌ Failed'}\n\n`;
         message += `**Events Captured**: ${resultData.eventCount || 0}\n\n`;
+        // Include git verification results if available
+        if (resultData.verificationOutput) {
+            message += `${resultData.verificationOutput}\n\n`;
+        }
+        else if (resultData.gitVerification) {
+            // Fallback to raw git verification data if formatted output not available
+            const gitV = resultData.gitVerification;
+            if (gitV.errors && gitV.errors.length > 0) {
+                message += `**Git Verification Errors**:\n`;
+                gitV.errors.forEach((err) => {
+                    message += `- ❌ ${err}\n`;
+                });
+                message += `\n`;
+            }
+            if (gitV.warnings && gitV.warnings.length > 0) {
+                message += `**Git Verification Warnings**:\n`;
+                gitV.warnings.forEach((warn) => {
+                    message += `- ⚠️ ${warn}\n`;
+                });
+                message += `\n`;
+            }
+            if (gitV.recommendations && gitV.recommendations.length > 0) {
+                message += `**Recommended Actions**:\n`;
+                gitV.recommendations.forEach((rec, i) => {
+                    message += `${i + 1}. ${rec}\n`;
+                });
+                message += `\n`;
+            }
+        }
         // Include Codex output
         if (resultData.finalOutput) {
             const output = globalRedactor.redact(resultData.finalOutput);

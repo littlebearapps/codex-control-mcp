@@ -1,9 +1,93 @@
 # Changelog
 
-All notable changes to Codex Control MCP will be documented in this file.
+All notable changes to MCP Delegator (formerly Codex Control MCP) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.2.1] - 2025-11-15
+
+### Fixed
+
+**Critical Production Bugs** 🐛
+
+Three production issues identified in Google Platforms Standardization audit have been resolved:
+
+1. **Issue #3 (CRITICAL): Database Constraint Error**
+   - **Problem**: Tasks failing with CHECK constraint error when git verification sets `completed_with_warnings` or `completed_with_errors` status
+   - **Root Cause**: SQL schema missing two status values that existed in TypeScript type
+   - **Fix**: Updated SQL constraint, added automatic schema migration with backup/restore
+   - **Impact**: 100% of tasks with git verification were failing → Now work correctly
+   - **Files**: `src/state/task_registry.ts` (lines 109-141, 146-168, 183, 295)
+   - **Tests**: 5/5 passed (`test-issue-3-fix.ts`)
+
+2. **Issue #1 (HIGH): Git Operations Silent Failure**
+   - **Problem**: Git operations (branch, commit, staging) reported success but didn't execute
+   - **Root Cause**: Codex SDK suppresses stdout/stderr for non-zero exit codes (upstream issue #1367)
+   - **Status**: Already implemented in previous session (`src/utils/git_verifier.ts` - 352 lines)
+   - **Note**: Was blocked from production testing by Issue #3 (now resolved)
+   - **Impact**: 60% of git operations failed silently → Now independently verified with detailed results
+
+3. **Issue #2 (MEDIUM): No Progress Visibility During Execution**
+   - **Problem**: Long-running tasks showed 0% progress for entire duration (15+ minutes), then jumped to 100%
+   - **Root Cause**: Progress calculation only counted completed steps, not in-progress steps
+   - **Fix**: Enhanced progress calculation to count in-progress items as 50% completion; moved file/command counters to update on `item.started` instead of `item.completed`
+   - **Impact**: Users saw 0% for entire task → Now see real-time progress (50% → 67% → 83% → 100%)
+   - **Files**: `src/executor/progress_inference.ts` (lines 86-97, 200-205, 225)
+   - **Tests**: 8/8 passed (`test-issue-2-fix.ts`)
+
+**Test Summary**: 13/13 tests passing (100%)
+
+**Documentation**: See `docs/ISSUE-RESOLUTION-COMPLETE-2025-11-15.md` for complete details
+
+## [3.2.0] - 2025-11-15
+
+### Changed
+
+**Renamed to MCP Delegator** 🎯
+
+This project has been renamed from "Codex Control MCP" to "MCP Delegator" to better reflect its multi-agent delegation pattern.
+
+- **New Package Name**: `@littlebearapps/mcp-delegator` (was `@littlebearapps/codex-control-mcp`)
+- **New Command**: `mcp-delegator` (was `codex-control-mcp`)
+- **Rationale**:
+  - Supports multi-agent delegation pattern (Codex + Claude Code Agent SDK + future agents)
+  - Claude Code delegates tasks to agents (async), continues working on other tasks
+  - Better reflects the architecture and user workflow
+- **Breaking Change**: MCP configurations must be updated to use new command name
+  - Old: `"command": "codex-control-mcp"`
+  - New: `"command": "mcp-delegator"`
+
+**Migration**:
+- Run `./setup-npm-link.sh` to create new global symlink
+- Update `.mcp.json` files to use `mcp-delegator` as command
+- Restart Claude Code in all working directories
+
+**See**:
+- Complete naming analysis: `docs/NAMING-AND-FEATURES-ANALYSIS-2025-11-15.md`
+- Missing features roadmap: `docs/MISSING-CODEX-FEATURES-IMPLEMENTATION-GUIDE.md`
+
+### Added
+
+**Missing Features Analysis**
+
+Identified 6 missing Codex CLI features for future implementation:
+
+**Phase 1 (v3.3.0)** - HIGH Priority:
+- Model selection tools (`_codex_list_models`, `_codex_set_default_model`)
+- Reasoning level control (`_codex_set_reasoning_level`) - 50-90% cost savings potential!
+
+**Phase 2 (v3.4.0)** - MEDIUM Priority:
+- Multimodal support (`_codex_local_run_with_images`)
+- Web search integration (`_codex_local_run_with_search`)
+
+**Phase 3 (v3.5.0)** - MEDIUM Priority:
+- Session commands (`_codex_session_init`, `_codex_session_review`)
+- Configuration profiles (`_codex_list_profiles`, `_codex_set_profile`)
+
+**Documentation**: Complete implementation specifications in `docs/MISSING-CODEX-FEATURES-IMPLEMENTATION-GUIDE.md` (6,700+ lines)
+
+---
 
 ## [2.1.1] - 2025-11-12
 

@@ -30,16 +30,67 @@ export class TaskRegistry {
         this.initializeSchema();
     }
     /**
+     * Check and perform schema migrations
+     */
+    migrateSchema() {
+        // Get current schema version
+        const versionResult = this.db.prepare(`
+      SELECT sql FROM sqlite_master
+      WHERE type='table' AND name='tasks'
+    `).get();
+        if (!versionResult || !versionResult.sql) {
+            // Table doesn't exist yet, no migration needed
+            return;
+        }
+        const currentSchema = versionResult.sql;
+        // Check if schema has old constraint (missing completed_with_warnings/completed_with_errors)
+        const hasOldConstraint = currentSchema.includes("CHECK(status IN ('pending', 'working', 'completed', 'failed', 'canceled', 'unknown'))") ||
+            !currentSchema.includes('completed_with_warnings');
+        if (hasOldConstraint) {
+            console.error('[TaskRegistry] Migrating database schema to add new status values...');
+            // Create backup table
+            this.db.exec('DROP TABLE IF EXISTS tasks_backup');
+            this.db.exec('CREATE TABLE tasks_backup AS SELECT * FROM tasks');
+            // Drop old table
+            this.db.exec('DROP TABLE tasks');
+            // Table will be recreated with new schema in initializeSchema()
+            console.error('[TaskRegistry] Schema migration complete. Old data backed up to tasks_backup table.');
+        }
+    }
+    /**
+     * Restore data from backup table after schema migration
+     */
+    restoreFromBackup() {
+        // Check if backup table exists
+        const backupExists = this.db.prepare(`
+      SELECT name FROM sqlite_master
+      WHERE type='table' AND name='tasks_backup'
+    `).get();
+        if (!backupExists) {
+            return;
+        }
+        console.error('[TaskRegistry] Restoring data from backup...');
+        // Copy data from backup to new table
+        this.db.exec(`
+      INSERT INTO tasks SELECT * FROM tasks_backup
+    `);
+        // Drop backup table
+        this.db.exec('DROP TABLE tasks_backup');
+        console.error('[TaskRegistry] Data restoration complete.');
+    }
+    /**
      * Initialize database schema
      */
     initializeSchema() {
+        // Check for schema migrations before creating table
+        this.migrateSchema();
         this.db.exec(`
       CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
         external_id TEXT,
         alias TEXT,
         origin TEXT NOT NULL CHECK(origin IN ('local', 'cloud')),
-        status TEXT NOT NULL CHECK(status IN ('pending', 'working', 'completed', 'failed', 'canceled', 'unknown')),
+        status TEXT NOT NULL CHECK(status IN ('pending', 'working', 'completed', 'completed_with_warnings', 'completed_with_errors', 'failed', 'canceled', 'unknown')),
         instruction TEXT NOT NULL,
 
         working_dir TEXT,
@@ -72,6 +123,8 @@ export class TaskRegistry {
       CREATE INDEX IF NOT EXISTS idx_user_thread ON tasks(user_id, thread_id, updated_at DESC);
       CREATE INDEX IF NOT EXISTS idx_created_at ON tasks(created_at DESC);
     `);
+        // Restore data from backup if migration occurred
+        this.restoreFromBackup();
     }
     /**
      * Generate a unique task ID
@@ -129,7 +182,7 @@ export class TaskRegistry {
             status,
             updatedAt: now,
         };
-        if (status === 'completed' || status === 'failed' || status === 'canceled') {
+        if (status === 'completed' || status === 'completed_with_warnings' || status === 'completed_with_errors' || status === 'failed' || status === 'canceled') {
             updates.completedAt = now;
         }
         return this.updateTask(taskId, updates);

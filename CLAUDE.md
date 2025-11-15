@@ -1,8 +1,8 @@
-# Codex Control MCP Server - Claude Code Memory
+# MCP Delegator - Claude Code Memory
 
-**Version**: 3.0.1
-**Purpose**: Hidden primitives for OpenAI Codex operations (local + cloud)
-**Status**: ✅ Production Ready - All 14 primitives working
+**Version**: 3.2.0
+**Purpose**: Delegate AI agent tasks to Codex, Claude Code (Agent SDK), and more - with async execution
+**Status**: ✅ Production Ready - All 14 Codex primitives working
 
 ---
 
@@ -24,9 +24,9 @@ See detailed documentation in `quickrefs/`:
 **✅ PRODUCTION READY**: This MCP server uses **npm link** for seamless development and deployment across all Claude Code working directories.
 
 **How It Works**:
-- Global symlink: `/opt/homebrew/bin/codex-control-mcp`
+- Global symlink: `/opt/homebrew/bin/mcp-delegator`
 - Points to: `/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js`
-- All MCP configs use: `"command": "codex-control-mcp"`
+- All MCP configs use: `"command": "mcp-delegator"`
 - Changes propagate automatically after rebuild!
 
 **Development Workflow**:
@@ -340,43 +340,63 @@ npm run build
 
 ---
 
-## Current Focus (2025-11-14)
+## Current Focus (2025-11-15)
 
-- ✅ **v3.0.1 - npm Package Ready + Bug Fixes**
-  - Scoped package name: `@littlebearapps/codex-control-mcp`
-  - npm link deployment: Global symlink for instant change propagation
-  - Publishing safety: Files whitelist, prepublishOnly, .npmignore
-  - Fixed critical bug: `_codex_local_results` parameter consistency
-  - Removed unified tool (was causing intermittent hangs)
-  - All 14 primitives working correctly
-  - See `NPM-PACKAGE-IMPROVEMENTS.md`, `NPM-LINK-SETUP.md`
+- ✅ **v3.2.1 - Critical Production Bug Fixes**
+  - **Fixed Issue #3 (CRITICAL)**: Database constraint error blocking git verification
+    - SQL schema updated to include `completed_with_warnings` and `completed_with_errors`
+    - Automatic schema migration with backup/restore
+    - 5/5 tests passing (`test-issue-3-fix.ts`)
+  - **Fixed Issue #1 (HIGH)**: Git operations silent failure
+    - Already implemented in previous session (352-line git verifier)
+    - Unblocked by Issue #3 fix, ready for production testing
+  - **Fixed Issue #2 (MEDIUM)**: No progress visibility during execution
+    - Enhanced progress calculation (in-progress items = 50% completion)
+    - Real-time file/command counters
+    - 8/8 tests passing (`test-issue-2-fix.ts`)
+  - **Test Summary**: 13/13 tests passing (100%)
+  - **See**: `docs/ISSUE-RESOLUTION-COMPLETE-2025-11-15.md` for complete details
+
+- ✅ **v3.2.0 - Renamed to MCP Delegator**
+  - **NEW NAME**: `@littlebearapps/mcp-delegator` (was codex-control-mcp)
+  - **Rationale**: Supports multi-agent delegation (Codex, Claude Code Agent SDK, future agents)
+  - **Pattern**: Claude Code delegates tasks to Codex (async), continues working on other tasks
+  - npm link updated: Global command is now `mcp-delegator`
+  - MCP configs updated to use new name
+  - All 14 Codex primitives working correctly
+  - See `docs/NAMING-AND-FEATURES-ANALYSIS-2025-11-15.md` for naming research
+
+- ✅ **Missing Features Identified** (v3.3.0+ roadmap):
+  - **Phase 1 (v3.3.0)**: Model Selection + Reasoning Levels (HIGH priority)
+    - `_codex_list_models`, `_codex_set_default_model` - Model discovery/management
+    - `_codex_set_reasoning_level` - GPT-5 thinking control (50-90% cost savings!)
+  - **Phase 2 (v3.4.0)**: Multimodal + Web Search (MEDIUM priority)
+    - `_codex_local_run_with_images` - Image analysis support
+    - `_codex_local_run_with_search` - Web search integration
+  - **Phase 3 (v3.5.0)**: Session Commands + Profiles (MEDIUM priority)
+    - `_codex_session_init`, `_codex_session_review` - Session management
+    - `_codex_list_profiles`, `_codex_set_profile` - Configuration profiles
+  - See `docs/MISSING-CODEX-FEATURES-IMPLEMENTATION-GUIDE.md` for complete specs
 
 - ✅ **npm Package Features**:
-  - **Scoped Name**: `@littlebearapps/codex-control-mcp`
+  - **Scoped Name**: `@littlebearapps/mcp-delegator`
   - **Files Whitelist**: Only ships dist/, quickrefs/, docs, LICENSE
   - **prepublishOnly**: Safety check before publishing
-  - **Enhanced Keywords**: Better npm discoverability (12 keywords)
+  - **Enhanced Keywords**: delegator, multi-agent, async, codex, claude
   - **Repository Metadata**: GitHub integration URLs
   - **MIT License**: Standard open source license
   - **Ready to Publish**: `npm publish --access public`
 
-- ✅ **Architecture** (v3.0.1):
-  - **14 hidden primitives** (all prefixed with `_`)
-  - **Pattern**: Users say "use codex control to run tests" → Claude Code selects primitive
-  - **No unified tool**: Removed in v3.0.1 (was causing intermittent hangs)
+- ✅ **Architecture** (v3.2.0):
+  - **14 hidden Codex primitives** (all prefixed with `_`)
+  - **Pattern**: Users say "use mcp delegator to run tests" → Claude Code selects primitive
+  - **Delegation Workflow**: Claude Code → MCP Delegator → Codex (async) → Claude Code continues
   - **Consistent parameters**: All tools use snake_case (task_id, thread_id, etc.)
   - **Similar to zen MCP**: Claude Code's native NLP handles selection
 
-- ✅ **Comprehensive Testing**:
-  - All 14 primitives tested and verified ✅
-  - npm link deployment validated ✅
-  - Async workflow validated ✅
-  - Parameter bug fix confirmed ✅
-  - Change propagation verified ✅
-  - Documentation: `ASYNC-COMPREHENSIVE-TEST-RESULTS.md`, `NPM-LINK-VERIFICATION-COMPLETE.md`
-
-- 🎯 **Status**: Production-ready, publish-ready npm package
-  - 14 hidden primitives (all working correctly)
+- 🎯 **Status**: v3.2.1 ready for deployment
+  - 14 Codex primitives (all working correctly)
+  - All 3 production bugs fixed and tested (13/13 tests passing)
   - npm link active (instant change propagation)
   - Ready for npm publish when desired
-  - Claude Code's native NLP handles tool selection
+  - Requires: Restart MCP server to apply fixes

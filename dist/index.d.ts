@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Codex Control MCP Server
+ * MCP Delegator
  *
- * MCP server for programmatic control of OpenAI Codex via Claude Code.
- * Provides tools for executing, planning, and applying Codex tasks.
+ * Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more.
+ * Provides 14 hidden primitives for Codex operations (local SDK + Cloud) with async execution.
  */
 export {};
 //# sourceMappingURL=index.d.ts.map

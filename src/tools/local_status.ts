@@ -91,7 +91,22 @@ export class LocalStatusTool {
           message += `**${task.id}**:\n`;
           message += `- Task: ${task.instruction.substring(0, 80)}${task.instruction.length > 80 ? '...' : ''}\n`;
           message += `- Mode: ${task.mode || 'N/A'}\n`;
-          message += `- Elapsed: ${elapsed}s ago\n`;
+          message += `- Elapsed: ${elapsed}s\n`;
+
+          // Show progress if available
+          if (task.progressSteps) {
+            try {
+              const progress = JSON.parse(task.progressSteps);
+              message += `- Progress: ${progress.progressPercentage}% (${progress.completedSteps}/${progress.totalSteps} steps)\n`;
+              if (progress.currentAction) {
+                message += `- Current: ${progress.currentAction}\n`;
+              }
+              message += `- Activity: ${progress.filesChanged} file(s) changed, ${progress.commandsExecuted} command(s) executed\n`;
+            } catch (e) {
+              // Ignore parse errors for progress display
+            }
+          }
+
           message += '\n';
         }
       }
