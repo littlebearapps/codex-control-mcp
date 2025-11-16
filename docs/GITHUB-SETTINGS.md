@@ -9,6 +9,7 @@ This document describes the GitHub repository settings that need to be manually 
 - Repository must be public or have GitHub Advanced Security (GHAS) enabled
 - Repository owner must have appropriate permissions
 - npm Trusted Publisher already configured (✅ completed)
+- CodeQL default setup disabled (✅ completed - using custom workflow)
 
 ---
 
