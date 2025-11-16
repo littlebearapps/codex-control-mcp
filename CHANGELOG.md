@@ -1,3 +1,10 @@
+## [3.3.2](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.1...v3.3.2) (2025-11-16)
+
+
+### Bug Fixes
+
+* temporarily disable provenance to debug E409 errors ([3f33a67](https://github.com/littlebearapps/mcp-delegator/commit/3f33a67853bba3fdde7bf2fe894fd688369224ac))
+
 ## [3.3.1](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.0...v3.3.1) (2025-11-16)
 
 # [3.3.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.2.2...v3.3.0) (2025-11-16)
