@@ -162,6 +162,16 @@
   - ✅ Allow force pushes: **OFF**
   - ✅ Allow deletions: **OFF**
 
+### Repository Settings
+
+- [ ] Enable auto-delete head branches:
+  - Repo settings → General → Pull Requests
+  - ✅ Automatically delete head branches (after PR merge)
+- [ ] Configure default branch protection:
+  - Ensures merged feature branches are cleaned up automatically
+  - Reduces repository clutter
+  - Prevents accidental commits to old branches
+
 ### Security Audit
 
 - [ ] Review all dependencies:

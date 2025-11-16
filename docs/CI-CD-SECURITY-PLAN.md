@@ -204,7 +204,12 @@ graph TD
    - Prevent force push
    - Enforce for administrators
 
-4. **Security Audit**
+4. **Configure Repository Settings**
+   - Enable auto-delete head branches (after PR merge)
+   - Prevents repository clutter from merged feature branches
+   - Reduces risk of accidental commits to old branches
+
+5. **Security Audit**
    - Review all dependencies
    - Fix or document vulnerabilities
    - Audit GitHub Actions usage
