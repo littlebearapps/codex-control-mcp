@@ -1,3 +1,22 @@
+# 1.0.0 (2025-11-16)
+
+
+### Bug Fixes
+
+* **sandbox:** critical sandbox mode bug fix + comprehensive git operations testing ([5ee090e](https://github.com/littlebearapps/mcp-delegator/commit/5ee090e90cf1ec6561dcbc0c5aed3b8340005848))
+
+
+### Features
+
+* add CI/CD infrastructure and security hardening (Phase 1 & 2) ([a7f2cef](https://github.com/littlebearapps/mcp-delegator/commit/a7f2cef2bd25b7f6fc7dd32af744095cc26d9542))
+* add structured metadata extraction for AI agent decision-making ([8004694](https://github.com/littlebearapps/mcp-delegator/commit/80046944bfd55d1d195d4d4d94577778a0c7ff47))
+* Codex Control MCP v2.1.0 - Dual Execution Modes ([f1080b1](https://github.com/littlebearapps/mcp-delegator/commit/f1080b1ecbc607f2f2754aa7d9c4afcc2ba023a4))
+* complete v3.0.0 unified natural language interface ([14871bb](https://github.com/littlebearapps/mcp-delegator/commit/14871bb559b84b8c9954acbb68f82f4ca09c67d6))
+* **local-exec:** add comprehensive mode documentation ([bad9ce3](https://github.com/littlebearapps/mcp-delegator/commit/bad9ce372beb947180a494b35d16973b10d00301))
+* v2.1.1 - async/non-blocking execution for all tools ([f338e8e](https://github.com/littlebearapps/mcp-delegator/commit/f338e8e517144c955cbbe857b7f26293818503e5))
+* v3.0.1 - npm package ready + unified tool removal + bug fixes ([3b622ce](https://github.com/littlebearapps/mcp-delegator/commit/3b622ceb8c710860fd1792a474741f422eb682e4))
+* v3.2.1 - complete timeout/hang detection for all execution tools ([f7852e7](https://github.com/littlebearapps/mcp-delegator/commit/f7852e7fed9fab7e4b6c90dd5d60457231196405))
+
 # Changelog
 
 All notable changes to MCP Delegator (formerly Codex Control MCP) will be documented in this file.
