@@ -1,5 +1,7 @@
 # GitHub Repository Settings Guide
 
+> **Note**: This document is part of the CI/CD setup. See [CI-CD-SECURITY-PLAN.md](../CI-CD-SECURITY-PLAN.md) for the complete implementation plan.
+
 This document describes the GitHub repository settings that need to be manually configured to complete the CI/CD and security setup for mcp-delegator.
 
 ## Prerequisites
