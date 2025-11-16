@@ -8,6 +8,8 @@ import { ErrorMapper } from '../executor/error_mapper.js';
 import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
 import { globalTaskRegistry } from '../state/task_registry.js';
+import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
+import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
 export class LocalRunTool {
     processManager;
     constructor(processManager) {
@@ -16,6 +18,56 @@ export class LocalRunTool {
     async execute(input) {
         // Default to read-only mode
         const mode = input.mode || 'read-only';
+        // GIT SAFETY CHECK: Detect and block risky git operations (RUNS FIRST)
+        const detector = new RiskyOperationDetector();
+        const riskyOps = detector.detect(input.task);
+        let checkpointInfo = null; // Store checkpoint info for inclusion in output
+        if (riskyOps.length > 0) {
+            const highestTier = detector.getHighestRiskTier(input.task);
+            // Tier 1: ALWAYS BLOCKED - No way to proceed
+            if (highestTier === GitOperationTier.ALWAYS_BLOCKED) {
+                const blockedOps = riskyOps.filter((op) => op.tier === GitOperationTier.ALWAYS_BLOCKED);
+                const errorMessage = detector.formatBlockedMessage(blockedOps);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: errorMessage,
+                        },
+                    ],
+                    isError: true,
+                };
+            }
+            // Tier 2: REQUIRES CONFIRMATION - Check if user confirmed
+            if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !input.allow_destructive_git) {
+                const riskyOpsToConfirm = riskyOps.filter((op) => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
+                const confirmMessage = detector.formatConfirmationMessage(riskyOpsToConfirm);
+                const confirmMetadata = detector.formatConfirmationMetadata(riskyOpsToConfirm);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: confirmMessage,
+                        },
+                    ],
+                    isError: true,
+                    metadata: confirmMetadata,
+                };
+            }
+            // User confirmed risky operation - Create safety checkpoint
+            if (input.allow_destructive_git) {
+                console.error('[LocalRun] ⚠️  User confirmed risky operation, creating safety checkpoint...');
+                const checkpointing = new SafetyCheckpointing();
+                const workingDir = input.workingDir || process.cwd();
+                const riskyOpsToCheckpoint = riskyOps.filter((op) => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
+                // Create checkpoint for the first risky operation detected
+                const operation = riskyOpsToCheckpoint[0].operation.replace(/\s+/g, '-').toLowerCase();
+                const checkpoint = await checkpointing.createCheckpoint(operation, workingDir);
+                checkpointInfo = checkpointing.formatRecoveryInstructions(checkpoint);
+                console.error('[LocalRun] ✅ Safety checkpoint created:', checkpoint.safety_branch);
+                console.error('[LocalRun] Recovery instructions will be included in output');
+            }
+        }
         // SAFETY GATE: Require confirmation for mutations
         const isMutationMode = mode === 'workspace-write' || mode === 'danger-full-access';
         if (isMutationMode && input.confirm !== true) {
@@ -135,6 +187,10 @@ export class LocalRunTool {
             }
             else {
                 message = this.formatExecutionResult(mode, summary, fileChanges, commands, result);
+            }
+            // Prepend safety checkpoint info if it exists
+            if (checkpointInfo) {
+                message = `🛡️  **GIT SAFETY CHECKPOINT CREATED**\n\n${checkpointInfo}\n\n---\n\n` + message;
             }
             // Add redacted output
             if (redactedOutput.stdout.trim()) {

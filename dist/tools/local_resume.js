@@ -1,11 +1,14 @@
 import { Codex } from '@openai/codex-sdk';
 import { z } from 'zod';
+import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
+import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
 const LocalResumeInputSchema = z.object({
     threadId: z.string().describe('The thread ID to resume'),
     task: z.string().describe('The follow-up task to execute'),
     mode: z.enum(['read-only', 'workspace-write', 'danger-full-access']).optional().default('read-only').describe('Execution mode'),
     outputSchema: z.any().optional().describe('Optional JSON Schema for structured output'),
     model: z.string().optional().describe('Model to use (e.g., gpt-5-codex, gpt-5)'),
+    allow_destructive_git: z.boolean().optional().default(false).describe('Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.'),
 });
 export class LocalResumeTool {
     static getSchema() {
@@ -49,6 +52,59 @@ export class LocalResumeTool {
             // Validate input
             const validated = LocalResumeInputSchema.parse(input);
             console.error('[LocalResume] ✅ Input validated successfully');
+            let checkpointInfo = null; // Store checkpoint info for inclusion in output
+            // GIT SAFETY CHECK: Detect and block risky git operations
+            const detector = new RiskyOperationDetector();
+            const riskyOps = detector.detect(validated.task);
+            if (riskyOps.length > 0) {
+                const highestTier = detector.getHighestRiskTier(validated.task);
+                // Tier 1: ALWAYS BLOCKED
+                if (highestTier === GitOperationTier.ALWAYS_BLOCKED) {
+                    const blockedOps = riskyOps.filter((op) => op.tier === GitOperationTier.ALWAYS_BLOCKED);
+                    const errorMessage = detector.formatBlockedMessage(blockedOps);
+                    console.error('[LocalResume] ❌ BLOCKED - Destructive git operation detected');
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: errorMessage,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+                // Tier 2: REQUIRES CONFIRMATION
+                if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !validated.allow_destructive_git) {
+                    const riskyOpsToConfirm = riskyOps.filter((op) => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
+                    const confirmMessage = detector.formatConfirmationMessage(riskyOpsToConfirm);
+                    const confirmMetadata = detector.formatConfirmationMetadata(riskyOpsToConfirm);
+                    console.error('[LocalResume] ⚠️ RISKY operation detected, user confirmation required');
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: confirmMessage,
+                            },
+                        ],
+                        isError: true,
+                        metadata: confirmMetadata,
+                    };
+                }
+                // User confirmed risky operation - Create safety checkpoint
+                if (validated.allow_destructive_git) {
+                    console.error('[LocalResume] ⚠️  User confirmed risky operation, creating safety checkpoint...');
+                    const checkpointing = new SafetyCheckpointing();
+                    // Note: workingDir not available in resume, use cwd
+                    const workingDir = process.cwd();
+                    const riskyOpsToCheckpoint = riskyOps.filter((op) => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
+                    // Create checkpoint
+                    const operation = riskyOpsToCheckpoint[0].operation.replace(/\s+/g, '-').toLowerCase();
+                    const checkpoint = await checkpointing.createCheckpoint(operation, workingDir);
+                    checkpointInfo = checkpointing.formatRecoveryInstructions(checkpoint);
+                    console.error('[LocalResume] ✅ Safety checkpoint created:', checkpoint.safety_branch);
+                    console.error('[LocalResume] Recovery instructions will be included in output');
+                }
+            }
             // Initialize Codex SDK
             console.error('[LocalResume] Initializing Codex SDK...');
             const codex = new Codex();
@@ -73,27 +129,69 @@ export class LocalResumeTool {
             // Kick off execution in background (don't await)
             thread.runStreamed(validated.task, runOptions).then(async ({ events }) => {
                 console.error(`[LocalResume:${validated.threadId}] Background execution started`);
+                // Setup timeout detection (v3.2.1)
+                const idleTimeoutMs = 5 * 60 * 1000; // 5 minutes of no events
+                const hardTimeoutMs = 20 * 60 * 1000; // 20 minutes total execution time
+                let lastEventTime = Date.now();
+                let timedOut = false;
+                // Hard timeout watchdog
+                const hardTimeoutTimer = setTimeout(() => {
+                    if (!timedOut) {
+                        timedOut = true;
+                        console.error(`[LocalResume:${validated.threadId}] ⏱️ HARD TIMEOUT after ${hardTimeoutMs / 1000}s`);
+                    }
+                }, hardTimeoutMs);
+                // Idle timeout check (runs every 30s)
+                const idleCheckInterval = setInterval(() => {
+                    const idleTime = Date.now() - lastEventTime;
+                    if (idleTime > idleTimeoutMs && !timedOut) {
+                        timedOut = true;
+                        console.error(`[LocalResume:${validated.threadId}] ⏱️ IDLE TIMEOUT after ${idleTimeoutMs / 1000}s of inactivity`);
+                        clearTimeout(hardTimeoutTimer);
+                        clearInterval(idleCheckInterval);
+                    }
+                }, 30000); // Check every 30 seconds
                 // Process events in background
                 let eventCount = 0;
                 try {
                     for await (const event of events) {
+                        // Update last event time (reset idle timeout)
+                        lastEventTime = Date.now();
+                        // Stop if timed out
+                        if (timedOut) {
+                            console.error(`[LocalResume:${validated.threadId}] Stopping iteration - timed out`);
+                            break;
+                        }
                         eventCount++;
                         console.error(`[LocalResume:${validated.threadId}] Event ${eventCount}:`, event.type);
                     }
+                    // Clear timeout timers (v3.2.1)
+                    clearTimeout(hardTimeoutTimer);
+                    clearInterval(idleCheckInterval);
                     console.error(`[LocalResume:${validated.threadId}] ✅ Execution complete, ${eventCount} events processed`);
                 }
                 catch (streamError) {
+                    // Clear timeout timers (v3.2.1)
+                    clearTimeout(hardTimeoutTimer);
+                    clearInterval(idleCheckInterval);
                     console.error(`[LocalResume:${validated.threadId}] ❌ Error during execution:`, streamError);
                 }
             }).catch((error) => {
                 console.error(`[LocalResume:${validated.threadId}] ❌ Fatal error:`, error);
             });
+            // Build response message
+            let responseText = '';
+            // Prepend safety checkpoint info if it exists
+            if (checkpointInfo) {
+                responseText += `🛡️  **GIT SAFETY CHECKPOINT CREATED**\n\n${checkpointInfo}\n\n---\n\n`;
+            }
+            responseText += `✅ Codex SDK Thread Resumed (Async)\n\n**Thread ID**: \`${validated.threadId}\`\n\n**Follow-up Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Status**: Executing in background\n\n💡 **Thread Persistence**: Results are saved to \`~/.codex/sessions/${validated.threadId}/\`\n\n**Check Progress**:\n- Call \`codex_local_resume\` again with this thread ID to check results or continue\n- Thread data persists across Claude Code sessions\n- High cache rates (45-93%) on resumed threads\n\n**Note**: Execution continues in background. The conversation history is preserved and you can continue interacting with this thread.`;
             // Return thread ID immediately (non-blocking)
             const mcpResponse = {
                 content: [
                     {
                         type: 'text',
-                        text: `✅ Codex SDK Thread Resumed (Async)\n\n**Thread ID**: \`${validated.threadId}\`\n\n**Follow-up Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Status**: Executing in background\n\n💡 **Thread Persistence**: Results are saved to \`~/.codex/sessions/${validated.threadId}/\`\n\n**Check Progress**:\n- Call \`codex_local_resume\` again with this thread ID to check results or continue\n- Thread data persists across Claude Code sessions\n- High cache rates (45-93%) on resumed threads\n\n**Note**: Execution continues in background. The conversation history is preserved and you can continue interacting with this thread.`,
+                        text: responseText,
                     },
                 ],
             };

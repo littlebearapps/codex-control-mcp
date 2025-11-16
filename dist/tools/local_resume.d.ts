@@ -5,10 +5,12 @@ declare const LocalResumeInputSchema: z.ZodObject<{
     mode: z.ZodDefault<z.ZodOptional<z.ZodEnum<["read-only", "workspace-write", "danger-full-access"]>>>;
     outputSchema: z.ZodOptional<z.ZodAny>;
     model: z.ZodOptional<z.ZodString>;
+    allow_destructive_git: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
     task: string;
     mode: "read-only" | "workspace-write" | "danger-full-access";
     threadId: string;
+    allow_destructive_git: boolean;
     outputSchema?: any;
     model?: string | undefined;
 }, {
@@ -17,6 +19,7 @@ declare const LocalResumeInputSchema: z.ZodObject<{
     mode?: "read-only" | "workspace-write" | "danger-full-access" | undefined;
     outputSchema?: any;
     model?: string | undefined;
+    allow_destructive_git?: boolean | undefined;
 }>;
 export type LocalResumeInput = z.infer<typeof LocalResumeInputSchema>;
 export interface LocalResumeResult {

@@ -6,10 +6,12 @@ declare const LocalExecInputSchema: z.ZodObject<{
     outputSchema: z.ZodOptional<z.ZodAny>;
     skipGitRepoCheck: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     model: z.ZodOptional<z.ZodString>;
+    allow_destructive_git: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
     task: string;
     mode: "read-only" | "workspace-write" | "danger-full-access";
     skipGitRepoCheck: boolean;
+    allow_destructive_git: boolean;
     outputSchema?: any;
     model?: string | undefined;
     workingDir?: string | undefined;
@@ -20,6 +22,7 @@ declare const LocalExecInputSchema: z.ZodObject<{
     model?: string | undefined;
     workingDir?: string | undefined;
     skipGitRepoCheck?: boolean | undefined;
+    allow_destructive_git?: boolean | undefined;
 }>;
 export type LocalExecInput = z.infer<typeof LocalExecInputSchema>;
 export interface LocalExecResult {
@@ -67,6 +70,11 @@ export declare class LocalExecTool {
                 model: {
                     type: string;
                     description: string;
+                };
+                allow_destructive_git: {
+                    type: string;
+                    description: string;
+                    default: boolean;
                 };
             };
             required: string[];

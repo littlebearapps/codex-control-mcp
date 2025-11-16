@@ -223,7 +223,24 @@ export class CloudWaitTool {
         };
     }
     async execute(params) {
-        const result = await handleCloudWait(params);
+        // Add hard timeout wrapper (v3.2.1) - ensures wait can't hang indefinitely
+        const maxExecutionTime = 31 * 60 * 1000; // 31 minutes (slightly longer than max wait)
+        const timeoutPromise = new Promise((resolve) => {
+            setTimeout(() => {
+                resolve({
+                    success: false,
+                    task_id: params.task_id,
+                    status: 'unknown',
+                    message: `Wait operation timed out after ${maxExecutionTime / 1000}s (hard limit)`,
+                    error: 'Wait operation exceeded hard timeout',
+                    elapsed_ms: maxExecutionTime,
+                    timed_out: true,
+                    web_ui_url: `https://chatgpt.com/codex/tasks/${params.task_id}`,
+                });
+            }, maxExecutionTime);
+        });
+        // Race between actual wait and hard timeout
+        const result = await Promise.race([handleCloudWait(params), timeoutPromise]);
         // Format progress info if available
         let displayText = `**Task ${result.task_id}** - ${result.status}\n\n`;
         if (result.progress) {

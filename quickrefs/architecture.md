@@ -47,6 +47,7 @@ codex-control/
 │   ├── executor/
 │   │   ├── jsonl_parser.ts       # JSONL event stream parser
 │   │   ├── process_manager.ts    # Process spawning + queue
+│   │   ├── timeout_watchdog.ts   # Timeout/hang detection (v3.2.1) 🆕
 │   │   └── error_mapper.ts       # Error → MCP format
 │   ├── security/
 │   │   ├── input_validator.ts    # Input sanitization
@@ -237,6 +238,33 @@ error_context: {
 ```
 
 **Test Coverage**: 7/7 tests (100% pass rate) - see `test-metadata-extraction.ts`
+
+---
+
+### 7. Timeout Watchdog (`executor/timeout_watchdog.ts`) 🆕 (v3.2.1)
+
+**Purpose**: Detect and abort tasks that hang or freeze, preventing indefinite waits.
+
+**Two-Tier Timeout System**:
+- **Inactivity Timeout** (default: 5 min) - Resets on any stdout/stderr output, catches silent hangs
+- **Hard Timeout** (default: 20 min) - Wall-clock maximum, prevents infinite execution
+
+**Features**:
+- **MCP Progress Tracking**: `notifications/progress` sent every 30 seconds
+- **MCP Warning Notifications**: `notifications/message` (warning level) sent 30s before timeout
+- **MCP Error Notifications**: `notifications/message` (error level) when timeout fires
+- **Partial Results Capture**: Last 50 JSONL events + last 64KB stdout/stderr for recovery
+- **Process Cleanup**: SIGTERM → SIGKILL cascade using `tree-kill` library
+
+**Coverage** (6/6 execution tools):
+1. `_codex_local_run` - Via ProcessManager integration
+2. `_codex_cloud_submit` - Via runCodexCloud() integration
+3. `_codex_local_exec` - Background execution monitoring
+4. `_codex_local_resume` - Background execution monitoring
+5. `_codex_local_wait` - Hard timeout wrapper (11 min max)
+6. `_codex_cloud_wait` - Hard timeout wrapper (31 min max)
+
+**Impact**: 36-minute hang (Test 2.6) now caught in 5m 30s with warning at 4m 30s
 
 ---
 

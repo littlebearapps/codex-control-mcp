@@ -8,6 +8,7 @@
  * - Error handling and cleanup
  */
 import { CodexEvent } from './jsonl_parser.js';
+import { ProgressUpdate, TimeoutWarning, TimeoutError, PartialResults } from './timeout_watchdog.js';
 export interface CodexProcessOptions {
     task: string;
     mode?: 'read-only' | 'workspace-write' | 'danger-full-access';
@@ -26,6 +27,11 @@ export interface CodexProcessOptions {
      * Example: ['OPENAI_API_KEY', 'DATABASE_URL']
      */
     envAllowList?: string[];
+    idleTimeoutMs?: number;
+    hardTimeoutMs?: number;
+    onProgress?: (progress: ProgressUpdate) => void;
+    onWarning?: (warning: TimeoutWarning) => void;
+    onTimeout?: (timeout: TimeoutError) => void;
 }
 export interface CodexProcessResult {
     success: boolean;
@@ -35,6 +41,8 @@ export interface CodexProcessResult {
     exitCode: number | null;
     signal: NodeJS.Signals | null;
     error?: Error;
+    timeout?: TimeoutError;
+    partial?: PartialResults;
 }
 export declare class ProcessQueue {
     private queue;

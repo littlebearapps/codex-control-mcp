@@ -15,6 +15,7 @@ export interface LocalRunToolInput {
     envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
     envAllowList?: string[];
     async?: boolean;
+    allow_destructive_git?: boolean;
 }
 export interface LocalRunToolResult {
     content: Array<{
@@ -22,6 +23,7 @@ export interface LocalRunToolResult {
         text: string;
     }>;
     isError?: boolean;
+    metadata?: any;
 }
 export declare class LocalRunTool {
     private processManager;

@@ -1,8 +1,8 @@
 # MCP Delegator
 
-**Version**: 3.2.0
+**Version**: 3.2.1
 **Package**: `@littlebearapps/mcp-delegator`
-**Status**: ✅ Production Ready - Publish-Ready npm Package
+**Status**: ✅ Production Ready - All Critical Bugs Fixed
 **Repository**: [github.com/littlebearapps/mcp-delegator](https://github.com/littlebearapps/mcp-delegator)
 **Purpose**: Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution
 
@@ -11,6 +11,18 @@
 ## Overview
 
 **MCP Delegator** enables Claude Code to delegate tasks to multiple AI agents with async execution. Currently supports **14 Codex primitives** with future support for Claude Code (Anthropic Agent SDK) and other agents.
+
+**🚀 v3.2.1 - Timeout Detection + Critical Bug Fixes**:
+- ⏱️ **TIMEOUT DETECTION**: All 6 execution tools now protected against indefinite hangs (100% coverage)
+  - Process-spawning tools: TimeoutWatchdog with 5 min idle / 20 min hard timeouts
+  - SDK background execution: Idle/hard timeout monitoring with registry updates
+  - Polling/wait tools: Hard timeout wrappers (11-31 min max)
+  - **Impact**: 36-minute hang (Test 2.6) now caught in 5m 30s with warning at 4m 30s
+- 🔒 **CRITICAL FIX**: Sandbox mode bug preventing ALL write operations resolved
+- ✅ **Git Operations Verified**: 10/10 tests passed (100% success rate)
+- ⚠️ **Risky Operations Identified**: 5 git operations requiring safety warnings
+- 🛡️ **Built-In Safety**: Git lock permissions protecting project repos
+- 🎯 **See**: CHANGELOG.md v3.2.1 for complete details
 
 **🚀 v3.2.0 - Renamed for Multi-Agent Support**:
 - 🎯 **NEW NAME**: `mcp-delegator` (was codex-control-mcp)
@@ -54,6 +66,7 @@ Status returned
 **Pattern**: Claude Code delegates → Agent executes (async) → Claude Code continues → Results when ready
 
 **Version History**:
+- ✅ **v3.2.1 - Timeout Detection + Bug Fixes**: All 6 tools protected against hangs + sandbox mode fix
 - ✅ **v3.2.0 - Renamed to MCP Delegator**: Multi-agent delegation pattern
 - ✅ **v3.0.1 - npm Package Ready**: Scoped package with publishing safety
 - ✅ **v3.0.0 - Unified Interface**: Removed in favor of hidden primitives
@@ -107,6 +120,31 @@ Access via:
 - **Secret Redaction**: Automatic scrubbing of API keys, tokens, passwords from logs
 - **Mutation Gating**: Requires explicit `confirm=true` for file-modifying operations
 - **Concurrency Control**: Max 2-4 parallel processes (configurable)
+
+### ⏱️ Timeout/Hang Detection (v3.2.1)
+
+**100% Coverage** - All 6 execution tools protected against indefinite hangs:
+
+**Process-Spawning Tools**:
+- `_codex_local_run` - TimeoutWatchdog via ProcessManager (5 min idle / 20 min hard)
+- `_codex_cloud_submit` - TimeoutWatchdog via runCodexCloud() (5 min idle / 10 min hard)
+
+**SDK Background Execution**:
+- `_codex_local_exec` - Background monitoring with idle/hard timeouts
+- `_codex_local_resume` - Background monitoring with idle/hard timeouts
+
+**Polling/Wait Tools**:
+- `_codex_local_wait` - Hard timeout wrapper (11 min max)
+- `_codex_cloud_wait` - Hard timeout wrapper (31 min max)
+
+**Features**:
+- **Two-Tier Detection**: Inactivity timeout (resets on output) + hard deadline (wall-clock max)
+- **MCP Notifications**: Progress updates every 30s, warning 30s before timeout, error on timeout
+- **Partial Results**: Last 50 events + 64KB stdout/stderr captured for recovery context
+- **Process Cleanup**: SIGTERM → SIGKILL cascade for reliable termination
+- **Cross-Platform**: Uses `tree-kill` library for process tree cleanup
+
+**Impact**: 36-minute hang (Test 2.6) now caught in 5m 30s with warning at 4m 30s
 
 ### 💾 Persistent Task Tracking (v1.3.0)
 

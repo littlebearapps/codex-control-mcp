@@ -9,6 +9,7 @@
  */
 import { spawn } from 'child_process';
 import { JSONLParser } from './jsonl_parser.js';
+import { TimeoutWatchdog } from './timeout_watchdog.js';
 export class ProcessQueue {
     queue = [];
     running = 0;
@@ -69,7 +70,7 @@ export class ProcessManager {
      * Internal: Run a single Codex process
      */
     async runProcess(options) {
-        const { task, mode, outputSchema, model, workingDir, envPolicy, envAllowList } = options;
+        const { task, mode, outputSchema, model, workingDir, envPolicy, envAllowList, idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout } = options;
         // Build command args safely (no shell injection)
         const args = ['exec', '--json'];
         if (mode) {
@@ -110,19 +111,59 @@ export class ProcessManager {
             });
             const processId = `codex-${Date.now()}-${Math.random().toString(36).substring(7)}`;
             this.processes.set(processId, proc);
+            // Create timeout watchdog (v3.2.1)
+            const watchdog = new TimeoutWatchdog(proc, processId, {
+                idleTimeoutMs,
+                hardTimeoutMs,
+                onProgress,
+                onWarning,
+                onTimeout: (timeout) => {
+                    // Call user's timeout callback
+                    if (onTimeout) {
+                        onTimeout(timeout);
+                    }
+                    // Return structured error with partial results
+                    const partial = watchdog.getPartialResults();
+                    // Clear iTerm2 badge on timeout
+                    this.clearITermBadge();
+                    // Cleanup
+                    this.processes.delete(processId);
+                    watchdog.stop();
+                    resolve({
+                        success: false,
+                        events,
+                        stdout,
+                        stderr,
+                        exitCode: null,
+                        signal: null,
+                        timeout,
+                        partial,
+                    });
+                },
+            });
             // Parse JSONL from stdout
             proc.stdout.on('data', (chunk) => {
                 const text = chunk.toString('utf-8');
                 stdout += text;
+                // Record stdout for watchdog
+                watchdog.recordStdout(chunk);
                 const parsedEvents = parser.feed(text);
-                events.push(...parsedEvents);
+                for (const event of parsedEvents) {
+                    events.push(event);
+                    // Record event for watchdog
+                    watchdog.recordEvent(event);
+                }
             });
             // Capture stderr (warnings, errors)
             proc.stderr.on('data', (chunk) => {
                 stderr += chunk.toString('utf-8');
+                // Record stderr for watchdog
+                watchdog.recordStderr(chunk);
             });
             // Handle process completion
             proc.on('close', (exitCode, signal) => {
+                // Stop watchdog
+                watchdog.stop();
                 // Flush any remaining buffered events
                 const finalEvent = parser.flush();
                 if (finalEvent) {
@@ -143,6 +184,8 @@ export class ProcessManager {
             });
             // Handle process errors (spawn failures, etc.)
             proc.on('error', (error) => {
+                // Stop watchdog
+                watchdog.stop();
                 this.processes.delete(processId);
                 resolve({
                     success: false,

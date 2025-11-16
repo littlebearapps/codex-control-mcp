@@ -10,6 +10,13 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import { JSONLParser, CodexEvent } from './jsonl_parser.js';
+import {
+  TimeoutWatchdog,
+  ProgressUpdate,
+  TimeoutWarning,
+  TimeoutError,
+  PartialResults
+} from './timeout_watchdog.js';
 
 export interface CodexProcessOptions {
   task: string;
@@ -31,6 +38,13 @@ export interface CodexProcessOptions {
    * Example: ['OPENAI_API_KEY', 'DATABASE_URL']
    */
   envAllowList?: string[];
+
+  // Timeout detection (v3.2.1)
+  idleTimeoutMs?: number;    // Default: 5 minutes
+  hardTimeoutMs?: number;    // Default: 20 minutes
+  onProgress?: (progress: ProgressUpdate) => void;
+  onWarning?: (warning: TimeoutWarning) => void;
+  onTimeout?: (timeout: TimeoutError) => void;
 }
 
 export interface CodexProcessResult {
@@ -41,6 +55,9 @@ export interface CodexProcessResult {
   exitCode: number | null;
   signal: NodeJS.Signals | null;
   error?: Error;
+  // Timeout detection (v3.2.1)
+  timeout?: TimeoutError;
+  partial?: PartialResults;
 }
 
 export class ProcessQueue {
@@ -110,7 +127,10 @@ export class ProcessManager {
    * Internal: Run a single Codex process
    */
   private async runProcess(options: CodexProcessOptions): Promise<CodexProcessResult> {
-    const { task, mode, outputSchema, model, workingDir, envPolicy, envAllowList } = options;
+    const {
+      task, mode, outputSchema, model, workingDir, envPolicy, envAllowList,
+      idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout
+    } = options;
 
     // Build command args safely (no shell injection)
     const args = ['exec', '--json'];
@@ -161,22 +181,69 @@ export class ProcessManager {
       const processId = `codex-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       this.processes.set(processId, proc);
 
+      // Create timeout watchdog (v3.2.1)
+      const watchdog = new TimeoutWatchdog(proc, processId, {
+        idleTimeoutMs,
+        hardTimeoutMs,
+        onProgress,
+        onWarning,
+        onTimeout: (timeout) => {
+          // Call user's timeout callback
+          if (onTimeout) {
+            onTimeout(timeout);
+          }
+
+          // Return structured error with partial results
+          const partial = watchdog.getPartialResults();
+
+          // Clear iTerm2 badge on timeout
+          this.clearITermBadge();
+
+          // Cleanup
+          this.processes.delete(processId);
+          watchdog.stop();
+
+          resolve({
+            success: false,
+            events,
+            stdout,
+            stderr,
+            exitCode: null,
+            signal: null,
+            timeout,
+            partial,
+          });
+        },
+      });
+
       // Parse JSONL from stdout
       proc.stdout.on('data', (chunk: Buffer) => {
         const text = chunk.toString('utf-8');
         stdout += text;
 
+        // Record stdout for watchdog
+        watchdog.recordStdout(chunk);
+
         const parsedEvents = parser.feed(text);
-        events.push(...parsedEvents);
+        for (const event of parsedEvents) {
+          events.push(event);
+          // Record event for watchdog
+          watchdog.recordEvent(event);
+        }
       });
 
       // Capture stderr (warnings, errors)
       proc.stderr.on('data', (chunk: Buffer) => {
         stderr += chunk.toString('utf-8');
+        // Record stderr for watchdog
+        watchdog.recordStderr(chunk);
       });
 
       // Handle process completion
       proc.on('close', (exitCode, signal) => {
+        // Stop watchdog
+        watchdog.stop();
+
         // Flush any remaining buffered events
         const finalEvent = parser.flush();
         if (finalEvent) {
@@ -201,6 +268,9 @@ export class ProcessManager {
 
       // Handle process errors (spawn failures, etc.)
       proc.on('error', (error) => {
+        // Stop watchdog
+        watchdog.stop();
+
         this.processes.delete(processId);
 
         resolve({

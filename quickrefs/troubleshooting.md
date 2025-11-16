@@ -289,36 +289,46 @@ npm run build
 
 ## 4. Execution Issues
 
-### Issue: Task Times Out
+### Issue: Task Times Out (v3.2.1+ Automatic Detection)
 
 **Symptoms**:
 ```
 Error: Process timed out
 Execution exceeded time limit
+Idle timeout: No events received for 5 minutes
+Hard timeout: Execution exceeded 20 minutes
 ```
+
+**Background** (v3.2.1):
+All 6 execution tools now have automatic timeout detection:
+- **Process-spawning tools**: 5 min idle / 20 min hard timeout with MCP notifications
+- **SDK tools**: Background monitoring with task registry updates
+- **Polling tools**: Hard timeout wrappers (11-31 min max)
 
 **Diagnosis**:
 ```bash
-# Check task complexity
-# Review concurrency settings
+# Check task complexity and expected duration
+# Review timeout notifications in Claude Code
+# Check partial results in error message (last 50 events captured)
 ```
 
 **Solutions**:
 
-**Solution 1: Increase Timeout** (not configurable in v2.1.0)
+**Solution 1: Use Cloud for Long Tasks**
 ```bash
-# For long tasks, use Cloud instead
+# Tasks exceeding 20 min should use Cloud
+# Cloud tasks can run for hours
 codex_cloud_submit
 ```
 
 **Solution 2: Break Task into Steps**
 ```typescript
-// ❌ One large task
+// ❌ One large task (may timeout)
 {
   task: "Refactor entire codebase, run tests, create PR"
 }
 
-// ✅ Multiple smaller tasks
+// ✅ Multiple smaller tasks (each completes faster)
 {
   task: "Analyze codebase for refactoring opportunities",
   mode: "read-only"
@@ -326,12 +336,20 @@ codex_cloud_submit
 // Then use codex_local_resume for each step
 ```
 
-**Solution 3: Use Cloud for Long Tasks**
+**Solution 3: Review Partial Results**
 ```typescript
-{
-  task: "Run full test suite and fix all failures",
-  envId: "env_myproject"
-}
+// v3.2.1+ captures last 50 JSONL events on timeout
+// Check error message for partial progress
+// Resume from where it stopped using codex_local_resume
+```
+
+**Solution 4: Adjust Expectations**
+```typescript
+// If task legitimately needs >20 min:
+// ✅ Use codex_cloud_submit (designed for long tasks)
+
+// If task should complete <20 min but times out:
+// ✅ Investigate performance issues or simplify task
 ```
 
 ---
@@ -688,6 +706,11 @@ task: "Fix null pointer in utils.ts line 42"
 ### "Not inside a trusted directory"
 - **Meaning**: Not a git repository
 - **Fix**: Run `git init` or use `skipGitRepoCheck: true`
+
+### "Process timed out" / "Idle timeout" / "Hard timeout" (v3.2.1+)
+- **Meaning**: Task exceeded timeout limits (5 min idle or 20 min hard)
+- **Fix**: Use `codex_cloud_submit` for long tasks, or break into smaller steps
+- **Note**: Partial results captured in error message (last 50 events)
 
 ### "INVALID_PARAMS"
 - **Meaning**: Invalid tool parameters

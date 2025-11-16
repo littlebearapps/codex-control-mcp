@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { globalTaskRegistry } from '../state/task_registry.js';
 import { verifyGitOperations, formatGitVerification } from '../utils/git_verifier.js';
 import { ProgressInferenceEngine } from '../executor/progress_inference.js';
+import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
+import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
 
 const LocalExecInputSchema = z.object({
   task: z.string().describe('The task to execute locally'),
@@ -11,6 +13,7 @@ const LocalExecInputSchema = z.object({
   outputSchema: z.any().optional().describe('Optional JSON Schema for structured output'),
   skipGitRepoCheck: z.boolean().optional().default(false).describe('Skip Git repository check (use with caution)'),
   model: z.string().optional().describe('Model to use (e.g., gpt-5-codex, gpt-5)'),
+  allow_destructive_git: z.boolean().optional().default(false).describe('Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.'),
 });
 
 export type LocalExecInput = z.infer<typeof LocalExecInputSchema>;
@@ -72,6 +75,11 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
             type: 'string',
             description: 'Model to use (e.g., gpt-5-codex, gpt-5)',
           },
+          allow_destructive_git: {
+            type: 'boolean',
+            description: 'Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.',
+            default: false,
+          },
         },
         required: ['task'],
       },
@@ -81,6 +89,7 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
   async execute(input: LocalExecInput): Promise<any> {
     try {
       console.error('[LocalExec] Starting execution with:', JSON.stringify(input, null, 2));
+      let checkpointInfo: string | null = null; // Store checkpoint info for inclusion in output
 
       // TEST MODE: Return immediately to verify MCP response works
       if (process.env.LOCAL_EXEC_TEST_MODE === 'true') {
@@ -98,6 +107,68 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
       // Validate input
       const validated = LocalExecInputSchema.parse(input);
       console.error('[LocalExec] Input validated:', validated);
+
+      // GIT SAFETY CHECK: Detect and block risky git operations
+      const detector = new RiskyOperationDetector();
+      const riskyOps = detector.detect(validated.task);
+
+      if (riskyOps.length > 0) {
+        const highestTier = detector.getHighestRiskTier(validated.task);
+
+        // Tier 1: ALWAYS BLOCKED - No way to proceed
+        if (highestTier === GitOperationTier.ALWAYS_BLOCKED) {
+          const blockedOps = riskyOps.filter(op => op.tier === GitOperationTier.ALWAYS_BLOCKED);
+          const errorMessage = detector.formatBlockedMessage(blockedOps);
+
+          console.error('[LocalExec] ❌ BLOCKED - Destructive git operation detected');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: errorMessage,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // Tier 2: REQUIRES CONFIRMATION - Check if user confirmed
+        if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !validated.allow_destructive_git) {
+          const riskyOpsToConfirm = riskyOps.filter(op => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
+          const confirmMessage = detector.formatConfirmationMessage(riskyOpsToConfirm);
+          const confirmMetadata = detector.formatConfirmationMetadata(riskyOpsToConfirm);
+
+          console.error('[LocalExec] ⚠️ RISKY operation detected, user confirmation required');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: confirmMessage,
+              },
+            ],
+            isError: true,
+            metadata: confirmMetadata,
+          };
+        }
+
+        // User confirmed risky operation - Create safety checkpoint
+        if (validated.allow_destructive_git) {
+          console.error('[LocalExec] ⚠️  User confirmed risky operation, creating safety checkpoint...');
+
+          const checkpointing = new SafetyCheckpointing();
+          const workingDir = validated.workingDir || process.cwd();
+          const riskyOpsToCheckpoint = riskyOps.filter(op => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
+
+          // Create checkpoint for the first risky operation detected
+          const operation = riskyOpsToCheckpoint[0].operation.replace(/\s+/g, '-').toLowerCase();
+          const checkpoint = await checkpointing.createCheckpoint(operation, workingDir);
+
+          checkpointInfo = checkpointing.formatRecoveryInstructions(checkpoint);
+
+          console.error('[LocalExec] ✅ Safety checkpoint created:', checkpoint.safety_branch);
+          console.error('[LocalExec] Recovery instructions will be included in output');
+        }
+      }
 
       // Initialize Codex SDK
       console.error('[LocalExec] Initializing Codex SDK...');
@@ -150,6 +221,39 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
 
       // Execute in background (fire and forget - updates registry on completion)
       (async () => {
+        // Setup timeout detection (v3.2.1)
+        const idleTimeoutMs = 5 * 60 * 1000; // 5 minutes of no events
+        const hardTimeoutMs = 20 * 60 * 1000; // 20 minutes total execution time
+        let lastEventTime = Date.now();
+        let timedOut = false;
+
+        // Hard timeout watchdog
+        const hardTimeoutTimer = setTimeout(() => {
+          if (!timedOut) {
+            timedOut = true;
+            console.error(`[LocalExec:${taskId}] ⏱️ HARD TIMEOUT after ${hardTimeoutMs / 1000}s`);
+            globalTaskRegistry.updateTask(taskId, {
+              status: 'failed',
+              error: `Execution exceeded hard timeout (${hardTimeoutMs / 1000}s)`,
+            });
+          }
+        }, hardTimeoutMs);
+
+        // Idle timeout check (runs every 30s)
+        const idleCheckInterval = setInterval(() => {
+          const idleTime = Date.now() - lastEventTime;
+          if (idleTime > idleTimeoutMs && !timedOut) {
+            timedOut = true;
+            console.error(`[LocalExec:${taskId}] ⏱️ IDLE TIMEOUT after ${idleTimeoutMs / 1000}s of inactivity`);
+            clearTimeout(hardTimeoutTimer);
+            clearInterval(idleCheckInterval);
+            globalTaskRegistry.updateTask(taskId, {
+              status: 'failed',
+              error: `No events received for ${idleTimeoutMs / 1000}s (idle timeout)`,
+            });
+          }
+        }, 30000); // Check every 30 seconds
+
         try {
           const { events } = await thread.runStreamed(validated.task, runOptions);
 
@@ -164,6 +268,14 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
           console.error(`[LocalExec:${taskId}] Background execution started`);
 
           for await (const event of events) {
+            // Update last event time (reset idle timeout)
+            lastEventTime = Date.now();
+
+            // Stop if timed out
+            if (timedOut) {
+              console.error(`[LocalExec:${taskId}] Stopping iteration - timed out`);
+              break;
+            }
             eventCount++;
             eventLog.push(event);
 
@@ -208,6 +320,10 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
 
           console.error(`[LocalExec:${taskId}] ✅ Execution complete, ${eventCount} events, thread: ${threadId}`);
 
+          // Clear timeout timers (v3.2.1)
+          clearTimeout(hardTimeoutTimer);
+          clearInterval(idleCheckInterval);
+
           // Run git verification to check if git operations actually succeeded
           console.error(`[LocalExec:${taskId}] Running git verification...`);
           const gitVerification = await verifyGitOperations(
@@ -251,6 +367,10 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
         } catch (error) {
           console.error(`[LocalExec:${taskId}] ❌ Error:`, error);
 
+          // Clear timeout timers (v3.2.1)
+          clearTimeout(hardTimeoutTimer);
+          clearInterval(idleCheckInterval);
+
           // Update SQLite registry with failure
           globalTaskRegistry.updateTask(taskId, {
             status: 'failed',
@@ -261,12 +381,22 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
 
       // Task is now tracked in unified SQLite registry
 
+      // Build response message
+      let responseText = '';
+
+      // Prepend safety checkpoint info if it exists
+      if (checkpointInfo) {
+        responseText += `🛡️  **GIT SAFETY CHECKPOINT CREATED**\n\n${checkpointInfo}\n\n---\n\n`;
+      }
+
+      responseText += `✅ Codex SDK Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Working Directory**: ${validated.workingDir || process.cwd()}\n\n**Status**: Running in background\n\n💡 **Check Progress**:\n- Use \`_codex_local_wait\` to wait for completion: \`{ "task_id": "${taskId}" }\`\n- Use \`_codex_local_status\` to check status\n- Use \`_codex_local_results\` with task ID to get results when complete\n- Use \`_codex_local_cancel\` to cancel: \`{ "task_id": "${taskId}" }\`\n\n**Note**: Task tracked in unified SQLite registry. Thread data persists in \`~/.codex/sessions/\` for resumption with \`_codex_local_resume\`.`;
+
       // Return unified registry task ID immediately (non-blocking)
       const mcpResponse = {
         content: [
           {
             type: 'text',
-            text: `✅ Codex SDK Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Working Directory**: ${validated.workingDir || process.cwd()}\n\n**Status**: Running in background\n\n💡 **Check Progress**:\n- Use \`_codex_local_wait\` to wait for completion: \`{ "task_id": "${taskId}" }\`\n- Use \`_codex_local_status\` to check status\n- Use \`_codex_local_results\` with task ID to get results when complete\n- Use \`_codex_local_cancel\` to cancel: \`{ "task_id": "${taskId}" }\`\n\n**Note**: Task tracked in unified SQLite registry. Thread data persists in \`~/.codex/sessions/\` for resumption with \`_codex_local_resume\`.`,
+            text: responseText,
           },
         ],
       };

@@ -8,11 +8,13 @@ import { spawn } from 'child_process';
 import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
 import { globalTaskRegistry } from '../state/cloud_task_registry.js';
+import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
 export class CloudSubmitTool {
     /**
      * Submit a task to Codex Cloud for background execution
      */
     async execute(input) {
+        let riskyOperationApproved = false; // Track if user approved risky git operation
         // Validate inputs
         const validation = InputValidator.validateTask(input.task);
         if (!validation.valid) {
@@ -36,6 +38,49 @@ export class CloudSubmitTool {
                 ],
                 isError: true,
             };
+        }
+        // GIT SAFETY CHECK: Detect and block risky git operations
+        const detector = new RiskyOperationDetector();
+        const riskyOps = detector.detect(input.task);
+        if (riskyOps.length > 0) {
+            const highestTier = detector.getHighestRiskTier(input.task);
+            // Tier 1: ALWAYS BLOCKED - No way to proceed
+            if (highestTier === GitOperationTier.ALWAYS_BLOCKED) {
+                const blockedOps = riskyOps.filter(op => op.tier === GitOperationTier.ALWAYS_BLOCKED);
+                const errorMessage = detector.formatBlockedMessage(blockedOps);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: errorMessage,
+                        },
+                    ],
+                    isError: true,
+                };
+            }
+            // Tier 2: REQUIRES CONFIRMATION - Check if user confirmed
+            if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !input.allow_destructive_git) {
+                const riskyOpsToConfirm = riskyOps.filter(op => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
+                const confirmMessage = detector.formatConfirmationMessage(riskyOpsToConfirm);
+                const confirmMetadata = detector.formatConfirmationMetadata(riskyOpsToConfirm);
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: confirmMessage,
+                        },
+                    ],
+                    isError: true,
+                    metadata: confirmMetadata,
+                };
+            }
+            // User confirmed risky operation - note this in submission
+            if (input.allow_destructive_git) {
+                console.log('[CloudSubmit] ⚠️  User confirmed risky git operation for cloud execution');
+                riskyOperationApproved = true;
+                // Note: Cloud execution doesn't create local checkpoint, but Codex Cloud
+                // has its own safety mechanisms (git history is preserved in container)
+            }
         }
         // Build command arguments
         const args = ['cloud', 'exec', '--env', input.envId];
@@ -86,7 +131,18 @@ export class CloudSubmitTool {
                 }
             }
             // Build success message
-            let message = `🚀 Task Submitted to Codex Cloud\n\n`;
+            let message = '';
+            // Prepend risky operation notice if approved
+            if (riskyOperationApproved) {
+                message += `⚠️  **RISKY GIT OPERATION APPROVED**\n\n`;
+                message += `This task includes destructive git operations that you approved.\n\n`;
+                message += `**Cloud Safety**: Codex Cloud uses sandboxed containers where:\n`;
+                message += `- Git history is preserved within the container\n`;
+                message += `- Changes are isolated to the cloud environment\n`;
+                message += `- You can review changes before merging any PRs created\n\n`;
+                message += `---\n\n`;
+            }
+            message += `🚀 Task Submitted to Codex Cloud\n\n`;
             if (taskId) {
                 message += `**Task ID**: ${taskId}\n`;
                 message += `**Monitor**: https://chatgpt.com/codex/tasks/${taskId}\n\n`;
@@ -131,9 +187,9 @@ export class CloudSubmitTool {
         }
     }
     /**
-     * Execute codex cloud command
+     * Execute codex cloud command (with timeout detection v3.2.1)
      */
-    runCodexCloud(args) {
+    runCodexCloud(args, options) {
         return new Promise((resolve) => {
             let stdout = '';
             let stderr = '';
@@ -141,13 +197,34 @@ export class CloudSubmitTool {
                 stdio: ['ignore', 'pipe', 'pipe'],
                 shell: false,
             });
+            const processId = `cloud-submit-${Date.now()}`;
+            // Create timeout watchdog (v3.2.1)
+            const TimeoutWatchdog = require('../executor/timeout_watchdog.js').TimeoutWatchdog;
+            const watchdog = new TimeoutWatchdog(proc, processId, {
+                idleTimeoutMs: options?.idleTimeoutMs ?? 5 * 60 * 1000, // 5 min
+                hardTimeoutMs: options?.hardTimeoutMs ?? 10 * 60 * 1000, // 10 min (shorter for cloud submit)
+                onTimeout: (timeout) => {
+                    const partial = watchdog.getPartialResults();
+                    watchdog.stop();
+                    resolve({
+                        success: false,
+                        stdout: partial.stdoutTail || stdout,
+                        stderr: partial.stderrTail || stderr,
+                        exitCode: 1,
+                        timeout,
+                    });
+                },
+            });
             proc.stdout?.on('data', (data) => {
                 stdout += data.toString();
+                watchdog.recordStdout(data);
             });
             proc.stderr?.on('data', (data) => {
                 stderr += data.toString();
+                watchdog.recordStderr(data);
             });
             proc.on('close', (exitCode) => {
+                watchdog.stop();
                 resolve({
                     success: exitCode === 0,
                     stdout,
@@ -156,6 +233,7 @@ export class CloudSubmitTool {
                 });
             });
             proc.on('error', (error) => {
+                watchdog.stop();
                 resolve({
                     success: false,
                     stdout,
@@ -210,6 +288,11 @@ export class CloudSubmitTool {
                     model: {
                         type: 'string',
                         description: 'OpenAI model to use (e.g., "gpt-4o", "o1", "o3-mini"). Defaults to environment default.',
+                    },
+                    allow_destructive_git: {
+                        type: 'boolean',
+                        description: 'Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.',
+                        default: false,
                     },
                 },
                 required: ['task', 'envId'],

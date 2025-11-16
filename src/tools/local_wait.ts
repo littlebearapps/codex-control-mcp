@@ -186,7 +186,24 @@ export class LocalWaitTool {
   }
 
   async execute(params: any) {
-    const result = await handleLocalWait(params);
+    // Add hard timeout wrapper (v3.2.1) - ensures wait can't hang indefinitely
+    const maxExecutionTime = 11 * 60 * 1000; // 11 minutes (slightly longer than max wait)
+    const timeoutPromise = new Promise<any>((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: false,
+          task_id: params.task_id,
+          status: 'unknown',
+          message: `Wait operation timed out after ${maxExecutionTime / 1000}s (hard limit)`,
+          error: 'Wait operation exceeded hard timeout',
+          elapsed_ms: maxExecutionTime,
+          timed_out: true,
+        });
+      }, maxExecutionTime);
+    });
+
+    // Race between actual wait and hard timeout
+    const result = await Promise.race([handleLocalWait(params), timeoutPromise]);
 
     // Format progress info if available
     let displayText = `**Task ${result.task_id}** - ${result.status}\n\n`;

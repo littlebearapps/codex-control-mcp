@@ -9,6 +9,7 @@ export interface CloudSubmitInput {
     envId: string;
     attempts?: number;
     model?: string;
+    allow_destructive_git?: boolean;
 }
 export interface CloudStatusInput {
     taskId?: string;
@@ -28,6 +29,7 @@ export interface CloudToolResult {
         text: string;
     }>;
     isError?: boolean;
+    metadata?: any;
 }
 export declare class CloudSubmitTool {
     /**
@@ -35,7 +37,7 @@ export declare class CloudSubmitTool {
      */
     execute(input: CloudSubmitInput): Promise<CloudToolResult>;
     /**
-     * Execute codex cloud command
+     * Execute codex cloud command (with timeout detection v3.2.1)
      */
     private runCodexCloud;
     /**
@@ -67,6 +69,11 @@ export declare class CloudSubmitTool {
                 model: {
                     type: string;
                     description: string;
+                };
+                allow_destructive_git: {
+                    type: string;
+                    description: string;
+                    default: boolean;
                 };
             };
             required: string[];

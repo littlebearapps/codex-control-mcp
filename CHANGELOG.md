@@ -5,11 +5,76 @@ All notable changes to MCP Delegator (formerly Codex Control MCP) will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.2.1] - 2025-11-15
+## [3.2.1] - 2025-11-16
+
+### Added
+
+**Timeout/Hang Detection for Long-Running Tasks** ⏱️
+
+Added MCP-compliant timeout detection to prevent AI agents and Claude Code from waiting indefinitely when tasks hang or freeze.
+
+**Problem Solved**:
+- During UAT testing (Test 2.6), Codex CLI hung for 36 minutes with no output
+- Claude Code and user had no way to detect hang or take action
+- AI agent sat frozen waiting for task that would never complete
+
+**Solution**:
+- **TimeoutWatchdog** class with two-tier timeout system:
+  - **Inactivity timeout** (default: 5 min) - Resets on any stdout/stderr output, catches silent hangs
+  - **Hard timeout** (default: 20 min) - Wall-clock maximum, prevents infinite execution
+- **MCP Progress Tracking**: `notifications/progress` sent every 30 seconds during execution
+- **MCP Warning Notifications**: `notifications/message` (warning level) sent 30s before timeout
+- **MCP Error Notifications**: `notifications/message` (error level) sent when timeout fires
+- **Structured Error Response**: Returns `isError: true` with partial results to "snap" Claude Code out of waiting
+- **Partial Results Capture**: Last 50 JSONL events + last 64KB of stdout/stderr for recovery context
+- **Process Cleanup**: SIGTERM → SIGKILL cascade for reliable process termination
+
+**Tools with Full Timeout Detection** (6/6 ✅ COMPLETE):
+
+**Process-Spawning Tools** (2 tools):
+1. ✅ `_codex_local_run` - Via ProcessManager + TimeoutWatchdog (5 min idle / 20 min hard)
+2. ✅ `_codex_cloud_submit` - Via runCodexCloud() + TimeoutWatchdog (5 min idle / 10 min hard)
+
+**SDK Background Execution** (2 tools):
+3. ✅ `_codex_local_exec` - Background task monitoring (5 min idle / 20 min hard)
+4. ✅ `_codex_local_resume` - Background task monitoring (5 min idle / 20 min hard)
+
+**Polling/Wait Tools** (2 tools):
+5. ✅ `_codex_local_wait` - Hard timeout wrapper (11 min max)
+6. ✅ `_codex_cloud_wait` - Hard timeout wrapper (31 min max)
+
+**Implementation**:
+- **New File**: `src/executor/timeout_watchdog.ts` (TimeoutWatchdog class, 300+ lines)
+- **Modified**: `src/executor/process_manager.ts` - Integrated TimeoutWatchdog for CLI process spawning
+- **Modified**: `src/tools/cloud.ts` - Added TimeoutWatchdog to cloud submission
+- **Modified**: `src/tools/local_exec.ts` - Added timeout monitoring to background SDK execution
+- **Modified**: `src/tools/local_resume.ts` - Added timeout monitoring to background SDK execution
+- **Modified**: `src/tools/local_wait.ts` - Added hard timeout wrapper around polling loop
+- **Modified**: `src/tools/cloud_wait.ts` - Added hard timeout wrapper around polling loop
+- **Dependency**: Added `tree-kill@^1.2.2` for cross-platform process cleanup
+
+**Configuration**:
+- `idleTimeoutMs`: Inactivity timeout in milliseconds (default: 300000 = 5 min)
+- `hardTimeoutMs`: Hard deadline in milliseconds (default: 1200000 = 20 min)
+- Callbacks: `onProgress`, `onWarning`, `onTimeout` for MCP notification integration
+
+**Test 2.6 Impact**:
+- **Before**: 36-minute hang with no detection
+- **After**: Would be caught in 5 minutes 30 seconds with warning at 4m 30s
+
+**Documentation**:
+- Complete design document: `docs/TIMEOUT-HANG-DETECTION-IMPLEMENTATION.md` (27KB, 600+ lines of code)
+- MCP specification research: Official progress tracking and logging protocols
+
+**Coverage Details**:
+- **Process-spawning tools** use TimeoutWatchdog with full MCP notification support
+- **SDK background execution** monitors idle time and hard deadline, updates task registry on timeout
+- **Wait tools** have hard timeout wrappers to prevent infinite polling
+- All 6 execution tools protected against indefinite hangs (100% coverage)
 
 ### Fixed
 
-**Critical Production Bugs** 🐛
+**Critical Production Bugs from v3.2.1 (Part 1)** 🐛
 
 Three production issues identified in Google Platforms Standardization audit have been resolved:
 
