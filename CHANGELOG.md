@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.2.2...v3.3.0) (2025-11-16)
+
+
+### Features
+
+* customize semantic-release to trigger on docs commits ([#12](https://github.com/littlebearapps/mcp-delegator/issues/12)) ([33c7d87](https://github.com/littlebearapps/mcp-delegator/commit/33c7d87e5a230e141fe7686d69c3689a96a7f377))
+
 # 1.0.0 (2025-11-16)
 
 

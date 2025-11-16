@@ -1,6 +1,6 @@
 {
   "name": "@littlebearapps/mcp-delegator",
-  "version": "3.2.2",
+  "version": "3.3.0",
   "description": "Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution",
   "main": "dist/index.js",
   "type": "module",
