@@ -1,6 +1,6 @@
 # MCP Delegator - Claude Code Memory
 
-**Version**: 3.2.2
+**Version**: 3.2.3-dev
 **Purpose**: Delegate AI agent tasks to Codex, Claude Code (Agent SDK), and more - with async execution
 **Status**: ✅ Production Ready - Full CI/CD Automation Active
 
