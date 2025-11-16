@@ -1,3 +1,5 @@
+## [3.3.1](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.0...v3.3.1) (2025-11-16)
+
 # [3.3.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.2.2...v3.3.0) (2025-11-16)
 
 
