@@ -1,8 +1,8 @@
 # MCP Delegator - Claude Code Memory
 
-**Version**: 3.2.1
+**Version**: 3.2.2
 **Purpose**: Delegate AI agent tasks to Codex, Claude Code (Agent SDK), and more - with async execution
-**Status**: ✅ Production Ready - All Critical Bugs Fixed
+**Status**: ✅ Production Ready - Full CI/CD Automation Active
 
 ---
 
@@ -19,14 +19,33 @@ See detailed documentation in `quickrefs/`:
 
 ---
 
+## CI/CD Infrastructure (v3.2.2)
+
+**✅ FULLY AUTOMATED** - Complete CI/CD pipeline operational
+
+**Automated on Every PR**:
+- Lint, build, type check, tests (Node 20.x/22.x, Ubuntu/macOS/Windows)
+- CodeQL security scanning, dependency audit
+
+**Automated on Main Commits**:
+- semantic-release (auto-versioning based on conventional commits)
+- npm publishing with provenance (OIDC Trusted Publisher)
+- GitHub releases + CHANGELOG generation
+
+**Security**: Dependabot updates, secret scanning, weekly CodeQL scans
+
+**See**: `docs/CI-CD-SECURITY-PLAN.md`, `docs/GITHUB-SETTINGS.md`
+
+---
+
 ## Production Deployment (npm Package)
 
 **✅ PUBLISHED TO NPM**: This MCP server is published as a **private npm package** under the `@littlebearapps` organization.
 
 **Package Details**:
 - **Name**: `@littlebearapps/mcp-delegator`
-- **Version**: 3.2.1
-- **Access**: Private (requires @littlebearapps org membership)
+- **Version**: 3.2.2 (automated via semantic-release)
+- **Access**: Public
 - **Registry**: https://www.npmjs.com/package/@littlebearapps/mcp-delegator
 
 **Installation**:

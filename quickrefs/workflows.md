@@ -552,3 +552,31 @@ jobs:
 - ✅ Review error messages carefully
 - ✅ Check `codex_status` for queue issues
 - ✅ Use `codex_cloud_check_reminder` for pending tasks
+
+---
+
+## Repository CI/CD (v3.2.2+)
+
+**Fully automated pipeline** - No manual versioning or publishing required.
+
+### Automated on Every PR
+- Multi-platform testing (Node 20.x/22.x on Ubuntu/macOS/Windows)
+- Lint, type check, coverage, security audit
+- CodeQL security scanning
+
+### Automated on Main Commits
+- **semantic-release** determines version from conventional commits:
+  - `fix:` → Patch (3.2.x)
+  - `feat:` → Minor (3.x.0)
+  - `feat!:` or `BREAKING CHANGE:` → Major (x.0.0)
+- Auto-publish to npm with provenance
+- Generate CHANGELOG.md
+- Create GitHub releases
+
+### Continuous Security
+- Weekly CodeQL scans
+- Dependabot dependency updates
+- Secret scanning with push protection
+- npm audit on every CI run
+
+**See**: `docs/CI-CD-SECURITY-PLAN.md`, `docs/GITHUB-SETTINGS.md`
