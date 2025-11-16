@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.2...v3.4.0) (2025-11-16)
+
+
+### Features
+
+* re-enable provenance with E409 error handling ([bc5e7a3](https://github.com/littlebearapps/mcp-delegator/commit/bc5e7a3b06983fea6d27dd2981994704ea538acd)), closes [ckeditor/ckeditor5#16625](https://github.com/ckeditor/ckeditor5/issues/16625)
+
 ## [3.3.2](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.1...v3.3.2) (2025-11-16)
 
 
