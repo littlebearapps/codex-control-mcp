@@ -28,7 +28,7 @@
 - 🎯 **NEW NAME**: `mcp-delegator` (was codex-control-mcp)
 - 🤖 **Multi-Agent Ready**: Codex + Claude Code (Agent SDK) + future agents
 - 📦 **Scoped Package**: `@littlebearapps/mcp-delegator` ready for npm publish
-- 🔗 **npm link Development**: Instant change propagation via global symlink
+- 📦 **npm Package Deployment**: Install globally via npm for production use
 - 🛡️ **Publishing Safety**: Files whitelist, prepublishOnly script, .npmignore
 - 📊 **Structured Metadata**: AI agents get machine-readable test results, errors, suggestions
 - 🎯 **Actionable Guidance**: Error context with specific investigation suggestions
@@ -296,10 +296,22 @@ codex --version
 codex auth
 ```
 
-### Build MCP Server
+### Install MCP Server
 
+**Production Deployment** (Recommended):
 ```bash
-cd /Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control
+# Install published npm package
+npm install -g @littlebearapps/mcp-delegator
+
+# Verify installation
+which mcp-delegator
+mcp-delegator --version
+```
+
+**Development Workflow** (For contributors):
+```bash
+# Clone and build from source
+cd /path/to/mcp-delegator
 
 # Install dependencies
 npm install
@@ -307,8 +319,8 @@ npm install
 # Build TypeScript
 npm run build
 
-# Verify build
-ls -la dist/index.js
+# Link globally for development
+npm link
 ```
 
 ---
@@ -319,13 +331,28 @@ ls -la dist/index.js
 
 Add this configuration to your `.mcp.json` file:
 
+**Using npm Package** (Recommended):
 ```json
 {
   "mcpServers": {
-    "codex-control": {
+    "mcp-delegator": {
+      "command": "mcp-delegator",
+      "env": {
+        "CODEX_MAX_CONCURRENCY": "2"
+      }
+    }
+  }
+}
+```
+
+**Using Local Build** (Development only):
+```json
+{
+  "mcpServers": {
+    "mcp-delegator": {
       "command": "node",
       "args": [
-        "/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js"
+        "/path/to/mcp-delegator/dist/index.js"
       ],
       "env": {
         "CODEX_MAX_CONCURRENCY": "2"

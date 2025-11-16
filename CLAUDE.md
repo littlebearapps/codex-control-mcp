@@ -19,57 +19,116 @@ See detailed documentation in `quickrefs/`:
 
 ---
 
-## Production Deployment (npm link)
+## Production Deployment (npm Package)
 
-**✅ PRODUCTION READY**: This MCP server uses **npm link** for seamless development and deployment across all Claude Code working directories.
+**✅ PUBLISHED TO NPM**: This MCP server is published as a **private npm package** under the `@littlebearapps` organization.
 
-**How It Works**:
-- Global symlink: `/opt/homebrew/bin/mcp-delegator`
-- Points to: `/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js`
-- All MCP configs use: `"command": "mcp-delegator"`
-- Changes propagate automatically after rebuild!
+**Package Details**:
+- **Name**: `@littlebearapps/mcp-delegator`
+- **Version**: 3.2.1
+- **Access**: Private (requires @littlebearapps org membership)
+- **Registry**: https://www.npmjs.com/package/@littlebearapps/mcp-delegator
 
-**Development Workflow**:
-1. Edit files in `src/`
-2. Build with `npm run build`
-3. **That's it!** Changes propagate to all projects
-4. Restart Claude Code to pick up changes
-
-**Setup** (Already Done! ✅):
+**Installation**:
 ```bash
-./setup-npm-link.sh  # Creates global symlink
+# Install globally (requires org membership)
+npm install -g @littlebearapps/mcp-delegator
+
+# Verify installation
+which mcp-delegator
+mcp-delegator --version
+```
+
+**MCP Configuration**:
+All MCP configs use: `"command": "mcp-delegator"`
+```json
+{
+  "mcpServers": {
+    "mcp-delegator": {
+      "command": "mcp-delegator",
+      "env": {
+        "CODEX_MAX_CONCURRENCY": "2"
+      }
+    }
+  }
+}
+```
+
+**Updating**:
+```bash
+# Check for updates
+npm outdated -g @littlebearapps/mcp-delegator
+
+# Update to latest version
+npm update -g @littlebearapps/mcp-delegator
 ```
 
 **Benefits**:
-- ✅ No manual copying needed
-- ✅ Single source of truth (no version drift)
-- ✅ Portable MCP configs (no hard-coded paths)
-- ✅ Prepares for npm publish (when ready)
+- ✅ Version management (rollback capability)
+- ✅ Works across all directories (no symlink fragility)
+- ✅ Clean installation (standard npm workflow)
+- ✅ Org-wide access (@littlebearapps team members)
+- ✅ No directory rename issues
 
-**See**: `NPM-LINK-SETUP.md` for complete documentation
+---
 
-### npm Package (Publish-Ready)
+### Development Workflow (npm link)
 
-**Package Name**: `@littlebearapps/codex-control-mcp`
-**Status**: ✅ Ready for npm publish (when desired)
+For active development, you can use **npm link** to test changes instantly:
 
-**Improvements**:
-- ✅ Scoped package name (@littlebearapps/codex-control-mcp)
-- ✅ Files whitelist (only ships dist/, docs/, LICENSE)
-- ✅ prepublishOnly script (safety check before publish)
-- ✅ Enhanced keywords for npm discoverability
-- ✅ Repository URLs for GitHub integration
-- ✅ MIT License file included
-- ✅ .npmignore to exclude development files
-
-**Publishing**:
+**Setup**:
 ```bash
-npm publish --access public
+cd /Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/mcp-delegator
+npm link  # Creates global symlink
 ```
 
-**Note**: Scoped packages default to private access. Use `--access public` for free accounts.
+**Development Cycle**:
+1. Edit files in `src/`
+2. Build with `npm run build`
+3. **Changes propagate immediately!**
+4. Restart Claude Code to test
 
-**See**: `NPM-PACKAGE-IMPROVEMENTS.md` for complete details
+**Revert to npm package**:
+```bash
+npm unlink -g @littlebearapps/mcp-delegator
+npm install -g @littlebearapps/mcp-delegator
+```
+
+**When to use npm link**:
+- ✅ Active feature development
+- ✅ Bug fixing and iteration
+- ✅ Testing before publishing
+
+**When to use npm package**:
+- ✅ Production use across projects
+- ✅ Stable releases
+- ✅ Team collaboration
+
+---
+
+### Publishing Updates
+
+**Publish workflow**:
+```bash
+# 1. Update version
+npm version patch  # 3.2.1 → 3.2.2
+# or: npm version minor  # 3.2.1 → 3.3.0
+# or: npm version major  # 3.2.1 → 4.0.0
+
+# 2. Build
+npm run build
+
+# 3. Publish (private to @littlebearapps org)
+npm publish --access restricted
+
+# 4. Verify
+npm view @littlebearapps/mcp-delegator
+```
+
+**Org Requirements**:
+- Organization: `@littlebearapps` (has Pro plan)
+- Members can publish and install private packages
+- Cost: $7/month (org-wide)
 
 ---
 

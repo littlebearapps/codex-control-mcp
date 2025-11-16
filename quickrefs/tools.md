@@ -226,10 +226,10 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 
 **v3.0.1 Status**:
 - ✅ All 14 primitives working and verified
-- ✅ npm link deployment tested
+- ✅ npm package published (@littlebearapps/mcp-delegator)
 - ✅ Async workflow validated
 - ✅ Parameter bug fix confirmed (_codex_local_results)
-- ✅ Change propagation verified
+- ✅ Production deployment verified
 
 **v3.0.0 (Unified Tool - Removed)**:
 - Core E2E: 14/14 tests (100%)
