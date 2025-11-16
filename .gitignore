@@ -3,4 +3,15 @@
 
 # Ad-hoc test scripts
 test-*.js
+test-*.ts
+
+# Database files
+*.db
+
+# Python scripts
+*.py
+
+# Sandbox directories
+git-merge-sandbox/
+test-write-permission/
 
