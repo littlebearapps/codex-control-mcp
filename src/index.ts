@@ -41,7 +41,7 @@ import { globalLogger } from './utils/logger.js';
  */
 const MAX_CONCURRENCY = parseInt(process.env.CODEX_MAX_CONCURRENCY || '2', 10);
 const SERVER_NAME = 'mcp-delegator';
-const SERVER_VERSION = '3.2.0';
+const SERVER_VERSION = '3.2.1';
 
 /**
  * Main Server Class
