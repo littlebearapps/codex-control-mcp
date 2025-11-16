@@ -2,46 +2,40 @@
  * Test Helpers - Shared utilities for test suites
  */
 
-import { strict as assert } from 'node:assert';
-
 /**
  * Assert that value is within range
  */
 export function assertInRange(value: number, min: number, max: number, message?: string): void {
-  assert.ok(
-    value >= min && value <= max,
-    message || `Expected ${value} to be between ${min} and ${max}`
-  );
+  if (value < min || value > max) {
+    throw new Error(message || `Expected ${value} to be between ${min} and ${max}`);
+  }
 }
 
 /**
  * Assert that array contains value
  */
 export function assertContains<T>(array: T[], value: T, message?: string): void {
-  assert.ok(
-    array.includes(value),
-    message || `Expected array to contain ${value}`
-  );
+  if (!array.includes(value)) {
+    throw new Error(message || `Expected array to contain ${value}`);
+  }
 }
 
 /**
  * Assert that object has property
  */
 export function assertHasProperty(obj: any, prop: string, message?: string): void {
-  assert.ok(
-    prop in obj,
-    message || `Expected object to have property "${prop}"`
-  );
+  if (!(prop in obj)) {
+    throw new Error(message || `Expected object to have property "${prop}"`);
+  }
 }
 
 /**
  * Assert that string matches regex
  */
 export function assertMatches(str: string, regex: RegExp, message?: string): void {
-  assert.ok(
-    regex.test(str),
-    message || `Expected "${str}" to match ${regex}`
-  );
+  if (!regex.test(str)) {
+    throw new Error(message || `Expected "${str}" to match ${regex}`);
+  }
 }
 
 /**
@@ -92,21 +86,23 @@ export async function assertRejects(
 ): Promise<void> {
   try {
     await fn();
-    assert.fail('Expected promise to reject, but it resolved');
+    throw new Error('Expected promise to reject, but it resolved');
   } catch (error) {
     if (expectedError) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (typeof expectedError === 'string') {
-        assert.ok(
-          errorMessage.includes(expectedError),
-          `Expected error to include "${expectedError}", but got: ${errorMessage}`
-        );
+        if (!errorMessage.includes(expectedError)) {
+          throw new Error(
+            `Expected error to include "${expectedError}", but got: ${errorMessage}`
+          );
+        }
       } else {
-        assert.ok(
-          expectedError.test(errorMessage),
-          `Expected error to match ${expectedError}, but got: ${errorMessage}`
-        );
+        if (!expectedError.test(errorMessage)) {
+          throw new Error(
+            `Expected error to match ${expectedError}, but got: ${errorMessage}`
+          );
+        }
       }
     }
   }
@@ -116,10 +112,9 @@ export async function assertRejects(
  * Assert that value is defined (not null/undefined)
  */
 export function assertDefined<T>(value: T | null | undefined, message?: string): asserts value is T {
-  assert.ok(
-    value !== null && value !== undefined,
-    message || 'Expected value to be defined'
-  );
+  if (value === null || value === undefined) {
+    throw new Error(message || 'Expected value to be defined');
+  }
 }
 
 /**
@@ -159,9 +154,7 @@ export function assertStringsEqual(actual: string, expected: string, message?: s
   const normalizedActual = normalizeTestString(actual);
   const normalizedExpected = normalizeTestString(expected);
 
-  assert.strictEqual(
-    normalizedActual,
-    normalizedExpected,
-    message || `Expected "${expected}" but got "${actual}"`
-  );
+  if (normalizedActual !== normalizedExpected) {
+    throw new Error(message || `Expected "${expected}" but got "${actual}"`);
+  }
 }

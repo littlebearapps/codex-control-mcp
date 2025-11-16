@@ -1,5 +1,10 @@
 # MCP Delegator
 
+[![CI](https://github.com/littlebearapps/mcp-delegator/workflows/CI/badge.svg)](https://github.com/littlebearapps/mcp-delegator/actions)
+[![npm version](https://badge.fury.io/js/@littlebearapps%2Fmcp-delegator.svg)](https://www.npmjs.com/package/@littlebearapps/mcp-delegator)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/node/v/@littlebearapps/mcp-delegator)](https://nodejs.org)
+
 **Version**: 3.2.1
 **Package**: `@littlebearapps/mcp-delegator`
 **Status**: ✅ Production Ready - All Critical Bugs Fixed

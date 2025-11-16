@@ -10,6 +10,7 @@ import { InputValidator } from '../security/input_validator.js';
 import { globalRedactor } from '../security/redactor.js';
 import { globalTaskRegistry, CloudTaskFilter } from '../state/cloud_task_registry.js';
 import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
+import { TimeoutWatchdog } from '../executor/timeout_watchdog.js';
 
 export interface CloudSubmitInput {
   task: string;
@@ -272,7 +273,6 @@ export class CloudSubmitTool {
       const processId = `cloud-submit-${Date.now()}`;
 
       // Create timeout watchdog (v3.2.1)
-      const TimeoutWatchdog = require('../executor/timeout_watchdog.js').TimeoutWatchdog;
       const watchdog = new TimeoutWatchdog(proc, processId, {
         idleTimeoutMs: options?.idleTimeoutMs ?? 5 * 60 * 1000,  // 5 min
         hardTimeoutMs: options?.hardTimeoutMs ?? 10 * 60 * 1000, // 10 min (shorter for cloud submit)

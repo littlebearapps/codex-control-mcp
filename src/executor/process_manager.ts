@@ -9,6 +9,7 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
+import fs from 'fs';
 import { JSONLParser, CodexEvent } from './jsonl_parser.js';
 import {
   TimeoutWatchdog,
@@ -315,11 +316,10 @@ export class ProcessManager {
   private setITermBadge(text: string) {
     if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
       try {
-        const fs = require('fs');
         // Write directly to terminal device to bypass MCP stdio redirection
         const badge = Buffer.from(text).toString('base64');
         fs.writeFileSync('/dev/tty', `\x1b]1337;SetBadgeFormat=${badge}\x07`);
-      } catch (error) {
+      } catch {
         // Silently fail if /dev/tty not accessible
       }
     }
@@ -331,10 +331,9 @@ export class ProcessManager {
   private clearITermBadge() {
     if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
       try {
-        const fs = require('fs');
         // Clear badge by writing empty badge format
         fs.writeFileSync('/dev/tty', '\x1b]1337;SetBadgeFormat=\x07');
-      } catch (error) {
+      } catch {
         // Silently fail if /dev/tty not accessible
       }
     }

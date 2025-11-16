@@ -1,299 +1,353 @@
-# Contributing to Codex Control MCP
+# Contributing to MCP Delegator
 
-Thank you for your interest in contributing to Codex Control MCP! This document provides guidelines for contributing, especially for environment templates.
+Thank you for your interest in contributing to **mcp-delegator**! This document provides guidelines for contributing to the project.
 
 ## Table of Contents
 
-- [Environment Templates](#environment-templates)
-- [Development Setup](#development-setup)
+- [Code of Conduct](#code-of-conduct)
+- [Getting Started](#getting-started)
+- [Development Workflow](#development-workflow)
+- [Commit Guidelines](#commit-guidelines)
 - [Pull Request Process](#pull-request-process)
-- [Testing](#testing)
+- [Testing Requirements](#testing-requirements)
+- [Code Quality Standards](#code-quality-standards)
 
-## Environment Templates
+## Code of Conduct
 
-Environment templates provide pre-configured setup scripts for different technology stacks with GitHub integration.
+This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to conduct@littlebearapps.com.
 
-### Template Structure
+## Getting Started
 
-Each template must include:
+### Prerequisites
 
-```typescript
-{
-  name: string;              // Unique ID (lowercase, hyphens only)
-  description: string;       // Human-readable description
-  repoTypes: string[];       // Supported tech stacks
-  setupScript: string;       // Bash script for first startup
-  maintenanceScript: string; // Bash script for cached containers
-  requiredSecrets: string[]; // Required Codex Cloud secrets
-  environmentVariables: Record<string, string>;  // Default env vars
-  instructions: string;      // Markdown setup instructions
-}
+- **Node.js**: >=20.0.0
+- **npm**: Latest version
+- **Git**: For version control
+- **TypeScript**: Familiarity with TypeScript
+
+### Development Setup
+
+1. **Fork and clone the repository**
+   ```bash
+   git clone https://github.com/littlebearapps/mcp-delegator.git
+   cd mcp-delegator
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Build the project**
+   ```bash
+   npm run build
+   ```
+
+4. **Run tests**
+   ```bash
+   npm test
+   ```
+
+5. **Run linter**
+   ```bash
+   npm run lint
+   ```
+
+### Project Structure
+
+```
+mcp-delegator/
+├── src/                  # Source code (TypeScript)
+├── dist/                 # Compiled output (JavaScript)
+├── test/                 # Test files
+├── docs/                 # Documentation
+├── quickrefs/            # Quick reference guides
+├── .github/              # GitHub workflows and configuration
+└── scripts/              # Build and utility scripts
 ```
 
-### Adding a New Template
+## Development Workflow
 
-1. **Edit `src/resources/environment_templates.ts`**
+### 1. Create a Feature Branch
 
-```typescript
-{
-  name: 'github-your-stack',
-  description: 'Your stack with GitHub integration',
-  repoTypes: ['your-stack'],
-  setupScript: `#!/bin/bash
-set -e
-
-# Configure git identity
-git config --global user.name "$GIT_USER_NAME"
-git config --global user.email "$GIT_USER_EMAIL"
-
-# Configure git to use GITHUB_TOKEN
-git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"
-
-${githubCliInstall}  // Use common GitHub CLI installation
-
-# Install your stack dependencies
-# ... your setup commands ...
-`,
-  maintenanceScript: `#!/bin/bash
-# Update dependencies for cached containers
-# ... your maintenance commands ...
-`,
-  requiredSecrets: ['GITHUB_TOKEN'],
-  environmentVariables: {
-    GIT_USER_NAME: 'Codex Agent',
-    GIT_USER_EMAIL: 'codex@example.com',
-  },
-  instructions: githubInstructions,  // Use common instructions
-}
-```
-
-2. **Run validation**
+Always create a new branch from `main` for your work:
 
 ```bash
+git checkout main
+git pull origin main
+git checkout -b feature/your-feature-name
+```
+
+Branch naming conventions:
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation updates
+- `refactor/` - Code refactoring
+- `test/` - Test additions/fixes
+- `chore/` - Maintenance tasks
+
+### 2. Make Your Changes
+
+- Follow the [code quality standards](#code-quality-standards)
+- Add tests for new functionality
+- Update documentation as needed
+- Ensure all tests pass locally
+
+### 3. Test Your Changes
+
+Before committing, run:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run linter
+npm run lint
+
+# Fix linting issues automatically
+npm run lint:fix
+
+# Build the project
 npm run build
-python3 scripts/validate_templates.py
 ```
 
-3. **Test in Codex Cloud**
+**Coverage Requirements**: Minimum 95% coverage for all metrics (branches, functions, lines, statements).
 
-- Create test environment using your template
-- Submit test task: "Create test branch and PR"
-- Verify GitHub operations work
+### 4. Commit Your Changes
 
-4. **Submit PR with**:
-
-- Template code
-- Test results (screenshots or logs)
-- Documentation updates (if needed)
-
-### Template Best Practices
-
-#### Error Handling (4-Level Fallback)
-
-All GitHub-integrated templates MUST use the 4-level fallback pattern:
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ```bash
-# Level 1: Standard installation (APT, package manager)
-if install_via_package_manager; then
-  echo "✅ Installed via package manager"
-  return 0
-fi
-
-# Level 2: Direct download (binary, precompiled)
-if download_and_install_directly; then
-  echo "✅ Installed via direct download"
-  return 0
-fi
-
-# Level 3: Graceful degradation (warn, continue)
-echo "⚠️  WARNING: Installation failed"
-echo "   Core operations will work"
-echo "   Some features unavailable"
-echo "   Manual installation: [link]"
-return 0  # DON'T fail setup
-
-# Level 4: Manual instructions in output
+git commit -m "feat: add new delegation strategy"
+git commit -m "fix: resolve async execution timeout"
+git commit -m "docs: update README with new examples"
 ```
 
-**Why 4-level fallback?**
+See [Commit Guidelines](#commit-guidelines) for details.
 
-- Codex Cloud containers may have network restrictions
-- Different base images may have different package managers
-- Graceful degradation enables core workflows even if optional tools fail
-- Clear instructions help users fix issues manually
-
-#### Security Requirements
-
-**MUST**:
-- ✅ Use `$GITHUB_TOKEN` environment variable (never hardcode)
-- ✅ Configure git auth via `git config url.insteadOf`
-- ✅ Use secrets for sensitive data
-- ✅ Include `set -e` for error handling
-
-**MUST NOT**:
-- ❌ Hardcode credentials or tokens
-- ❌ Expose secrets in logs
-- ❌ Use unquoted variable expansions
-- ❌ Skip error handling
-
-#### Script Quality
-
-**Required**:
-- Bash shebang: `#!/bin/bash`
-- Error handling: `set -e`
-- Status messages: `echo "✅ Step complete"`
-- Warning messages: `echo "⚠️  Warning: ..."`
-- Error messages: `echo "❌ Error: ..."`
-
-**Recommended**:
-- Check for file existence before operations
-- Provide context in error messages
-- Use conditional execution for optional steps
-- Log version information for debugging
-
-### Updating Existing Templates
-
-When updating templates:
-
-1. **Maintain Backward Compatibility**
-   - Don't change template names
-   - Don't remove required fields
-   - Don't break existing environment setups
-
-2. **Document Breaking Changes**
-   - Note in CHANGELOG
-   - Provide migration guide
-   - Consider deprecation period
-
-3. **Test Thoroughly**
-   - Test in fresh Codex Cloud environment
-   - Test with cached containers (maintenance script)
-   - Verify GitHub operations still work
-
-### Template Maintenance
-
-Templates are **embedded** in the MCP server (not external files):
-
-**Pros**:
-- Bundled distribution (single npm package)
-- Version locked with MCP server
-- No external dependencies
-- Claude Code reads from MCP resources
-
-**Cons**:
-- Updates require new MCP version
-- Can't update templates independently
-
-**When to Update**:
-- New GitHub CLI version released
-- Security vulnerabilities discovered
-- User feedback on setup failures
-- New technology stack requested
-
-**Update Process**:
-1. Edit templates in `src/resources/environment_templates.ts`
-2. Run validation: `python3 scripts/validate_templates.py`
-3. Test in Codex Cloud
-4. Submit PR with test results
-5. Document in CHANGELOG under "Templates" section
-
-## Development Setup
+### 5. Push and Create Pull Request
 
 ```bash
-# Clone repository
-git clone https://github.com/your-org/codex-control-mcp
-cd codex-control-mcp
+git push origin feature/your-feature-name
+```
 
-# Install dependencies
-npm install
+Then create a PR on GitHub following the [PR template](.github/PULL_REQUEST_TEMPLATE.md).
 
-# Build
-npm run build
+## Commit Guidelines
 
-# Run validation
-python3 scripts/validate_templates.py
+We use [Conventional Commits](https://www.conventionalcommits.org/) for clear and semantic commit messages.
 
-# Watch mode (development)
-npm run watch
+### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+
+- **feat**: New feature
+- **fix**: Bug fix
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, missing semicolons, etc.)
+- **refactor**: Code refactoring (no functional changes)
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks, dependency updates
+- **ci**: CI/CD configuration changes
+
+### Examples
+
+```bash
+# Simple feature
+git commit -m "feat: add support for GitHub PR metadata extraction"
+
+# Bug fix with scope
+git commit -m "fix(codex): handle timeout in cloud execution"
+
+# Breaking change
+git commit -m "feat!: change MCP tool parameter structure
+
+BREAKING CHANGE: Tool parameters now use structured objects instead of flat strings.
+Migration: Update tool calls to use { taskId, prompt } object structure."
+
+# Documentation
+git commit -m "docs: add troubleshooting guide for keychain issues"
+```
+
+### Breaking Changes
+
+Mark breaking changes with `!` or `BREAKING CHANGE:` footer:
+
+```bash
+git commit -m "feat!: remove deprecated unified_codex tool
+
+BREAKING CHANGE: The unified_codex tool has been removed.
+Use separate codex_local and codex_cloud tools instead."
 ```
 
 ## Pull Request Process
 
-1. **Create Feature Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+### Before Submitting
 
-2. **Make Changes**
-   - Follow coding standards
-   - Add tests if applicable
-   - Update documentation
+- [ ] All tests pass locally (`npm test`)
+- [ ] Code coverage meets 95% threshold
+- [ ] Linting passes (`npm run lint`)
+- [ ] Build succeeds (`npm run build`)
+- [ ] Documentation updated (if needed)
+- [ ] CHANGELOG.md updated (for significant changes)
 
-3. **Validate**
-   ```bash
-   npm run build
-   python3 scripts/validate_templates.py
-   ```
+### PR Description Template
 
-4. **Commit**
-   ```bash
-   git commit -m "feat: add your feature"
-   ```
-   Use conventional commits: `feat:`, `fix:`, `docs:`, `chore:`
+Your PR should include:
 
-5. **Push and Create PR**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-   - Provide clear description
-   - Reference related issues
-   - Include test results for templates
+1. **Summary**: Brief description of changes
+2. **Motivation**: Why this change is needed
+3. **Changes**: Detailed list of modifications
+4. **Testing**: How you tested the changes
+5. **Breaking Changes**: Any breaking changes (if applicable)
+6. **Related Issues**: Link to related issues
 
-6. **CI Validation**
-   - GitHub Actions will validate templates
-   - All checks must pass before merge
+Example:
+
+```markdown
+## Summary
+Add support for extracting GitHub PR metadata including labels and reviewers.
+
+## Motivation
+Users need access to PR metadata for advanced workflow automation.
+
+## Changes
+- Added `extractPRMetadata` function in `src/github/pr-metadata.ts`
+- Extended `codex_cloud_github_setup` tool with metadata extraction
+- Added tests for metadata extraction
 
 ## Testing
+- Unit tests added with 98% coverage
+- Manual testing with live GitHub PRs
+- Verified metadata accuracy
 
-### Unit Tests
+## Breaking Changes
+None
+
+## Related Issues
+Closes #123
+```
+
+### Review Process
+
+1. **Automated Checks**: CI must pass (tests, linting, build, coverage)
+2. **Code Review**: At least 1 approval from maintainer required
+3. **Conversation Resolution**: All review comments must be resolved
+4. **Up to Date**: Branch must be up to date with `main`
+
+### After Approval
+
+Once approved and all checks pass:
+- **Maintainer will merge** using squash merge
+- **Automated release** will trigger via semantic-release (if applicable)
+- **Branch will be deleted** automatically
+
+## Testing Requirements
+
+### Test Coverage
+
+- **Minimum Coverage**: 95% for branches, functions, lines, and statements
+- **Test Files**: Place tests in `test/` directory or co-located with `*.test.ts` suffix
+- **Naming**: Use descriptive test names
+
+### Writing Tests
+
+```typescript
+import { describe, test, expect } from '@jest/globals';
+
+describe('Feature Name', () => {
+  test('should handle successful case', () => {
+    // Arrange
+    const input = 'test';
+
+    // Act
+    const result = functionUnderTest(input);
+
+    // Assert
+    expect(result).toBe('expected');
+  });
+
+  test('should handle error case', () => {
+    expect(() => functionUnderTest(null)).toThrow();
+  });
+});
+```
+
+### Test Types
+
+- **Unit Tests**: Test individual functions and modules
+- **Integration Tests**: Test interactions between components
+- **E2E Tests**: Test complete workflows (manual testing acceptable)
+
+### Running Tests
+
 ```bash
+# Run all tests
 npm test
+
+# Run specific test file
+npm test -- src/feature.test.ts
+
+# Run with coverage
+npm test -- --coverage
+
+# Watch mode
+npm run test:watch
 ```
 
-### Template Validation
-```bash
-npm run build
-python3 scripts/validate_templates.py
-```
+## Code Quality Standards
 
-### Manual Testing (Codex Cloud)
+### TypeScript
 
-For template changes, manual testing in Codex Cloud is **required**:
+- Use strict TypeScript settings
+- Avoid `any` type (use `unknown` or specific types)
+- Define interfaces for complex objects
+- Use type guards for runtime type checking
 
-1. Create test environment with your template
-2. Run test task:
-   ```
-   "Create test branch called codex-test-$(date +%s), add a comment to README, create PR"
-   ```
-3. Verify:
-   - Branch created successfully
-   - Changes committed
-   - PR created with proper title
-   - CI triggered (if configured)
-4. Document results in PR
+### Code Style
 
-### Test Matrix
+- **Formatting**: Enforced by ESLint
+- **Line Length**: Max 100 characters (guideline, not strict)
+- **Imports**: Organize imports (external, internal, types)
+- **Comments**: Use JSDoc for public APIs
 
-For new templates, test on:
-- ✅ Fresh Codex Cloud environment (setup script)
-- ✅ Cached container (maintenance script)
-- ✅ GitHub operations (clone, push, PR)
-- ✅ Error scenarios (missing secrets, network issues)
+### Security
 
-## Questions?
+- **No Secrets**: Never commit API keys, tokens, or passwords
+- **Input Validation**: Always validate and sanitize user input
+- **SQL Safety**: Use parameterized queries (better-sqlite3)
+- **Command Execution**: Sanitize commands, avoid injection
 
-- Open an issue for questions or discussions
-- Check existing issues before creating new ones
-- Be respectful and constructive
+### Performance
 
-Thank you for contributing! 🎉
+- Use async/await for asynchronous operations
+- Avoid blocking operations in main thread
+- Clean up resources (close database connections, kill processes)
+
+## Questions or Issues?
+
+- **Questions**: Open a [GitHub Discussion](https://github.com/littlebearapps/mcp-delegator/discussions)
+- **Bugs**: Report via [GitHub Issues](https://github.com/littlebearapps/mcp-delegator/issues)
+- **Security**: Report to security@littlebearapps.com (see [SECURITY.md](SECURITY.md))
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the MIT License.
+
+---
+
+**Thank you for contributing to mcp-delegator!** 🎉
+
+Your contributions help make AI agent delegation more powerful and accessible for everyone.

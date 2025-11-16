@@ -10,6 +10,7 @@
 import { spawn } from 'child_process';
 import { ProcessManager } from '../executor/process_manager.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface StatusToolInput {
   // No input required - returns current status
 }

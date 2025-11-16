@@ -12,8 +12,7 @@
  * Total: 50 tests
  */
 
-import { describe, test } from 'node:test';
-import { strict as assert } from 'node:assert';
+import { describe, test, expect } from '@jest/globals';
 import { IntentParser } from '../src/core/intent-parser.js';
 import {
   assertInRange,
@@ -184,26 +183,15 @@ describe('Intent Parser - Positive Cases', () => {
 
         // Should successfully parse intent
         assertDefined(result.intent, `Failed to parse intent for "${input}"`);
-        assert.strictEqual(
-          result.intent.primitive,
-          primitive,
-          `Expected primitive "${primitive}" but got "${result.intent.primitive}"`
-        );
+        expect(result.intent.primitive).toBe(primitive);
 
         // Confidence should be reasonable
         assertValidConfidence(result.intent.confidence);
-        assert.ok(
-          result.intent.confidence >= 30,
-          `Confidence too low (${result.intent.confidence}%) for positive case`
-        );
+        expect(result.intent.confidence).toBeGreaterThanOrEqual(30);
 
         // Should not require disambiguation for clear inputs
         if (result.intent.confidence >= 70) {
-          assert.strictEqual(
-            result.requiresDisambiguation,
-            false,
-            'High-confidence input should not require disambiguation'
-          );
+          expect(result.requiresDisambiguation).toBe(false);
         }
 
         // Should have reasoning
@@ -224,10 +212,7 @@ describe('Intent Parser - Negative Cases', () => {
 
       // Should fail to parse or have very low confidence
       if (result.intent) {
-        assert.ok(
-          result.intent.confidence < 60,
-          `Unexpected high confidence (${result.intent.confidence}%) for negative case "${input}"`
-        );
+        expect(result.intent.confidence).toBeLessThan(60);
       } else {
         // No intent parsed - this is acceptable for negative cases
         assertDefined(result.error, 'Should include error message when no intent found');
@@ -245,10 +230,9 @@ describe('Intent Parser - Disambiguation', () => {
 
       if (testCase.should_disambiguate) {
         // Should identify multiple possible matches
-        assert.ok(
-          result.requiresDisambiguation || result.alternatives.length > 0,
-          `Expected disambiguation for "${testCase.input}"`
-        );
+        expect(
+          result.requiresDisambiguation || result.alternatives.length > 0
+        ).toBeTruthy();
 
         // Check if expected matches are in top results
         const topMatches = [
@@ -257,27 +241,17 @@ describe('Intent Parser - Disambiguation', () => {
         ].filter(Boolean);
 
         for (const expectedMatch of testCase.expected_matches) {
-          assert.ok(
-            topMatches.includes(expectedMatch),
-            `Expected "${expectedMatch}" in top matches for "${testCase.input}", got: ${topMatches.join(', ')}`
-          );
+          expect(topMatches).toContain(expectedMatch);
         }
 
         // Scores should be close (within 20 points)
         if (result.intent && result.alternatives[0]) {
           const diff = Math.abs(result.intent.confidence - result.alternatives[0].confidence);
-          assert.ok(
-            diff < 20,
-            `Confidence scores should be close for ambiguous input (diff: ${diff})`
-          );
+          expect(diff).toBeLessThan(20);
         }
       } else {
         // Should NOT require disambiguation
-        assert.strictEqual(
-          result.requiresDisambiguation,
-          false,
-          `Should not require disambiguation for "${testCase.input}"`
-        );
+        expect(result.requiresDisambiguation).toBe(false);
       }
     });
   }
@@ -296,19 +270,15 @@ describe('Intent Parser - Parameter Extraction', () => {
 
       // Check each expected parameter
       for (const [key, expectedValue] of Object.entries(testCase.expected_params)) {
-        assert.ok(
-          key in extractedParams,
-          `Missing parameter "${key}" in extracted params`
-        );
+        expect(extractedParams).toHaveProperty(key);
 
         if (typeof expectedValue === 'string') {
-          assert.ok(
+          expect(
             extractedParams[key].includes(expectedValue) ||
               normalizeTestString(extractedParams[key]).includes(
                 normalizeTestString(expectedValue)
-              ),
-            `Expected param "${key}" to contain "${expectedValue}", got: ${extractedParams[key]}`
-          );
+              )
+          ).toBeTruthy();
         }
       }
     });
@@ -323,7 +293,7 @@ describe('Intent Parser - Confidence Scoring', () => {
     const result = parser.parse(input);
 
     assertDefined(result.intent);
-    assert.strictEqual(result.intent.primitive, '_codex_cloud_cancel');
+    expect(result.intent.primitive).toBe('_codex_cloud_cancel');
     assertInRange(result.intent.confidence, 80, 100, 'Should have high confidence');
   });
 
@@ -332,7 +302,7 @@ describe('Intent Parser - Confidence Scoring', () => {
     const result = parser.parse(input);
 
     assertDefined(result.intent);
-    assert.strictEqual(result.intent.primitive, '_codex_local_resume');
+    expect(result.intent.primitive).toBe('_codex_local_resume');
     assertInRange(result.intent.confidence, 70, 100, 'Should have high confidence');
   });
 
@@ -342,10 +312,10 @@ describe('Intent Parser - Confidence Scoring', () => {
 
     assertDefined(result.intent);
     // Could be local or cloud status
-    assert.ok(
+    expect(
       result.intent.primitive === '_codex_local_status' ||
         result.intent.primitive === '_codex_cloud_status'
-    );
+    ).toBeTruthy();
     assertInRange(result.intent.confidence, 40, 90, 'Should have medium confidence');
   });
 
@@ -365,10 +335,7 @@ describe('Intent Parser - Confidence Scoring', () => {
 
     // Should fail to parse or have very low confidence
     if (result.intent) {
-      assert.ok(
-        result.intent.confidence < 30,
-        `Unexpected confidence (${result.intent.confidence}%) for unrelated input`
-      );
+      expect(result.intent.confidence).toBeLessThan(30);
     } else {
       assertDefined(result.error, 'Should include error for unparseable input');
     }
@@ -382,17 +349,15 @@ describe('Intent Parser - Confidence Scoring', () => {
 
     // Top match should have highest confidence
     if (result.alternatives.length > 0) {
-      assert.ok(
-        result.intent.confidence >= result.alternatives[0].confidence,
-        'Top intent should have highest confidence'
+      expect(result.intent.confidence).toBeGreaterThanOrEqual(
+        result.alternatives[0].confidence
       );
     }
 
     // Alternatives should be sorted descending
     for (let i = 0; i < result.alternatives.length - 1; i++) {
-      assert.ok(
-        result.alternatives[i].confidence >= result.alternatives[i + 1].confidence,
-        'Alternatives should be sorted by confidence (descending)'
+      expect(result.alternatives[i].confidence).toBeGreaterThanOrEqual(
+        result.alternatives[i + 1].confidence
       );
     }
   });
@@ -403,14 +368,14 @@ describe('Intent Parser - Edge Cases', () => {
 
   test('Empty string', () => {
     const result = parser.parse('');
-    assert.strictEqual(result.intent, null, 'Should not parse empty string');
+    expect(result.intent).toBeNull();
     assertDefined(result.error);
-    assert.strictEqual(result.error, 'Empty input');
+    expect(result.error).toBe('Empty input');
   });
 
   test('Whitespace only', () => {
     const result = parser.parse('   \t\n  ');
-    assert.strictEqual(result.intent, null, 'Should not parse whitespace');
+    expect(result.intent).toBeNull();
     assertDefined(result.error);
   });
 
@@ -430,7 +395,7 @@ describe('Intent Parser - Edge Cases', () => {
     const result = parser.parse(input);
 
     assertDefined(result.intent);
-    assert.strictEqual(result.intent.primitive, '_codex_local_run');
+    expect(result.intent.primitive).toBe('_codex_local_run');
   });
 
   test('Mixed case', () => {
@@ -438,7 +403,7 @@ describe('Intent Parser - Edge Cases', () => {
     const result = parser.parse(input);
 
     assertDefined(result.intent);
-    assert.strictEqual(result.intent.primitive, '_codex_local_run');
+    expect(result.intent.primitive).toBe('_codex_local_run');
   });
 
   test('Multiple spaces', () => {
@@ -446,7 +411,7 @@ describe('Intent Parser - Edge Cases', () => {
     const result = parser.parse(input);
 
     assertDefined(result.intent);
-    assert.strictEqual(result.intent.primitive, '_codex_local_resume');
+    expect(result.intent.primitive).toBe('_codex_local_resume');
   });
 
   test('Contradictory keywords', () => {
@@ -467,10 +432,7 @@ describe('Intent Parser - Edge Cases', () => {
     assertDefined(result.intent);
 
     // Should extract at least one task ID
-    assert.ok(
-      'task_id' in result.intent.extractedParams,
-      'Should extract task_id parameter'
-    );
+    expect(result.intent.extractedParams).toHaveProperty('task_id');
   });
 
   test('GitHub URL extraction', () => {
@@ -478,15 +440,9 @@ describe('Intent Parser - Edge Cases', () => {
     const result = parser.parse(input);
 
     assertDefined(result.intent);
-    assert.strictEqual(result.intent.primitive, '_codex_cloud_github_setup');
-    assert.ok(
-      'repoUrl' in result.intent.extractedParams,
-      'Should extract repoUrl parameter'
-    );
-    assert.strictEqual(
-      result.intent.extractedParams.repoUrl,
-      'https://github.com/myorg/myrepo'
-    );
+    expect(result.intent.primitive).toBe('_codex_cloud_github_setup');
+    expect(result.intent.extractedParams).toHaveProperty('repoUrl');
+    expect(result.intent.extractedParams.repoUrl).toBe('https://github.com/myorg/myrepo');
   });
 
   test('Environment ID extraction', () => {
@@ -494,11 +450,8 @@ describe('Intent Parser - Edge Cases', () => {
     const result = parser.parse(input);
 
     assertDefined(result.intent);
-    assert.ok(
-      'envId' in result.intent.extractedParams,
-      'Should extract envId parameter'
-    );
-    assert.strictEqual(result.intent.extractedParams.envId, 'env_illustrations');
+    expect(result.intent.extractedParams).toHaveProperty('envId');
+    expect(result.intent.extractedParams.envId).toBe('env_illustrations');
   });
 });
 
@@ -513,10 +466,7 @@ describe('Intent Parser - Reasoning Generation', () => {
     assertDefined(result.intent.reasoning);
 
     // Should mention "analyze" keyword
-    assert.ok(
-      result.intent.reasoning.toLowerCase().includes('analyze'),
-      'Reasoning should mention matched keyword'
-    );
+    expect(result.intent.reasoning.toLowerCase()).toContain('analyze');
   });
 
   test('Reasoning explains context matches', () => {
@@ -528,10 +478,9 @@ describe('Intent Parser - Reasoning Generation', () => {
 
     // Should mention both keywords and context
     const reasoning = result.intent.reasoning.toLowerCase();
-    assert.ok(
-      reasoning.includes('check') || reasoning.includes('quality') || reasoning.includes('security'),
-      'Reasoning should mention matched keywords or context'
-    );
+    expect(
+      reasoning.includes('check') || reasoning.includes('quality') || reasoning.includes('security')
+    ).toBeTruthy();
   });
 
   test('Alternatives include reasoning', () => {
@@ -557,11 +506,10 @@ describe('Intent Parser - Clarification Suggestions', () => {
 
     if (result.requiresDisambiguation) {
       assertDefined(clarification);
-      assert.ok(
+      expect(
         clarification.toLowerCase().includes('local') ||
-          clarification.toLowerCase().includes('cloud'),
-        'Clarification should mention local vs cloud'
-      );
+          clarification.toLowerCase().includes('cloud')
+      ).toBeTruthy();
     }
   });
 
@@ -583,11 +531,7 @@ describe('Intent Parser - Clarification Suggestions', () => {
 
     const clarification = parser.suggestClarification(result);
 
-    assert.strictEqual(
-      result.requiresDisambiguation,
-      false,
-      'Clear input should not require disambiguation'
-    );
-    assert.strictEqual(clarification, '', 'Should return empty string for clear input');
+    expect(result.requiresDisambiguation).toBe(false);
+    expect(clarification).toBe('');
   });
 });

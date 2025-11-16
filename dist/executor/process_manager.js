@@ -8,6 +8,7 @@
  * - Error handling and cleanup
  */
 import { spawn } from 'child_process';
+import fs from 'fs';
 import { JSONLParser } from './jsonl_parser.js';
 import { TimeoutWatchdog } from './timeout_watchdog.js';
 export class ProcessQueue {
@@ -226,12 +227,11 @@ export class ProcessManager {
     setITermBadge(text) {
         if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
             try {
-                const fs = require('fs');
                 // Write directly to terminal device to bypass MCP stdio redirection
                 const badge = Buffer.from(text).toString('base64');
                 fs.writeFileSync('/dev/tty', `\x1b]1337;SetBadgeFormat=${badge}\x07`);
             }
-            catch (error) {
+            catch {
                 // Silently fail if /dev/tty not accessible
             }
         }
@@ -242,11 +242,10 @@ export class ProcessManager {
     clearITermBadge() {
         if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
             try {
-                const fs = require('fs');
                 // Clear badge by writing empty badge format
                 fs.writeFileSync('/dev/tty', '\x1b]1337;SetBadgeFormat=\x07');
             }
-            catch (error) {
+            catch {
                 // Silently fail if /dev/tty not accessible
             }
         }

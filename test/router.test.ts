@@ -5,8 +5,7 @@
  * Covers routing logic, parameter validation, error handling, and edge cases.
  */
 
-import { describe, test } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, test, expect } from '@jest/globals';
 import { Router, PrimitiveTool } from '../src/core/router.js';
 import { IntentParseResult } from '../src/core/intent-parser.js';
 import { assertDefined } from './test-helpers.js';
@@ -77,8 +76,8 @@ describe('Router - Routing Logic', () => {
     const intent = createMockIntent('_test_primitive', 80);
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.primitive, '_test_primitive');
+    expect(result.success).toBe(true);
+    expect(result.primitive).toBe('_test_primitive');
     assertDefined(result.result);
   });
 
@@ -99,7 +98,7 @@ describe('Router - Routing Logic', () => {
     const intent = createMockIntent('_test_primitive', 80, { task: 'test task', mode: 'read-only' });
     await router.route(intent);
 
-    assert.deepStrictEqual(capturedParams, { task: 'test task', mode: 'read-only' });
+    expect(capturedParams).toEqual({ task: 'test task', mode: 'read-only' });
   });
 
   test('Returns error when intent is null', async () => {
@@ -114,8 +113,8 @@ describe('Router - Routing Logic', () => {
 
     const result = await router.route(intentResult);
 
-    assert.strictEqual(result.success, false);
-    assert.strictEqual(result.error, 'Could not parse input');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Could not parse input');
     assertDefined(result.suggestion);
   });
 
@@ -126,8 +125,8 @@ describe('Router - Routing Logic', () => {
 
     const result = await router.route(intentResult);
 
-    assert.strictEqual(result.success, false);
-    assert.strictEqual(result.error, 'Input is ambiguous');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Input is ambiguous');
     assertDefined(result.suggestion);
   });
 
@@ -137,9 +136,9 @@ describe('Router - Routing Logic', () => {
     const intent = createMockIntent('_nonexistent_primitive', 80);
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
-    assert.strictEqual(result.primitive, '_nonexistent_primitive');
-    assert.ok(result.error?.includes('not found'));
+    expect(result.success).toBe(false);
+    expect(result.primitive).toBe('_nonexistent_primitive');
+    expect(result.error).toContain('not found');
   });
 
   test('Returns error when confidence too low', async () => {
@@ -151,9 +150,9 @@ describe('Router - Routing Logic', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
-    assert.ok(result.error?.includes('Confidence too low'));
-    assert.ok(result.error?.includes('30%'));
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Confidence too low');
+    expect(result.error).toContain('30%');
   });
 
   test('Executes with confidence exactly at threshold (60%)', async () => {
@@ -165,8 +164,8 @@ describe('Router - Routing Logic', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.primitive, '_test_primitive');
+    expect(result.success).toBe(true);
+    expect(result.primitive).toBe('_test_primitive');
   });
 
   test('Executes with high confidence (≥90%)', async () => {
@@ -178,8 +177,8 @@ describe('Router - Routing Logic', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.primitive, '_test_primitive');
+    expect(result.success).toBe(true);
+    expect(result.primitive).toBe('_test_primitive');
   });
 
   test('Returns result from successful execution', async () => {
@@ -192,8 +191,8 @@ describe('Router - Routing Logic', () => {
     const intent = createMockIntent('_test_primitive', 80);
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, true);
-    assert.deepStrictEqual(result.result, mockResult);
+    expect(result.success).toBe(true);
+    expect(result.result).toEqual(mockResult);
   });
 
   test('Handles execution errors gracefully', async () => {
@@ -211,8 +210,8 @@ describe('Router - Routing Logic', () => {
     const intent = createMockIntent('_test_primitive', 80);
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
-    assert.ok(result.error?.includes('Execution failed'));
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Execution failed');
     assertDefined(result.suggestion);
   });
 });
@@ -233,9 +232,9 @@ describe('Router - Parameter Validation', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
-    assert.ok(result.error?.includes('Missing required parameter'));
-    assert.ok(result.error?.includes('mode'));
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Missing required parameter');
+    expect(result.error).toContain('mode');
   });
 
   test('Passes validation when all required parameters present', async () => {
@@ -252,7 +251,7 @@ describe('Router - Parameter Validation', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, true);
+    expect(result.success).toBe(true);
   });
 
   test('Handles empty parameters object with no required params', async () => {
@@ -267,7 +266,7 @@ describe('Router - Parameter Validation', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, true);
+    expect(result.success).toBe(true);
   });
 
   test('Detects undefined parameter values', async () => {
@@ -282,8 +281,8 @@ describe('Router - Parameter Validation', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
-    assert.ok(result.error?.includes('Missing required parameter'));
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Missing required parameter');
   });
 
   test('Provides parameter fix suggestions', async () => {
@@ -301,10 +300,10 @@ describe('Router - Parameter Validation', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.suggestion);
-    assert.ok(result.suggestion.includes('task'));
-    assert.ok(result.suggestion.includes('envId'));
+    expect(result.suggestion).toContain('task');
+    expect(result.suggestion).toContain('envId');
   });
 });
 
@@ -321,9 +320,9 @@ describe('Router - Error Messages & Suggestions', () => {
 
     const result = await router.route(intentResult);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.error);
-    assert.ok(result.error.length > 0);
+    expect(result.error.length).toBeGreaterThan(0);
   });
 
   test('Suggests alternatives when available', async () => {
@@ -341,10 +340,10 @@ describe('Router - Error Messages & Suggestions', () => {
 
     const result = await router.route(intentResult);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.suggestion);
-    assert.ok(result.suggestion.includes('_option1'));
-    assert.ok(result.suggestion.includes('_option2'));
+    expect(result.suggestion).toContain('_option1');
+    expect(result.suggestion).toContain('_option2');
   });
 
   test('Handles case with no alternatives gracefully', async () => {
@@ -359,9 +358,9 @@ describe('Router - Error Messages & Suggestions', () => {
 
     const result = await router.route(intentResult);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.suggestion);
-    assert.ok(result.suggestion.includes('more specific'));
+    expect(result.suggestion).toContain('more specific');
   });
 
   test('Formats disambiguation options correctly', async () => {
@@ -377,12 +376,12 @@ describe('Router - Error Messages & Suggestions', () => {
 
     const result = await router.route(intentResult);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.suggestion);
-    assert.ok(result.suggestion.includes('option 1'));
-    assert.ok(result.suggestion.includes('option 2'));
-    assert.ok(result.suggestion.includes('_option1'));
-    assert.ok(result.suggestion.includes('_option2'));
+    expect(result.suggestion).toContain('option 1');
+    expect(result.suggestion).toContain('option 2');
+    expect(result.suggestion).toContain('_option1');
+    expect(result.suggestion).toContain('_option2');
   });
 
   test('Includes Codex CLI installation suggestion on execution error', async () => {
@@ -400,9 +399,9 @@ describe('Router - Error Messages & Suggestions', () => {
     const intent = createMockIntent('_test_primitive', 80);
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.suggestion);
-    assert.ok(result.suggestion.includes('Codex CLI'));
+    expect(result.suggestion).toContain('Codex CLI');
   });
 });
 
@@ -412,7 +411,7 @@ describe('Router - Edge Cases', () => {
 
     const primitives = router.getRegisteredPrimitives();
 
-    assert.strictEqual(primitives.length, 0);
+    expect(primitives.length).toBe(0);
   });
 
   test('Lists all registered primitives', () => {
@@ -424,10 +423,10 @@ describe('Router - Edge Cases', () => {
 
     const primitives = router.getRegisteredPrimitives();
 
-    assert.strictEqual(primitives.length, 3);
-    assert.ok(primitives.includes('_primitive1'));
-    assert.ok(primitives.includes('_primitive2'));
-    assert.ok(primitives.includes('_primitive3'));
+    expect(primitives.length).toBe(3);
+    expect(primitives).toContain('_primitive1');
+    expect(primitives).toContain('_primitive2');
+    expect(primitives).toContain('_primitive3');
   });
 
   test('Allows duplicate primitive registration (overwrites)', () => {
@@ -441,8 +440,8 @@ describe('Router - Edge Cases', () => {
 
     const primitives = router.getRegisteredPrimitives();
 
-    assert.strictEqual(primitives.length, 1);
-    assert.strictEqual(primitives[0], '_test_primitive');
+    expect(primitives.length).toBe(1);
+    expect(primitives[0]).toBe('_test_primitive');
   });
 
   test('Handles very high confidence (100%)', async () => {
@@ -454,8 +453,8 @@ describe('Router - Edge Cases', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.primitive, '_test_primitive');
+    expect(result.success).toBe(true);
+    expect(result.primitive).toBe('_test_primitive');
   });
 
   test('Handles very low confidence (0%)', async () => {
@@ -467,8 +466,8 @@ describe('Router - Edge Cases', () => {
 
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
-    assert.ok(result.error?.includes('Confidence too low'));
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Confidence too low');
   });
 
   test('Formats alternatives with top 3 only', async () => {
@@ -490,10 +489,10 @@ describe('Router - Edge Cases', () => {
     const result = await router.route(intentResult);
 
     assertDefined(result.suggestion);
-    assert.ok(result.suggestion.includes('_alt1'));
-    assert.ok(result.suggestion.includes('_alt2'));
-    assert.ok(result.suggestion.includes('_alt3'));
-    assert.ok(!result.suggestion.includes('_alt4')); // Should not include 4th+
+    expect(result.suggestion).toContain('_alt1');
+    expect(result.suggestion).toContain('_alt2');
+    expect(result.suggestion).toContain('_alt3');
+    expect(result.suggestion).not.toContain('_alt4'); // Should not include 4th+
   });
 
   test('Handles malformed schema gracefully', async () => {
@@ -509,7 +508,7 @@ describe('Router - Edge Cases', () => {
     const result = await router.route(intent);
 
     // Should not crash, may succeed if no required params
-    assert.ok(result.success === true || result.success === false);
+    expect(result.success === true || result.success === false).toBeTruthy();
   });
 
   test('Handles non-Error exceptions', async () => {
@@ -527,9 +526,9 @@ describe('Router - Edge Cases', () => {
     const intent = createMockIntent('_test_primitive', 80);
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.error);
-    assert.strictEqual(result.error, 'String error');
+    expect(result.error).toBe('String error');
   });
 
   test('Provides available primitives list on "not found" error', async () => {
@@ -541,10 +540,10 @@ describe('Router - Edge Cases', () => {
     const intent = createMockIntent('_nonexistent', 80);
     const result = await router.route(intent);
 
-    assert.strictEqual(result.success, false);
+    expect(result.success).toBe(false);
     assertDefined(result.suggestion);
-    assert.ok(result.suggestion.includes('_available1'));
-    assert.ok(result.suggestion.includes('_available2'));
+    expect(result.suggestion).toContain('_available1');
+    expect(result.suggestion).toContain('_available2');
   });
 
   test('Handles disambiguation with empty alternatives array', async () => {
@@ -558,8 +557,8 @@ describe('Router - Edge Cases', () => {
 
     const result = await router.route(intentResult);
 
-    assert.strictEqual(result.success, false);
-    assert.strictEqual(result.error, 'Input is ambiguous');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Input is ambiguous');
     assertDefined(result.suggestion);
     // Should handle gracefully even with no alternatives
   });
