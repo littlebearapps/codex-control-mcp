@@ -305,10 +305,13 @@ codex auth
 
 **Production Deployment** (Recommended):
 ```bash
-# Install published npm package
+# Install published npm package globally
 npm install -g @littlebearapps/mcp-delegator
 
-# Verify installation
+# Or run without installing using npx
+npx @littlebearapps/mcp-delegator
+
+# Verify installation (for global install)
 which mcp-delegator
 mcp-delegator --version
 ```
