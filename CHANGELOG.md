@@ -1,4 +1,11 @@
-## [3.5.0] - 2025-11-17
+# [3.5.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.4.0...v3.5.0) (2025-11-17)
+
+
+### Features
+
+* add MCP progress notifications (v3.4.3 - DISABLED) ([#13](https://github.com/littlebearapps/mcp-delegator/issues/13)) ([937a269](https://github.com/littlebearapps/mcp-delegator/commit/937a26938a6259c26f78b4a6aa80dcb52a73c203)), closes [#8](https://github.com/littlebearapps/mcp-delegator/issues/8) [#4157](https://github.com/littlebearapps/mcp-delegator/issues/4157) [#3174](https://github.com/littlebearapps/mcp-delegator/issues/3174)
+
+## [3.4.3] - 2025-11-17
 
 ### Added
 
@@ -473,7 +480,7 @@ Identified 6 missing Codex CLI features for future implementation:
 - Multimodal support (`_codex_local_run_with_images`)
 - Web search integration (`_codex_local_run_with_search`)
 
-**Phase 3 (v3.5.0)** - MEDIUM Priority:
+**Phase 3 (v3.4.3)** - MEDIUM Priority:
 - Session commands (`_codex_session_init`, `_codex_session_review`)
 - Configuration profiles (`_codex_list_profiles`, `_codex_set_profile`)
 
