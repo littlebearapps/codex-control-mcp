@@ -62,6 +62,21 @@ Then rebuild with `npm run build` and notifications will start working automatic
 - npm publishing with provenance (OIDC Trusted Publisher)
 - GitHub releases + CHANGELOG generation
 
+**⚠️ IMPORTANT: semantic-release Version Control**:
+semantic-release automatically determines version numbers based on conventional commit messages:
+- `feat:` → **minor version bump** (3.4.0 → 3.5.0)
+- `fix:` → **patch version bump** (3.4.0 → 3.4.1)
+- `chore:` → **no version bump** (no release)
+- `BREAKING CHANGE:` or `feat!:` → **major version bump** (3.4.0 → 4.0.0)
+
+**This means**:
+- ❌ **DO NOT manually set version in package.json** - semantic-release will override it
+- ✅ **Use correct commit message prefix** to control version bumps
+- ✅ **Version is determined by commit messages**, not package.json
+- 💡 If you need a patch release, use `fix:` or `chore:` (for non-user-facing changes)
+- 💡 If you need a minor release, use `feat:`
+- 💡 Version in package.json will be updated automatically by semantic-release
+
 **Security**: Dependabot updates, secret scanning, weekly CodeQL scans
 
 **Provenance E409 Fix (v3.3.3+)**: Post-publish verification handles npm registry race condition
