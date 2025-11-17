@@ -4,8 +4,24 @@
  * Provides types and helper functions for sending MCP progress notifications
  * to Claude Code, enabling real-time task visibility in the status bar.
  *
+ * ⚠️ CURRENTLY DISABLED: Claude Code does not yet support displaying MCP
+ * progress notifications in the UI (as of 2025-11-17).
+ *
+ * See GitHub issues:
+ * - https://github.com/anthropics/claude-code/issues/4157
+ * - https://github.com/anthropics/claude-code/issues/3174
+ *
+ * When Claude Code adds UI support, set ENABLE_MCP_PROGRESS_NOTIFICATIONS = true
+ *
  * @module types/progress
  */
+/**
+ * Feature flag to enable/disable MCP progress notifications.
+ *
+ * DISABLED by default because Claude Code doesn't display them yet.
+ * Set to true when Claude Code implements UI support for notifications/progress.
+ */
+const ENABLE_MCP_PROGRESS_NOTIFICATIONS = false;
 /**
  * Send a progress notification to Claude Code with comprehensive error handling.
  *
@@ -33,6 +49,10 @@
  * ```
  */
 export async function sendProgressNotification(extra, params, context) {
+    // Feature disabled - Claude Code doesn't support displaying progress notifications yet
+    if (!ENABLE_MCP_PROGRESS_NOTIFICATIONS) {
+        return;
+    }
     // No notification capability - silent return
     if (!extra?.sendNotification) {
         return;

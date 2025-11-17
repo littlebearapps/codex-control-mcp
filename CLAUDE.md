@@ -19,6 +19,36 @@ See detailed documentation in `quickrefs/`:
 
 ---
 
+## ⚠️ MCP Progress Notifications (v3.5.0 - DISABLED)
+
+**Implementation Status**: ✅ Complete but **DISABLED**
+
+**Why Disabled**: Claude Code does not yet support displaying MCP `notifications/progress` in the UI (as of 2025-11-17). Our implementation is correct and follows the MCP spec, but Claude Code simply doesn't show these notifications to users yet.
+
+**GitHub Issues**:
+- [#4157](https://github.com/anthropics/claude-code/issues/4157) - "How to report progress with an MCP Server"
+- [#3174](https://github.com/anthropics/claude-code/issues/3174) - "Claude Code Receives But Doesn't Display Messages"
+
+**What's Implemented**:
+- ✅ `src/types/progress.ts` - Full MCP progress notification support
+- ✅ 4 executor tools send notifications (local_run, local_exec, local_resume, cloud_submit)
+- ✅ Three notification strategies (30s elapsed, 10-event step progress, one-time completion)
+- ✅ Error resilience and graceful degradation
+- ⚠️ **Feature flag `ENABLE_MCP_PROGRESS_NOTIFICATIONS = false`** (line 28 in progress.ts)
+
+**When to Enable**:
+When Claude Code adds UI support for `notifications/progress`, simply change:
+```typescript
+// In src/types/progress.ts line 28:
+const ENABLE_MCP_PROGRESS_NOTIFICATIONS = true; // Change false → true
+```
+
+Then rebuild with `npm run build` and notifications will start working automatically.
+
+**See Also**: `@quickrefs/architecture.md` component #8 for full implementation details
+
+---
+
 ## CI/CD Infrastructure (v3.4.0)
 
 **✅ FULLY AUTOMATED** - Complete CI/CD pipeline operational

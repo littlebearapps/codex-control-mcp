@@ -270,9 +270,11 @@ error_context: {
 
 ---
 
-### 8. MCP Progress Notifications (`types/progress.ts`) 🆕 (v3.5.0)
+### 8. MCP Progress Notifications (`types/progress.ts`) 🆕 (v3.5.0) ⚠️ DISABLED
 
 **Purpose**: Provide real-time task visibility in Claude Code's status bar during Codex executions.
+
+**⚠️ CURRENTLY DISABLED**: Claude Code does not yet support displaying MCP `notifications/progress` in the UI. Feature flag `ENABLE_MCP_PROGRESS_NOTIFICATIONS = false` in progress.ts:28. See CLAUDE.md for details.
 
 **What It Provides**:
 - **Status Bar Integration**: Running Codex tasks appear in Claude Code's status bar with live updates
