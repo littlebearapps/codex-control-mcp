@@ -4,6 +4,7 @@
  * Codex Cloud allows tasks to run in the background in sandboxed containers.
  * Tasks continue even after Claude Code closes and can be checked from any device.
  */
+import { ToolExecuteExtra } from '../types/progress.js';
 export interface CloudSubmitInput {
     task: string;
     envId: string;
@@ -35,7 +36,7 @@ export declare class CloudSubmitTool {
     /**
      * Submit a task to Codex Cloud for background execution
      */
-    execute(input: CloudSubmitInput): Promise<CloudToolResult>;
+    execute(input: CloudSubmitInput, extra?: ToolExecuteExtra): Promise<CloudToolResult>;
     /**
      * Execute codex cloud command (with timeout detection v3.2.1)
      */

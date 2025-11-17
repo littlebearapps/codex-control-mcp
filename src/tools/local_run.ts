@@ -12,6 +12,12 @@ import { globalRedactor } from '../security/redactor.js';
 import { globalTaskRegistry } from '../state/task_registry.js';
 import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
 import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
+import {
+  ToolExecuteExtra,
+  sendProgressNotification,
+  createElapsedTimeNotification,
+  createCompletionNotification,
+} from '../types/progress.js';
 
 export interface LocalRunToolInput {
   task: string;
@@ -42,7 +48,10 @@ export class LocalRunTool {
     this.processManager = processManager;
   }
 
-  async execute(input: LocalRunToolInput): Promise<LocalRunToolResult> {
+  async execute(
+    input: LocalRunToolInput,
+    extra?: ToolExecuteExtra
+  ): Promise<LocalRunToolResult> {
     // Default to read-only mode
     const mode = input.mode || 'read-only';
 
@@ -153,6 +162,9 @@ export class LocalRunTool {
     }
 
     // Execute Codex task
+    // Generate task ID for progress tracking (used in both async and sync modes)
+    const taskIdForProgress = `T-local-run-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
     const options: CodexProcessOptions = {
       task: actualTask,
       mode: actualMode as 'read-only' | 'workspace-write' | 'danger-full-access',
@@ -161,6 +173,14 @@ export class LocalRunTool {
       workingDir: input.workingDir,
       envPolicy: input.envPolicy,
       envAllowList: input.envAllowList,
+      // MCP Progress Notifications (v3.4.3)
+      onMcpProgress: async (elapsed: number) => {
+        await sendProgressNotification(
+          extra,
+          createElapsedTimeNotification(taskIdForProgress, elapsed),
+          `LocalRun:${taskIdForProgress}`
+        );
+      },
     };
 
     try {
@@ -269,6 +289,13 @@ export class LocalRunTool {
       if (redactedOutput.stderr.trim()) {
         message += `\n**Warnings/Debug Info**:\n\`\`\`\n${redactedOutput.stderr.substring(0, 1000)}\n\`\`\`\n`;
       }
+
+      // Send final completion notification (v3.4.3)
+      await sendProgressNotification(
+        extra,
+        createCompletionNotification(taskIdForProgress, 'Codex execution complete'),
+        `LocalRun:${taskIdForProgress}`
+      );
 
       return {
         content: [

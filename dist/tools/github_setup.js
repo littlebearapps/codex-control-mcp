@@ -340,9 +340,9 @@ Once setup is complete, you can use Codex Cloud for:
 
 ### Learn More
 
-- **Templates**: Use \`mcp__codex-control__resources/list\` to see all templates
+- **Templates**: Use \`mcp__mcp-delegator__resources/list\` to see all templates
 - **Documentation**: See CONTRIBUTING.md for template customization
-- **Support**: https://github.com/your-org/codex-control-mcp/issues
+- **Support**: https://github.com/littlebearapps/mcp-delegator/issues
 
 ---
 

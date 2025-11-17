@@ -10,12 +10,13 @@ import { globalRedactor } from '../security/redactor.js';
 import { globalTaskRegistry } from '../state/task_registry.js';
 import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
 import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
+import { sendProgressNotification, createElapsedTimeNotification, createCompletionNotification, } from '../types/progress.js';
 export class LocalRunTool {
     processManager;
     constructor(processManager) {
         this.processManager = processManager;
     }
-    async execute(input) {
+    async execute(input, extra) {
         // Default to read-only mode
         const mode = input.mode || 'read-only';
         // GIT SAFETY CHECK: Detect and block risky git operations (RUNS FIRST)
@@ -105,6 +106,8 @@ export class LocalRunTool {
             };
         }
         // Execute Codex task
+        // Generate task ID for progress tracking (used in both async and sync modes)
+        const taskIdForProgress = `T-local-run-${Date.now()}-${Math.random().toString(36).substring(7)}`;
         const options = {
             task: actualTask,
             mode: actualMode,
@@ -113,6 +116,10 @@ export class LocalRunTool {
             workingDir: input.workingDir,
             envPolicy: input.envPolicy,
             envAllowList: input.envAllowList,
+            // MCP Progress Notifications (v3.4.3)
+            onMcpProgress: async (elapsed) => {
+                await sendProgressNotification(extra, createElapsedTimeNotification(taskIdForProgress, elapsed), `LocalRun:${taskIdForProgress}`);
+            },
         };
         try {
             // ASYNC MODE: Return immediately with task ID
@@ -206,6 +213,8 @@ export class LocalRunTool {
             if (redactedOutput.stderr.trim()) {
                 message += `\n**Warnings/Debug Info**:\n\`\`\`\n${redactedOutput.stderr.substring(0, 1000)}\n\`\`\`\n`;
             }
+            // Send final completion notification (v3.4.3)
+            await sendProgressNotification(extra, createCompletionNotification(taskIdForProgress, 'Codex execution complete'), `LocalRun:${taskIdForProgress}`);
             return {
                 content: [
                     {

@@ -5,9 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/@littlebearapps/mcp-delegator)](https://nodejs.org)
 
-**Version**: 3.2.1
+**Version**: 3.4.3
 **Package**: `@littlebearapps/mcp-delegator`
-**Status**: ✅ Production Ready - All Critical Bugs Fixed
+**Status**: ✅ Production Ready - MCP Progress Notifications Live
 **Repository**: [github.com/littlebearapps/mcp-delegator](https://github.com/littlebearapps/mcp-delegator)
 **Purpose**: Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution
 
@@ -16,6 +16,17 @@
 ## Overview
 
 **MCP Delegator** enables Claude Code to delegate tasks to multiple AI agents with async execution. Currently supports **14 Codex primitives** with future support for Claude Code (Anthropic Agent SDK) and other agents.
+
+**🚀 v3.4.3 - MCP Progress Notifications**:
+- 🔔 **Real-Time Status Bar Updates**: Running Codex tasks now appear in Claude Code's status bar with live progress
+- ⚡ **Non-Blocking Execution**: Claude Code remains responsive while Codex runs in background
+- 📊 **Multiple Update Strategies**:
+  - CLI execution: Elapsed time updates every 30 seconds
+  - SDK execution: Step progress updates every 10 events
+  - Cloud submission: One-time notification on successful submit
+- 🛡️ **Error Resilience**: Notification failures never break tool execution
+- ✅ **Completion Tracking**: Clear completion/failure indicators in status bar
+- **Impact**: No more "did it freeze?" confusion - users can see Codex is working
 
 **🚀 v3.2.1 - Timeout Detection + Critical Bug Fixes**:
 - ⏱️ **TIMEOUT DETECTION**: All 6 execution tools now protected against indefinite hangs (100% coverage)
@@ -71,6 +82,7 @@ Status returned
 **Pattern**: Claude Code delegates → Agent executes (async) → Claude Code continues → Results when ready
 
 **Version History**:
+- ✅ **v3.4.3 - MCP Progress Notifications**: Real-time status bar updates for all Codex executions
 - ✅ **v3.2.1 - Timeout Detection + Bug Fixes**: All 6 tools protected against hangs + sandbox mode fix
 - ✅ **v3.2.0 - Renamed to MCP Delegator**: Multi-agent delegation pattern
 - ✅ **v3.0.1 - npm Package Ready**: Scoped package with publishing safety
@@ -81,7 +93,7 @@ Status returned
 
 ## Features
 
-### 🔧 14 Hidden Primitive Tools
+### 🔧 15 Hidden Primitive Tools
 
 **Claude Code's NLP selects from these primitives based on your natural language instructions**:
 
@@ -101,9 +113,10 @@ Status returned
 - `_codex_cloud_cancel` - Cancel cloud task
 - `_codex_cloud_results` - Get cloud results
 
-**Configuration**:
+**Configuration & Maintenance**:
 - `_codex_cloud_list_environments` - List environments
 - `_codex_cloud_github_setup` - GitHub setup guide
+- `_codex_cleanup_registry` - Clean up stuck and old tasks
 
 ### 🎯 MCP Resources
 

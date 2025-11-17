@@ -58,7 +58,11 @@ export class ProgressInferenceEngine {
         const totalSteps = allSteps.length || 1; // Avoid division by zero
         // Calculate progress: completed items = 100%, in-progress = 50%
         const weightedProgress = completedSteps + (inProgressSteps * 0.5);
-        const progressPercentage = Math.round((weightedProgress / totalSteps) * 100);
+        let progressPercentage = Math.round((weightedProgress / totalSteps) * 100);
+        // Force 100% when task is complete (v3.4.2 fix for Issue: progress stuck at intermediate value)
+        if (this.isComplete) {
+            progressPercentage = 100;
+        }
         // Find current action (last started item or turn)
         let currentAction = null;
         const startedSteps = allSteps

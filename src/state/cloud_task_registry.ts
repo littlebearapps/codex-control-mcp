@@ -40,8 +40,9 @@ export class CloudTaskRegistry {
   private initialized: boolean = false;
 
   constructor() {
-    // Store in user config directory: ~/.config/codex-control/cloud-tasks.json
-    const configDir = path.join(os.homedir(), '.config', 'codex-control');
+    // Store in user config directory: ~/.config/mcp-delegator/cloud-tasks.json
+    // Note: Directory migration handled by TaskRegistry constructor
+    const configDir = path.join(os.homedir(), '.config', 'mcp-delegator');
     this.storePath = path.join(configDir, 'cloud-tasks.json');
   }
 

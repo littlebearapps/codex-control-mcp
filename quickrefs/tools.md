@@ -1,6 +1,6 @@
 # Tools Quick Reference (v3.0.1)
 
-Complete guide to Codex Control MCP's 14 hidden primitives.
+Complete guide to Codex Control MCP's 15 hidden primitives.
 
 ---
 
@@ -10,7 +10,7 @@ Complete guide to Codex Control MCP's 14 hidden primitives.
 
 ### Architecture
 
-**14 Hidden Primitives** (all prefixed with `_`):
+**15 Hidden Primitives** (all prefixed with `_`):
 - Not directly exposed to users
 - Claude Code's native NLP selects the right one
 - Similar to zen MCP pattern
@@ -27,7 +27,7 @@ Executes and returns results
 ```
 
 **No Need to Choose**:
-- ❌ Don't manually select from 14 primitives
+- ❌ Don't manually select from 15 primitives
 - ✅ Just describe what you want naturally
 
 ---
@@ -89,7 +89,7 @@ User: "Use codex control to get results for T-cloud-ghi012"
 → Claude Code selects: _codex_cloud_results
 ```
 
-### Configuration
+### Configuration & Maintenance
 
 ```
 User: "Use codex control to list environments"
@@ -100,6 +100,12 @@ User: "Use codex control to show available environments"
 
 User: "Use codex control to setup GitHub for https://github.com/myorg/repo"
 → Claude Code selects: _codex_cloud_github_setup
+
+User: "Use codex control to clean up stuck tasks"
+→ Claude Code selects: _codex_cleanup_registry
+
+User: "Use codex control to preview cleanup of old tasks"
+→ Claude Code selects: _codex_cleanup_registry (with dryRun: true)
 ```
 
 ---
@@ -144,7 +150,7 @@ User: "Use codex control to setup GitHub for https://github.com/myorg/repo"
 
 ---
 
-## Hidden Implementation (14 Primitives)
+## Hidden Implementation (15 Primitives)
 
 These primitives are automatically selected by Claude Code's NLP. Users don't call them directly.
 
@@ -164,9 +170,10 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 - `_codex_cloud_wait` - Wait for cloud completion
 - `_codex_cloud_cancel` - Cancel cloud tasks
 
-### Configuration (2 tools)
+### Configuration & Maintenance (3 tools)
 - `_codex_cloud_list_environments` - List environments
 - `_codex_cloud_github_setup` - GitHub integration guide
+- `_codex_cleanup_registry` - Clean up stuck and old tasks
 
 ---
 
@@ -225,7 +232,7 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 ## Testing & Validation
 
 **v3.0.1 Status**:
-- ✅ All 14 primitives working and verified
+- ✅ All 15 primitives working and verified
 - ✅ npm package published (@littlebearapps/mcp-delegator)
 - ✅ Async workflow validated
 - ✅ Parameter bug fix confirmed (_codex_local_results)

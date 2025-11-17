@@ -32,6 +32,11 @@ export interface CodexProcessOptions {
     onProgress?: (progress: ProgressUpdate) => void;
     onWarning?: (warning: TimeoutWarning) => void;
     onTimeout?: (timeout: TimeoutError) => void;
+    /**
+     * Callback for MCP progress notifications (sent every 30 seconds)
+     * Receives elapsed time in seconds
+     */
+    onMcpProgress?: (elapsed: number) => Promise<void>;
 }
 export interface CodexProcessResult {
     success: boolean;

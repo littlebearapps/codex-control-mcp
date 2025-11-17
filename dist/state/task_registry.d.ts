@@ -134,6 +134,13 @@ export declare class TaskRegistry {
      */
     cleanupOldTasks(maxAgeMs?: number): number;
     /**
+     * Clean up stuck tasks (tasks in 'working' or 'pending' status for too long)
+     *
+     * @param maxAgeSeconds Maximum age in seconds before considering a task stuck (default: 3600 = 1 hour)
+     * @returns Number of tasks marked as failed
+     */
+    cleanupStuckTasks(maxAgeSeconds?: number): number;
+    /**
      * Get statistics about tasks
      */
     getStats(): {

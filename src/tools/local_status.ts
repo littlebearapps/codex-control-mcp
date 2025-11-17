@@ -30,7 +30,7 @@ export class LocalStatusTool {
 
   async execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult> {
     const workingDir = input.workingDir || process.cwd();
-    const showAll = input.showAll || false;
+    const showAll = input.showAll ?? true; // Default to true (Issue 3.2 fix)
 
     let message = `## 📊 Codex Execution Status\n\n`;
 
@@ -71,7 +71,7 @@ export class LocalStatusTool {
     if (tasks.length === 0) {
       message += showAll
         ? `No tasks found in registry.\n\n`
-        : `No tasks found for current directory.\n\n💡 Use \`showAll: true\` to see all tasks.\n\n`;
+        : `No tasks found for directory: ${workingDir}\n\n💡 Set \`showAll: true\` to see tasks from all directories (default behavior).\n\n`;
     } else {
       message += `**Working Dir**: ${workingDir}\n\n`;
 
@@ -140,8 +140,9 @@ export class LocalStatusTool {
     // ========================================
     message += `### 💡 Usage Tips\n\n`;
     message += `- **Check results**: Use \`codex_local_results\` with task ID\n`;
-    message += `- **See all tasks**: Set \`showAll: true\` parameter\n`;
+    message += `- **Filter by directory**: Set \`showAll: false\` + \`workingDir: "/path/to/project"\`\n`;
     message += `- **Cloud tasks**: Use \`codex_cloud_check_reminder\` for cloud status\n`;
+    message += `- **Note**: MCP server can't auto-detect your current directory (shows all by default)\n`;
 
     return {
       content: [
@@ -177,9 +178,9 @@ export class LocalStatusTool {
           },
           showAll: {
             type: 'boolean',
-            default: false,
+            default: true,
             description:
-              'Show all tasks from all directories (default: false, shows only current directory tasks)',
+              'Show all tasks from all directories (default: true). Set to false with workingDir to filter by specific directory. Note: MCP server cannot auto-detect user\'s current directory.',
           },
         },
       },

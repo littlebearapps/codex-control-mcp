@@ -4,7 +4,7 @@
  * MCP Delegator
  *
  * Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more.
- * Provides 14 hidden primitives for Codex operations (local SDK + Cloud) with async execution.
+ * Provides 13 hidden primitives for Codex operations (local SDK + Cloud) with async execution.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -29,19 +29,28 @@ import { LocalExecTool } from './tools/local_exec.js';
 import { LocalResumeTool } from './tools/local_resume.js';
 import { ListEnvironmentsTool } from './tools/list_environments.js';
 import { LocalResultsTool } from './tools/local_results.js';
-import { LocalWaitTool } from './tools/local_wait.js';
 import { LocalCancelTool } from './tools/local_cancel.js';
-import { CloudWaitTool } from './tools/cloud_wait.js';
 import { CloudCancelTool } from './tools/cloud_cancel.js';
+import { CleanupRegistryTool } from './tools/cleanup_registry.js';
 import { templates } from './resources/environment_templates.js';
 import { globalLogger } from './utils/logger.js';
+import { globalTaskRegistry } from './state/task_registry.js';
+import updateNotifier from 'update-notifier';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Read package.json for update notifier
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
 
 /**
  * Server Configuration
  */
 const MAX_CONCURRENCY = parseInt(process.env.CODEX_MAX_CONCURRENCY || '2', 10);
 const SERVER_NAME = 'mcp-delegator';
-const SERVER_VERSION = '3.2.1';
+const SERVER_VERSION = '3.4.3';
 
 /**
  * Main Server Class
@@ -49,6 +58,7 @@ const SERVER_VERSION = '3.2.1';
 class MCPDelegatorServer {
   private server: Server;
   private processManager: ProcessManager;
+  private cleanupInterval?: NodeJS.Timeout;
 
   // Hidden primitive tools
   private localRunTool: LocalRunTool;
@@ -56,15 +66,14 @@ class MCPDelegatorServer {
   private localExecTool: LocalExecTool;
   private localResumeTool: LocalResumeTool;
   private localResultsTool: LocalResultsTool;
-  private localWaitTool: LocalWaitTool;
   private localCancelTool: LocalCancelTool;
   private cloudSubmitTool: CloudSubmitTool;
   private cloudStatusTool: CloudStatusTool;
   private cloudResultsTool: CloudResultsTool;
-  private cloudWaitTool: CloudWaitTool;
   private cloudCancelTool: CloudCancelTool;
   private listEnvironmentsTool: ListEnvironmentsTool;
   private githubSetupTool: GitHubSetupTool;
+  private cleanupRegistryTool: CleanupRegistryTool;
 
   constructor() {
     // Initialize process manager
@@ -76,15 +85,14 @@ class MCPDelegatorServer {
     this.localExecTool = new LocalExecTool();
     this.localResumeTool = new LocalResumeTool();
     this.localResultsTool = new LocalResultsTool();
-    this.localWaitTool = new LocalWaitTool();
     this.localCancelTool = new LocalCancelTool();
     this.cloudSubmitTool = new CloudSubmitTool();
     this.cloudStatusTool = new CloudStatusTool();
     this.cloudResultsTool = new CloudResultsTool();
-    this.cloudWaitTool = new CloudWaitTool();
     this.cloudCancelTool = new CloudCancelTool();
     this.listEnvironmentsTool = new ListEnvironmentsTool();
     this.githubSetupTool = new GitHubSetupTool();
+    this.cleanupRegistryTool = new CleanupRegistryTool();
 
     // Create MCP server
     this.server = new Server(
@@ -115,27 +123,26 @@ class MCPDelegatorServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
-          // Hidden primitives (14 tools with _ prefix)
+          // Hidden primitives (13 tools with _ prefix)
           LocalRunTool.getSchema(),
           LocalStatusTool.getSchema(),
           LocalExecTool.getSchema(),
           LocalResumeTool.getSchema(),
           LocalResultsTool.getSchema(),
-          LocalWaitTool.getSchema(),
           LocalCancelTool.getSchema(),
           CloudSubmitTool.getSchema(),
           CloudStatusTool.getSchema(),
           CloudResultsTool.getSchema(),
-          CloudWaitTool.getSchema(),
           CloudCancelTool.getSchema(),
           ListEnvironmentsTool.getSchema(),
           GitHubSetupTool.getSchema(),
+          CleanupRegistryTool.getSchema(),
         ],
       };
     });
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const { name, arguments: args } = request.params;
 
       // Extract working directory for logging context
@@ -154,13 +161,11 @@ class MCPDelegatorServer {
         output_schema: 'outputSchema',
       };
 
-      // Exception: task_id is VALID for wait/results/cancel tools
+      // Exception: task_id is VALID for results/cancel tools
       const taskIdTools = [
         '_codex_local_results',
-        '_codex_local_wait',
         '_codex_local_cancel',
         '_codex_cloud_results',
-        '_codex_cloud_wait',
         '_codex_cloud_cancel',
       ];
 
@@ -197,7 +202,7 @@ class MCPDelegatorServer {
         switch (name) {
           // Hidden primitive tools (14 tools with _ prefix)
           case '_codex_local_run':
-            result = await this.localRunTool.execute(args as any) as any;
+            result = await this.localRunTool.execute(args as any, extra) as any;
             break;
 
           case '_codex_local_status':
@@ -205,19 +210,15 @@ class MCPDelegatorServer {
             break;
 
           case '_codex_local_exec':
-            result = await this.localExecTool.execute(args as any) as any;
+            result = await this.localExecTool.execute(args as any, extra) as any;
             break;
 
           case '_codex_local_resume':
-            result = await this.localResumeTool.execute(args as any) as any;
+            result = await this.localResumeTool.execute(args as any, extra) as any;
             break;
 
           case '_codex_local_results':
             result = await this.localResultsTool.execute(args as any) as any;
-            break;
-
-          case '_codex_local_wait':
-            result = await this.localWaitTool.execute(args as any) as any;
             break;
 
           case '_codex_local_cancel':
@@ -225,7 +226,7 @@ class MCPDelegatorServer {
             break;
 
           case '_codex_cloud_submit':
-            result = await this.cloudSubmitTool.execute(args as any) as any;
+            result = await this.cloudSubmitTool.execute(args as any, extra) as any;
             break;
 
           case '_codex_cloud_status':
@@ -234,10 +235,6 @@ class MCPDelegatorServer {
 
           case '_codex_cloud_results':
             result = await this.cloudResultsTool.execute(args as any) as any;
-            break;
-
-          case '_codex_cloud_wait':
-            result = await this.cloudWaitTool.execute(args as any) as any;
             break;
 
           case '_codex_cloud_cancel':
@@ -250,6 +247,10 @@ class MCPDelegatorServer {
 
           case '_codex_cloud_github_setup':
             result = await this.githubSetupTool.execute(args as any) as any;
+            break;
+
+          case '_codex_cleanup_registry':
+            result = await this.cleanupRegistryTool.execute(args as any) as any;
             break;
 
           default:
@@ -348,6 +349,12 @@ class MCPDelegatorServer {
     const shutdown = async () => {
       console.error('[MCPDelegator] Shutting down...');
 
+      // Clear cleanup interval
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+        console.error('[MCPDelegator] Stopped periodic cleanup scheduler');
+      }
+
       // Kill any running Codex processes
       this.processManager.killAll();
 
@@ -374,6 +381,25 @@ class MCPDelegatorServer {
     console.error(`[MCPDelegator] Max Concurrency: ${MAX_CONCURRENCY}`);
     console.error(`[MCPDelegator] Tools: 14 Codex primitives (all with _ prefix)`);
     console.error(`[MCPDelegator] Resources: ${templates.length} environment templates`);
+
+    // Run cleanup on startup to clear any stuck tasks from previous sessions
+    console.error('[MCPDelegator] Running stuck task cleanup on startup...');
+    const cleanedOnStartup = globalTaskRegistry.cleanupStuckTasks(3600); // 1 hour default
+    if (cleanedOnStartup > 0) {
+      console.error(`[MCPDelegator] ⚠️  Cleaned up ${cleanedOnStartup} stuck task(s) from previous session(s)`);
+    } else {
+      console.error('[MCPDelegator] ✅ No stuck tasks found');
+    }
+
+    // Schedule periodic cleanup (every 15 minutes)
+    console.error('[MCPDelegator] Scheduling periodic cleanup every 15 minutes...');
+    this.cleanupInterval = setInterval(() => {
+      const cleaned = globalTaskRegistry.cleanupStuckTasks(3600); // 1 hour default
+      if (cleaned > 0) {
+        console.error(`[MCPDelegator] ⚠️  Periodic cleanup: marked ${cleaned} stuck task(s) as failed`);
+        globalLogger.warn('Periodic cleanup completed', { tasksMarkedFailed: cleaned });
+      }
+    }, 15 * 60 * 1000); // 15 minutes
   }
 }
 
@@ -382,6 +408,14 @@ class MCPDelegatorServer {
  */
 async function main() {
   try {
+    // Check for updates (non-blocking, runs in background)
+    updateNotifier({
+      pkg,
+      updateCheckInterval: 1000 * 60 * 60 * 24, // Check once per day
+    }).notify({
+      isGlobal: true, // Show global install command
+    });
+
     const server = new MCPDelegatorServer();
     await server.start();
   } catch (error) {
