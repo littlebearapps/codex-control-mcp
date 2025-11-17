@@ -11,6 +11,11 @@ import { globalRedactor } from '../security/redactor.js';
 import { globalTaskRegistry, CloudTaskFilter } from '../state/cloud_task_registry.js';
 import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
 import { TimeoutWatchdog } from '../executor/timeout_watchdog.js';
+import {
+  ToolExecuteExtra,
+  sendProgressNotification,
+  createCompletionNotification,
+} from '../types/progress.js';
 
 export interface CloudSubmitInput {
   task: string;
@@ -47,7 +52,7 @@ export class CloudSubmitTool {
   /**
    * Submit a task to Codex Cloud for background execution
    */
-  async execute(input: CloudSubmitInput): Promise<CloudToolResult> {
+  async execute(input: CloudSubmitInput, extra?: ToolExecuteExtra): Promise<CloudToolResult> {
     let riskyOperationApproved = false; // Track if user approved risky git operation
 
     // Validate inputs
@@ -180,6 +185,13 @@ export class CloudSubmitTool {
           console.error('[CloudSubmitTool] Failed to register task:', error);
           // Continue anyway - registration failure shouldn't block submission
         }
+
+        // Send MCP notification for cloud task submission (v3.5.0)
+        await sendProgressNotification(
+          extra,
+          createCompletionNotification(taskId, `Cloud task submitted - running in background`),
+          `CloudSubmit:${taskId}`
+        );
       }
 
       // Build success message

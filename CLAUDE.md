@@ -1,8 +1,8 @@
 # MCP Delegator - Claude Code Memory
 
-**Version**: 3.2.3-dev
+**Version**: 3.4.2
 **Purpose**: Delegate AI agent tasks to Codex, Claude Code (Agent SDK), and more - with async execution
-**Status**: ✅ Production Ready - Full CI/CD Automation Active
+**Status**: ✅ Production Ready - Full CI/CD + Provenance Working (E409 Fix Applied)
 
 ---
 
@@ -19,7 +19,7 @@ See detailed documentation in `quickrefs/`:
 
 ---
 
-## CI/CD Infrastructure (v3.2.2)
+## CI/CD Infrastructure (v3.4.0)
 
 **✅ FULLY AUTOMATED** - Complete CI/CD pipeline operational
 
@@ -34,6 +34,12 @@ See detailed documentation in `quickrefs/`:
 
 **Security**: Dependabot updates, secret scanning, weekly CodeQL scans
 
+**Provenance E409 Fix (v3.3.3+)**: Post-publish verification handles npm registry race condition
+- Package publishes successfully despite E409 "packument save" errors
+- Verification script confirms package exists in registry (60s timeout)
+- Based on proven CKEditor solution (ckeditor/ckeditor5#16625)
+- **See**: `docs/PROVENANCE-E409-FIX.md` for complete details
+
 **See**: `docs/CI-CD-SECURITY-PLAN.md`, `docs/GITHUB-SETTINGS.md`
 
 ---
@@ -44,9 +50,10 @@ See detailed documentation in `quickrefs/`:
 
 **Package Details**:
 - **Name**: `@littlebearapps/mcp-delegator`
-- **Version**: 3.2.2 (automated via semantic-release)
+- **Version**: 3.4.1 (automated via semantic-release)
 - **Access**: Public
 - **Registry**: https://www.npmjs.com/package/@littlebearapps/mcp-delegator
+- **Provenance**: ✅ Enabled (Sigstore attestations published)
 
 **Installation**:
 ```bash
@@ -75,12 +82,20 @@ All MCP configs use: `"command": "mcp-delegator"`
 
 **Updating**:
 ```bash
-# Check for updates
+# Automatic notifications (v3.5.0+)
+# Server shows update message when new version available
+
+# Manual check
 npm outdated -g @littlebearapps/mcp-delegator
 
 # Update to latest version
 npm update -g @littlebearapps/mcp-delegator
+
+# Disable update notifications (if desired)
+export NO_UPDATE_NOTIFIER=1
 ```
+
+**See**: `docs/NPM-UPDATE-NOTIFICATIONS.md` for update notification details
 
 **Benefits**:
 - ✅ Version management (rollback capability)
@@ -148,6 +163,115 @@ npm view @littlebearapps/mcp-delegator
 - Organization: `@littlebearapps` (has Pro plan)
 - Members can publish and install private packages
 - Cost: $7/month (org-wide)
+
+---
+
+## ⚠️ CRITICAL: Development Workflow Rules
+
+**🚨 APPROVAL REQUIRED** for the following actions:
+
+### 1. Merging Pull Requests to Main
+- ❌ **NEVER merge a PR to main without explicit approval**
+- ✅ Always wait for user confirmation before merging
+- ✅ Ensure all checks pass (CI/CD, tests, linting)
+- ✅ Complete pre-merge checklist (see below)
+
+### 2. Building/Rebuilding the Package
+- ❌ **NEVER run `npm run build` without explicit approval**
+- ❌ **NEVER run `npm publish` without explicit approval**
+- ✅ Ask permission before any build/publish operation
+- ✅ Complete version update checklist (see below)
+
+### 3. Version Updates
+- ❌ **NEVER update version numbers without completing the checklist**
+- ✅ semantic-release handles versioning automatically via conventional commits
+- ✅ Manual version updates ONLY when reverting or fixing semantic-release failures
+
+---
+
+## Pre-Merge/Pre-Build Checklist
+
+**Before merging to main OR building the package**, ensure ALL of these files are updated:
+
+### Version Number Files (CRITICAL)
+1. **`package.json`** (line 3)
+   - Current: `"version": "3.3.2"`
+   - Updated via: `npm version patch|minor|major` OR semantic-release
+
+2. **`src/index.ts`** (line 45)
+   - Current: `const SERVER_VERSION = '3.2.1';`
+   - Must match package.json version
+   - **⚠️ This is MANUALLY updated** (not automated)
+
+3. **`config.json`** (line 2)
+   - Current: `"version": "3.2.1"`
+   - Must match package.json version
+   - **⚠️ This is MANUALLY updated** (not automated)
+
+4. **`CLAUDE.md`** (line 3)
+   - Current: `**Version**: 3.4.1`
+   - Must match package.json version
+   - **⚠️ This is MANUALLY updated** (not automated)
+
+### Documentation Files (Update if behavior changes)
+5. **`README.md`**
+   - Update feature lists, examples, version references
+   - Update "What's New" section for major/minor releases
+
+6. **`CHANGELOG.md`**
+   - Automatically updated by semantic-release
+   - Manual updates only for corrections
+
+7. **`quickrefs/tools.md`**
+   - Update if new tools added or tool behavior changes
+   - Update version references in examples
+
+8. **`quickrefs/architecture.md`**
+   - Update if system architecture changes
+   - Update component diagrams if needed
+
+9. **`quickrefs/workflows.md`**
+   - Update if new workflows added
+   - Update CI/CD section for infrastructure changes
+
+10. **`quickrefs/troubleshooting.md`**
+    - Update if new issues discovered or solutions added
+    - Add new error messages and fixes
+
+### Test Files (Update if tests change)
+11. **Test result documentation**
+    - `ASYNC-COMPREHENSIVE-TEST-RESULTS.md`
+    - `WEEK-5-COMPLETION-SUMMARY.md`
+    - Update when test counts or coverage changes
+
+### Version-Specific Update Matrix
+
+| Update Type | Files to Update |
+|-------------|----------------|
+| **Patch** (3.3.2 → 3.3.3) | 1, 2, 3, 4 + relevant docs |
+| **Minor** (3.3.2 → 3.4.0) | 1, 2, 3, 4, 5 + all relevant quickrefs |
+| **Major** (3.3.2 → 4.0.0) | ALL files + migration guide |
+
+### Pre-Merge Verification
+
+```bash
+# 1. Verify version consistency
+grep -r "version" package.json src/index.ts config.json CLAUDE.md
+
+# 2. Expected output (all should match):
+# package.json:  "version": "X.Y.Z"
+# src/index.ts:const SERVER_VERSION = 'X.Y.Z';
+# config.json:  "version": "X.Y.Z",
+# CLAUDE.md:**Version**: X.Y.Z
+
+# 3. Verify build succeeds
+npm run build
+
+# 4. Verify no uncommitted changes to version files
+git status
+
+# 5. All checks must pass before proceeding
+```
 
 ---
 
@@ -418,7 +542,21 @@ npm run build
 
 ---
 
-## Current Focus (2025-11-16 Morning)
+## Current Focus (2025-11-16)
+
+- ✅ **v3.4.0 - npm Provenance E409 Fix RESOLVED** 🎉
+  - **Problem**: npm publish with provenance failed with E409 "Failed to save packument" errors
+  - **Root Cause**: npm registry race condition - package uploads successfully but packument metadata save fails
+  - **Key Discovery**: Package IS actually published despite error message!
+  - **Solution**: Post-publish verification based on CKEditor solution (ckeditor/ckeditor5#16625)
+    - Added `continue-on-error` to release workflow step
+    - Created `.github/scripts/publish-with-retry.sh` verification script
+    - Script checks npm registry for up to 60 seconds to confirm package exists
+    - Re-enabled provenance in package.json (was temporarily disabled)
+  - **Testing**: v3.4.0 published successfully with provenance enabled (no E409 occurred this time)
+  - **Verification**: Provenance attestation confirmed in npm registry
+  - **Documentation**: Complete solution documented in `docs/PROVENANCE-E409-FIX.md`
+  - **Status**: ✅ COMPLETE - Provenance working, fix ready for future E409 occurrences
 
 - ✅ **v3.2.1 - Complete Timeout/Hang Detection for All 6 Execution Tools** ⏱️
   - **100% Coverage**: All execution tools now protected against indefinite hangs

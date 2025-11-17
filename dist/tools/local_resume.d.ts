@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ToolExecuteExtra } from '../types/progress.js';
 declare const LocalResumeInputSchema: z.ZodObject<{
     threadId: z.ZodString;
     task: z.ZodString;
@@ -67,7 +68,7 @@ export declare class LocalResumeTool {
             required: string[];
         };
     };
-    execute(input: LocalResumeInput): Promise<any>;
+    execute(input: LocalResumeInput, extra?: ToolExecuteExtra): Promise<any>;
 }
 export {};
 //# sourceMappingURL=local_resume.d.ts.map

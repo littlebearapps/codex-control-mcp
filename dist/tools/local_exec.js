@@ -5,6 +5,7 @@ import { verifyGitOperations, formatGitVerification } from '../utils/git_verifie
 import { ProgressInferenceEngine } from '../executor/progress_inference.js';
 import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
 import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
+import { sendProgressNotification, createStepProgressNotification, createCompletionNotification, } from '../types/progress.js';
 const LocalExecInputSchema = z.object({
     task: z.string().describe('The task to execute locally'),
     workingDir: z.string().optional().describe('Working directory (defaults to current directory)'),
@@ -68,7 +69,7 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
             },
         };
     }
-    async execute(input) {
+    async execute(input, extra) {
         try {
             console.error('[LocalExec] Starting execution with:', JSON.stringify(input, null, 2));
             let checkpointInfo = null; // Store checkpoint info for inclusion in output
@@ -258,9 +259,17 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
                             const progress = progressEngine.getProgress();
                             globalTaskRegistry.updateProgress(taskId, progress);
                             console.error(`[LocalExec:${taskId}] Progress: ${progress.progressPercentage}% (${progress.currentAction || 'processing'})`);
+                            // Send MCP progress notification (v3.5.0)
+                            await sendProgressNotification(extra, createStepProgressNotification(taskId, progress.completedSteps, progress.totalSteps, progress.currentAction ?? undefined), `LocalExec:${taskId}`);
                         }
                     }
                     console.error(`[LocalExec:${taskId}] ✅ Execution complete, ${eventCount} events, thread: ${threadId}`);
+                    // Update progress one final time to ensure 100% (v3.4.2 fix)
+                    const finalProgress = progressEngine.getProgress();
+                    globalTaskRegistry.updateProgress(taskId, finalProgress);
+                    console.error(`[LocalExec:${taskId}] Final progress: ${finalProgress.progressPercentage}%`);
+                    // Send final completion notification (v3.5.0)
+                    await sendProgressNotification(extra, createCompletionNotification(taskId, 'Codex SDK execution complete'), `LocalExec:${taskId}`);
                     // Clear timeout timers (v3.2.1)
                     clearTimeout(hardTimeoutTimer);
                     clearInterval(idleCheckInterval);

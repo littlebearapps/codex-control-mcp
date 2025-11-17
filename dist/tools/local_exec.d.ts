@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ToolExecuteExtra } from '../types/progress.js';
 declare const LocalExecInputSchema: z.ZodObject<{
     task: z.ZodString;
     workingDir: z.ZodOptional<z.ZodString>;
@@ -80,7 +81,7 @@ export declare class LocalExecTool {
             required: string[];
         };
     };
-    execute(input: LocalExecInput): Promise<any>;
+    execute(input: LocalExecInput, extra?: ToolExecuteExtra): Promise<any>;
 }
 export {};
 //# sourceMappingURL=local_exec.d.ts.map

@@ -5,6 +5,7 @@
  * Supports all execution modes with safety gating for mutations.
  */
 import { ProcessManager } from '../executor/process_manager.js';
+import { ToolExecuteExtra } from '../types/progress.js';
 export interface LocalRunToolInput {
     task: string;
     mode?: 'read-only' | 'preview' | 'workspace-write' | 'danger-full-access';
@@ -28,7 +29,7 @@ export interface LocalRunToolResult {
 export declare class LocalRunTool {
     private processManager;
     constructor(processManager: ProcessManager);
-    execute(input: LocalRunToolInput): Promise<LocalRunToolResult>;
+    execute(input: LocalRunToolInput, extra?: ToolExecuteExtra): Promise<LocalRunToolResult>;
     private formatPreviewResult;
     private formatExecutionResult;
     static getSchema(): {

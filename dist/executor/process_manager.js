@@ -71,7 +71,7 @@ export class ProcessManager {
      * Internal: Run a single Codex process
      */
     async runProcess(options) {
-        const { task, mode, outputSchema, model, workingDir, envPolicy, envAllowList, idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout } = options;
+        const { task, mode, outputSchema, model, workingDir, envPolicy, envAllowList, idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout, onMcpProgress } = options;
         // Build command args safely (no shell injection)
         const args = ['exec', '--json'];
         if (mode) {
@@ -123,6 +123,10 @@ export class ProcessManager {
                     if (onTimeout) {
                         onTimeout(timeout);
                     }
+                    // Stop MCP progress interval (v3.5.0)
+                    if (mcpProgressInterval) {
+                        clearInterval(mcpProgressInterval);
+                    }
                     // Return structured error with partial results
                     const partial = watchdog.getPartialResults();
                     // Clear iTerm2 badge on timeout
@@ -142,6 +146,22 @@ export class ProcessManager {
                     });
                 },
             });
+            // MCP Progress Notifications (v3.5.0)
+            // Send progress updates every 30 seconds
+            const startTime = Date.now();
+            let mcpProgressInterval;
+            if (onMcpProgress) {
+                mcpProgressInterval = setInterval(async () => {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    try {
+                        await onMcpProgress(elapsed);
+                    }
+                    catch (error) {
+                        // Log error but don't break execution
+                        console.error('[ProcessManager] MCP progress callback error:', error);
+                    }
+                }, 30000); // Every 30 seconds
+            }
             // Parse JSONL from stdout
             proc.stdout.on('data', (chunk) => {
                 const text = chunk.toString('utf-8');
@@ -165,6 +185,10 @@ export class ProcessManager {
             proc.on('close', (exitCode, signal) => {
                 // Stop watchdog
                 watchdog.stop();
+                // Stop MCP progress interval (v3.5.0)
+                if (mcpProgressInterval) {
+                    clearInterval(mcpProgressInterval);
+                }
                 // Flush any remaining buffered events
                 const finalEvent = parser.flush();
                 if (finalEvent) {
@@ -187,6 +211,10 @@ export class ProcessManager {
             proc.on('error', (error) => {
                 // Stop watchdog
                 watchdog.stop();
+                // Stop MCP progress interval (v3.5.0)
+                if (mcpProgressInterval) {
+                    clearInterval(mcpProgressInterval);
+                }
                 this.processes.delete(processId);
                 resolve({
                     success: false,

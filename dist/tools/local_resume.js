@@ -2,6 +2,7 @@ import { Codex } from '@openai/codex-sdk';
 import { z } from 'zod';
 import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
 import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
+import { sendProgressNotification, createElapsedTimeNotification, createCompletionNotification, } from '../types/progress.js';
 const LocalResumeInputSchema = z.object({
     threadId: z.string().describe('The thread ID to resume'),
     task: z.string().describe('The follow-up task to execute'),
@@ -45,7 +46,7 @@ export class LocalResumeTool {
             },
         };
     }
-    async execute(input) {
+    async execute(input, extra) {
         console.error('[LocalResume] ==================== EXECUTE START ====================');
         console.error('[LocalResume] Resuming thread with:', JSON.stringify(input, null, 2));
         try {
@@ -134,6 +135,8 @@ export class LocalResumeTool {
                 const hardTimeoutMs = 20 * 60 * 1000; // 20 minutes total execution time
                 let lastEventTime = Date.now();
                 let timedOut = false;
+                // MCP Progress Notifications (v3.5.0)
+                const startTime = Date.now();
                 // Hard timeout watchdog
                 const hardTimeoutTimer = setTimeout(() => {
                     if (!timedOut) {
@@ -164,11 +167,18 @@ export class LocalResumeTool {
                         }
                         eventCount++;
                         console.error(`[LocalResume:${validated.threadId}] Event ${eventCount}:`, event.type);
+                        // Send MCP progress notification every 10 events (v3.5.0)
+                        if (eventCount % 10 === 0) {
+                            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                            await sendProgressNotification(extra, createElapsedTimeNotification(validated.threadId, elapsedSeconds), `LocalResume:${validated.threadId}`);
+                        }
                     }
                     // Clear timeout timers (v3.2.1)
                     clearTimeout(hardTimeoutTimer);
                     clearInterval(idleCheckInterval);
                     console.error(`[LocalResume:${validated.threadId}] ✅ Execution complete, ${eventCount} events processed`);
+                    // Send final completion notification (v3.5.0)
+                    await sendProgressNotification(extra, createCompletionNotification(validated.threadId, 'Codex SDK thread resumed - execution complete'), `LocalResume:${validated.threadId}`);
                 }
                 catch (streamError) {
                     // Clear timeout timers (v3.2.1)

@@ -46,6 +46,13 @@ export interface CodexProcessOptions {
   onProgress?: (progress: ProgressUpdate) => void;
   onWarning?: (warning: TimeoutWarning) => void;
   onTimeout?: (timeout: TimeoutError) => void;
+
+  // MCP Progress Notifications (v3.5.0)
+  /**
+   * Callback for MCP progress notifications (sent every 30 seconds)
+   * Receives elapsed time in seconds
+   */
+  onMcpProgress?: (elapsed: number) => Promise<void>;
 }
 
 export interface CodexProcessResult {
@@ -130,7 +137,7 @@ export class ProcessManager {
   private async runProcess(options: CodexProcessOptions): Promise<CodexProcessResult> {
     const {
       task, mode, outputSchema, model, workingDir, envPolicy, envAllowList,
-      idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout
+      idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout, onMcpProgress
     } = options;
 
     // Build command args safely (no shell injection)
@@ -194,6 +201,11 @@ export class ProcessManager {
             onTimeout(timeout);
           }
 
+          // Stop MCP progress interval (v3.5.0)
+          if (mcpProgressInterval) {
+            clearInterval(mcpProgressInterval);
+          }
+
           // Return structured error with partial results
           const partial = watchdog.getPartialResults();
 
@@ -216,6 +228,23 @@ export class ProcessManager {
           });
         },
       });
+
+      // MCP Progress Notifications (v3.5.0)
+      // Send progress updates every 30 seconds
+      const startTime = Date.now();
+      let mcpProgressInterval: NodeJS.Timeout | undefined;
+
+      if (onMcpProgress) {
+        mcpProgressInterval = setInterval(async () => {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          try {
+            await onMcpProgress(elapsed);
+          } catch (error) {
+            // Log error but don't break execution
+            console.error('[ProcessManager] MCP progress callback error:', error);
+          }
+        }, 30000); // Every 30 seconds
+      }
 
       // Parse JSONL from stdout
       proc.stdout.on('data', (chunk: Buffer) => {
@@ -245,6 +274,11 @@ export class ProcessManager {
         // Stop watchdog
         watchdog.stop();
 
+        // Stop MCP progress interval (v3.5.0)
+        if (mcpProgressInterval) {
+          clearInterval(mcpProgressInterval);
+        }
+
         // Flush any remaining buffered events
         const finalEvent = parser.flush();
         if (finalEvent) {
@@ -271,6 +305,11 @@ export class ProcessManager {
       proc.on('error', (error) => {
         // Stop watchdog
         watchdog.stop();
+
+        // Stop MCP progress interval (v3.5.0)
+        if (mcpProgressInterval) {
+          clearInterval(mcpProgressInterval);
+        }
 
         this.processes.delete(processId);
 

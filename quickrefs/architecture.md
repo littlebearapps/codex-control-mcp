@@ -44,6 +44,8 @@ Claude Code → MCP Server → spawn(codex cloud exec) → Codex Cloud
 codex-control/
 ├── src/
 │   ├── index.ts                  # MCP server entry point
+│   ├── types/
+│   │   └── progress.ts           # MCP progress notification helpers (v3.5.0) 🆕
 │   ├── executor/
 │   │   ├── jsonl_parser.ts       # JSONL event stream parser
 │   │   ├── process_manager.ts    # Process spawning + queue
@@ -268,6 +270,99 @@ error_context: {
 
 ---
 
+### 8. MCP Progress Notifications (`types/progress.ts`) 🆕 (v3.5.0)
+
+**Purpose**: Provide real-time task visibility in Claude Code's status bar during Codex executions.
+
+**What It Provides**:
+- **Status Bar Integration**: Running Codex tasks appear in Claude Code's status bar with live updates
+- **Non-Blocking Execution**: Claude Code remains responsive while Codex runs in background
+- **Error Resilience**: Notification failures never break tool execution (graceful degradation)
+- **Completion Tracking**: Clear completion/failure indicators
+
+**Notification Strategies** (3 approaches based on tool type):
+
+**1. CLI Execution** (`_codex_local_run`):
+- **Frequency**: Every 30 seconds
+- **Type**: Elapsed time notifications
+- **Implementation**: `ProcessManager.onMcpProgress` callback
+- **Message**: "Codex executing (45s elapsed)"
+
+**2. SDK Execution** (`_codex_local_exec`, `_codex_local_resume`):
+- **Frequency**: Every 10 events
+- **Type**: Step progress notifications
+- **Implementation**: Direct calls in event loop
+- **Message**: "67% complete - Analyzing security"
+
+**3. Cloud Submission** (`_codex_cloud_submit`):
+- **Frequency**: Once (on successful submit)
+- **Type**: Completion notification
+- **Implementation**: After task registration
+- **Message**: "Cloud task submitted - running in background"
+
+**Helper Functions**:
+```typescript
+// Send notification with error handling
+sendProgressNotification(
+  extra: ToolExecuteExtra | undefined,
+  params: ProgressNotificationParams,
+  context: string
+): Promise<void>
+
+// Create elapsed time notification (CLI execution)
+createElapsedTimeNotification(
+  taskId: string,
+  elapsedSeconds: number
+): ProgressNotificationParams
+
+// Create step progress notification (SDK execution)
+createStepProgressNotification(
+  taskId: string,
+  completedSteps: number,
+  totalSteps: number,
+  currentAction?: string
+): ProgressNotificationParams
+
+// Create completion notification (all tools)
+createCompletionNotification(
+  taskId: string,
+  message?: string
+): ProgressNotificationParams
+```
+
+**MCP Protocol Format**:
+```typescript
+{
+  method: 'notifications/progress',
+  params: {
+    progressToken: 'T-local-abc123',  // Task identifier
+    progress: 50,                      // Current value
+    total: 100,                        // Total (optional)
+    message: '50% complete'            // Human-readable
+  }
+}
+```
+
+**Error Handling**:
+- All notification calls wrapped in try/catch
+- Failures logged but never thrown
+- Tools continue normally if notifications fail
+- No impact on task execution
+
+**Coverage** (4/15 tools with progress tracking):
+1. `_codex_local_run` - Elapsed time every 30s
+2. `_codex_local_exec` - Step progress every 10 events
+3. `_codex_local_resume` - Elapsed time every 10 events
+4. `_codex_cloud_submit` - One-time on submit
+
+**User Experience Impact**:
+- ✅ No more "did it freeze?" confusion
+- ✅ Real-time progress tracking
+- ✅ Work on other tasks while Codex runs
+- ✅ Clear completion indicators
+
+---
+
 ## Data Flow
 
 ### Local CLI Execution (codex_run)
@@ -282,16 +377,20 @@ error_context: {
 4. Process Manager spawns codex CLI
    ↓
 5. JSONL Parser processes event stream
+   ↓ (Every 30 seconds during execution)
+6. MCP Progress Notification: Elapsed time update 🆕 (v3.5.0)
    ↓
-6. Secret Redactor scrubs sensitive data
+7. Secret Redactor scrubs sensitive data
    ↓
-7. Error Mapper converts errors to MCP format
+8. Error Mapper converts errors to MCP format
    ↓
-8. Metadata Extractor extracts structured metadata 🆕
+9. Metadata Extractor extracts structured metadata 🆕
    ↓
-9. MCP Server sends CallToolResponse (with metadata)
+10. MCP Progress Notification: Completion 🆕 (v3.5.0)
    ↓
-10. Claude Code receives result
+11. MCP Server sends CallToolResponse (with metadata)
+   ↓
+12. Claude Code receives result
 ```
 
 ### Local SDK Execution (codex_local_exec)
@@ -310,12 +409,16 @@ error_context: {
 6. SDK spawns codex CLI with session management
    ↓
 7. Real-time event streaming (turn.started, item.completed, etc.)
+   ↓ (Every 10 events during execution)
+8. MCP Progress Notification: Step progress update 🆕 (v3.5.0)
    ↓
-8. Thread persisted to ~/.codex/sessions/
+9. Thread persisted to ~/.codex/sessions/
    ↓
-9. MCP Server returns thread ID + events + token usage
+10. MCP Progress Notification: Completion 🆕 (v3.5.0)
    ↓
-10. Claude Code receives result
+11. MCP Server returns thread ID + events + token usage
+   ↓
+12. Claude Code receives result
 ```
 
 ### Cloud Submission (codex_cloud_submit)
@@ -333,13 +436,15 @@ error_context: {
    ↓
 6. Task Registry stores task metadata
    ↓
-7. MCP Server returns task ID + Web UI link
+7. MCP Progress Notification: Completion (task submitted) 🆕 (v3.5.0)
    ↓
-8. Claude Code receives result
+8. MCP Server returns task ID + Web UI link
    ↓
-9. (Background) Task executes in Codex Cloud
+9. Claude Code receives result
    ↓
-10. (Later) User checks status via Web UI or tools
+10. (Background) Task executes in Codex Cloud
+   ↓
+11. (Later) User checks status via Web UI or tools
 ```
 
 ---
