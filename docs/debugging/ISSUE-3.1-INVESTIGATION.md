@@ -367,7 +367,7 @@ if (event.type === 'item.completed') {
 - ⚠️ Event types might vary between SDK versions
 - ⚠️ Need to test with real Codex executions
 
-**Recommended**: Target v3.4.3 (requires testing)
+**Recommended**: Target v3.5.0 (requires testing)
 
 ---
 
@@ -438,7 +438,7 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 2. **Use metadata extractor** to show structured summary (Option D)
 3. **Smart truncation** - first 40KB + last 10KB (Option B)
 
-**Phase 2** (Medium - v3.4.3):
+**Phase 2** (Medium - v3.5.0):
 1. **Capture additional event types** (Option C)
 2. Test with real Codex SDK executions
 3. Refine based on actual event schema
@@ -531,7 +531,7 @@ Status: ✅ Success
 - [ ] Test with real tasks (OAuth implementation example)
 - [ ] Verify structured summary useful
 
-**Phase 2: Enhanced Capture** (v3.4.3)
+**Phase 2: Enhanced Capture** (v3.5.0)
 - [ ] Research Codex SDK event schema
 - [ ] Identify all event types (file_write, test_execution, etc.)
 - [ ] Add capture logic for file operations
@@ -595,4 +595,4 @@ Status: ✅ Success
 
 **Next Action**:
 - **Quick Fix**: Increase limit to 50KB + smart truncation + metadata extraction (v3.4.2)
-- **Proper Fix**: Capture additional event types (file_write, test_execution, code_generation) (v3.4.3)
+- **Proper Fix**: Capture additional event types (file_write, test_execution, code_generation) (v3.5.0)

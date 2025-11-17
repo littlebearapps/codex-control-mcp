@@ -1,4 +1,4 @@
-## [3.4.3] - 2025-11-17
+## [3.5.0] - 2025-11-17
 
 ### Added
 
@@ -473,7 +473,7 @@ Identified 6 missing Codex CLI features for future implementation:
 - Multimodal support (`_codex_local_run_with_images`)
 - Web search integration (`_codex_local_run_with_search`)
 
-**Phase 3 (v3.4.3)** - MEDIUM Priority:
+**Phase 3 (v3.5.0)** - MEDIUM Priority:
 - Session commands (`_codex_session_init`, `_codex_session_review`)
 - Configuration profiles (`_codex_list_profiles`, `_codex_set_profile`)
 

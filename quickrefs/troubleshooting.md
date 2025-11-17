@@ -770,7 +770,7 @@ task: "Fix null pointer in utils.ts line 42"
 
 ---
 
-## Update Notifications (v3.4.3+)
+## Update Notifications (v3.5.0+)
 
 ### Disable Update Notifications
 

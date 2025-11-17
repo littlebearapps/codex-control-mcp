@@ -494,7 +494,7 @@ if (task.status === 'completed' && resultData.success) {
    - Help users identify silent failures
    - Low risk, immediate value
 
-2. **Phase 2** (v3.4.3): Option B + C - Better detection
+2. **Phase 2** (v3.5.0): Option B + C - Better detection
    - Parse event content for error patterns
    - Add outcome validation (file creation, etc.)
    - Update success determination logic
@@ -621,7 +621,7 @@ Error indicators detected in execution output:
 
 1. **Implement Option E (Combination Approach)** - RECOMMENDED
    - Phase 1 (v3.4.2): Enhanced error reporting (Option D)
-   - Phase 2 (v3.4.3): Better detection (Options B + C)
+   - Phase 2 (v3.5.0): Better detection (Options B + C)
    - Phase 3 (Future): Full stderr capture (Option A)
 
 2. **Coordinate with Issue 1.2 Fix**

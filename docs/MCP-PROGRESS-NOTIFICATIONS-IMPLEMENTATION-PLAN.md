@@ -1,6 +1,6 @@
 # MCP Progress Notifications - Comprehensive Implementation Plan
 
-**Version**: 3.4.3
+**Version**: 3.5.0
 **Feature**: Add MCP `notifications/progress` to all execution tools
 **Impact**: Transform async UX - tasks visible in Claude Code status bar
 **Created**: 2025-11-17
@@ -711,7 +711,7 @@ See exactly what Codex is doing via Claude Code's status bar:
 ### 3. Update `CHANGELOG.md`
 
 ```markdown
-## [3.4.3] - 2025-11-17
+## [3.5.0] - 2025-11-17
 
 ### Added
 
@@ -818,7 +818,7 @@ All execution tools send `notifications/progress` to Claude Code during long-run
 
 ## Version Planning
 
-### v3.4.3 Release Checklist
+### v3.5.0 Release Checklist
 
 **Pre-Release**:
 - [ ] Implement all 4 tool modifications
@@ -845,10 +845,10 @@ All execution tools send `notifications/progress` to Claude Code during long-run
 - [ ] Test backward compatibility (tools without `extra`)
 
 **Version Updates**:
-- [ ] Update `package.json`: `3.4.2` → `3.4.3`
-- [ ] Update `src/index.ts` line 53: `SERVER_VERSION = '3.4.3'`
-- [ ] Update `config.json` line 2: `"version": "3.4.3"`
-- [ ] Update `CLAUDE.md` line 3: `**Version**: 3.4.3`
+- [ ] Update `package.json`: `3.4.2` → `3.5.0`
+- [ ] Update `src/index.ts` line 53: `SERVER_VERSION = '3.5.0'`
+- [ ] Update `config.json` line 2: `"version": "3.5.0"`
+- [ ] Update `CLAUDE.md` line 3: `**Version**: 3.5.0`
 
 **Build & Publish**:
 - [ ] Run `npm run build`
@@ -931,7 +931,7 @@ All execution tools send `notifications/progress` to Claude Code during long-run
 12. **Publish**
     - Commit with conventional commit message
     - Push to GitHub
-    - Verify semantic-release publishes v3.4.3
+    - Verify semantic-release publishes v3.5.0
     - Test published package
 
 **Total estimated time**: 8 hours
@@ -981,7 +981,7 @@ All execution tools send `notifications/progress` to Claude Code during long-run
 
 ## Success Metrics
 
-**After v3.4.3 release, we should observe**:
+**After v3.5.0 release, we should observe**:
 
 1. ✅ **Users see running tasks** in Claude Code status bar
 2. ✅ **No blocking behavior** - Claude Code can work during Codex execution
@@ -997,10 +997,10 @@ All execution tools send `notifications/progress` to Claude Code during long-run
 1. Start with Phase 1 (helper function + infrastructure)
 2. Build incrementally with testing at each step
 3. Verify with Claude Code integration tests
-4. Document and release v3.4.3
+4. Document and release v3.5.0
 
 **Questions to resolve**:
-- Should we implement this for v3.4.3 or defer to later?
+- Should we implement this for v3.5.0 or defer to later?
 - Any changes to the notification frequency (30s / 10 events)?
 - Should cloud tasks send periodic updates (if possible)?
 

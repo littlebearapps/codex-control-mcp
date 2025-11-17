@@ -586,7 +586,7 @@ cd /tmp/test-project-b
 1. **Explore MCP Protocol Extensions**
    - Check if MCP 1.0+ provides working directory context
    - If available, use it instead of process.cwd()
-   - Target: v3.4.3
+   - Target: v3.5.0
 
 2. **Add Project-Based Tagging**
    - Allow users to tag tasks with project names

@@ -121,7 +121,7 @@ grep -r "codex-control" README.md
 
 1. **CHANGELOG.md** - Add breaking change notice:
    ```markdown
-   ## [3.4.3] - 2025-11-XX
+   ## [3.5.0] - 2025-11-XX
 
    ### BREAKING CHANGE: Config Directory Migration
 

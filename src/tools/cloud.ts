@@ -186,7 +186,7 @@ export class CloudSubmitTool {
           // Continue anyway - registration failure shouldn't block submission
         }
 
-        // Send MCP notification for cloud task submission (v3.4.3)
+        // Send MCP notification for cloud task submission (v3.5.0)
         await sendProgressNotification(
           extra,
           createCompletionNotification(taskId, `Cloud task submitted - running in background`),

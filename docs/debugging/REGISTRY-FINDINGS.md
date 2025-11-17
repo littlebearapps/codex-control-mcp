@@ -221,7 +221,7 @@ this.dbPath = dbPath || path.join(newConfigDir, 'tasks.db');
 
 **CHANGELOG Entry**:
 ```markdown
-### v3.4.3 - Config Directory Migration
+### v3.5.0 - Config Directory Migration
 
 **BREAKING CHANGE**: Config directory renamed for consistency
 

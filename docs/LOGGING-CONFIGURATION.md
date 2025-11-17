@@ -1,7 +1,7 @@
 # Logging Configuration (Issue 1.5 Phase 1)
 
 **Version**: 3.4.2
-**Status**: Phase 1 - Documentation Only (Phase 2 structured logging planned for v3.4.3)
+**Status**: Phase 1 - Documentation Only (Phase 2 structured logging planned for v3.5.0)
 
 ---
 
@@ -142,7 +142,7 @@ mcp-delegator
 
 ## Log Levels
 
-Currently, MCP Delegator uses **console.error()** for all logging (stderr). Future versions (v3.4.3+) will add structured logging with levels:
+Currently, MCP Delegator uses **console.error()** for all logging (stderr). Future versions (v3.5.0+) will add structured logging with levels:
 
 - **ERROR**: Critical failures, exceptions
 - **WARN**: Warnings, stuck tasks, retry attempts
@@ -241,7 +241,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 
 ---
 
-## Future Enhancements (v3.4.3+)
+## Future Enhancements (v3.5.0+)
 
 Phase 2 structured logging will add:
 
@@ -289,7 +289,7 @@ Phase 2 structured logging will add:
 - ✅ Manual capture via file redirection
 - ✅ Accessible via system console
 
-**Coming Soon (v3.4.3+)**:
+**Coming Soon (v3.5.0+)**:
 - Structured logging with levels
 - JSON output for machine parsing
 - Log rotation

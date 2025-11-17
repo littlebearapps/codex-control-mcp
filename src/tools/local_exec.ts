@@ -322,7 +322,7 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
               globalTaskRegistry.updateProgress(taskId, progress);
               console.error(`[LocalExec:${taskId}] Progress: ${progress.progressPercentage}% (${progress.currentAction || 'processing'})`);
 
-              // Send MCP progress notification (v3.4.3)
+              // Send MCP progress notification (v3.5.0)
               await sendProgressNotification(
                 extra,
                 createStepProgressNotification(
@@ -343,7 +343,7 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
           globalTaskRegistry.updateProgress(taskId, finalProgress);
           console.error(`[LocalExec:${taskId}] Final progress: ${finalProgress.progressPercentage}%`);
 
-          // Send final completion notification (v3.4.3)
+          // Send final completion notification (v3.5.0)
           await sendProgressNotification(
             extra,
             createCompletionNotification(taskId, 'Codex SDK execution complete'),

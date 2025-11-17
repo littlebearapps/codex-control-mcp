@@ -45,7 +45,7 @@ codex-control/
 ├── src/
 │   ├── index.ts                  # MCP server entry point
 │   ├── types/
-│   │   └── progress.ts           # MCP progress notification helpers (v3.4.3) 🆕
+│   │   └── progress.ts           # MCP progress notification helpers (v3.5.0) 🆕
 │   ├── executor/
 │   │   ├── jsonl_parser.ts       # JSONL event stream parser
 │   │   ├── process_manager.ts    # Process spawning + queue
@@ -270,7 +270,7 @@ error_context: {
 
 ---
 
-### 8. MCP Progress Notifications (`types/progress.ts`) 🆕 (v3.4.3) ⚠️ DISABLED
+### 8. MCP Progress Notifications (`types/progress.ts`) 🆕 (v3.5.0) ⚠️ DISABLED
 
 **Purpose**: Provide real-time task visibility in Claude Code's status bar during Codex executions.
 
@@ -380,7 +380,7 @@ createCompletionNotification(
    ↓
 5. JSONL Parser processes event stream
    ↓ (Every 30 seconds during execution)
-6. MCP Progress Notification: Elapsed time update 🆕 (v3.4.3)
+6. MCP Progress Notification: Elapsed time update 🆕 (v3.5.0)
    ↓
 7. Secret Redactor scrubs sensitive data
    ↓
@@ -388,7 +388,7 @@ createCompletionNotification(
    ↓
 9. Metadata Extractor extracts structured metadata 🆕
    ↓
-10. MCP Progress Notification: Completion 🆕 (v3.4.3)
+10. MCP Progress Notification: Completion 🆕 (v3.5.0)
    ↓
 11. MCP Server sends CallToolResponse (with metadata)
    ↓
@@ -412,11 +412,11 @@ createCompletionNotification(
    ↓
 7. Real-time event streaming (turn.started, item.completed, etc.)
    ↓ (Every 10 events during execution)
-8. MCP Progress Notification: Step progress update 🆕 (v3.4.3)
+8. MCP Progress Notification: Step progress update 🆕 (v3.5.0)
    ↓
 9. Thread persisted to ~/.codex/sessions/
    ↓
-10. MCP Progress Notification: Completion 🆕 (v3.4.3)
+10. MCP Progress Notification: Completion 🆕 (v3.5.0)
    ↓
 11. MCP Server returns thread ID + events + token usage
    ↓
@@ -438,7 +438,7 @@ createCompletionNotification(
    ↓
 6. Task Registry stores task metadata
    ↓
-7. MCP Progress Notification: Completion (task submitted) 🆕 (v3.4.3)
+7. MCP Progress Notification: Completion (task submitted) 🆕 (v3.5.0)
    ↓
 8. MCP Server returns task ID + Web UI link
    ↓

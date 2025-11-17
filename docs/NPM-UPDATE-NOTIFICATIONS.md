@@ -1,7 +1,7 @@
 # npm Update Notifications - Implementation Summary
 
 **Date**: 2025-11-17
-**Version**: Will be included in next release (v3.4.3 or later)
+**Version**: Will be included in next release (v3.5.0 or later)
 **Status**: ✅ Implemented and Tested
 
 ---
@@ -120,7 +120,7 @@ isGlobal: true
 ```
 ╭───────────────────────────────────────────────────╮
 │                                                   │
-│   Update available 3.4.1 → 3.4.3                 │
+│   Update available 3.4.1 → 3.5.0                 │
 │   Run npm i -g @littlebearapps/mcp-delegator     │
 │                                                   │
 ╰───────────────────────────────────────────────────╯
@@ -262,16 +262,16 @@ npm config set update-notifier false
 
 ### Version Targeting
 
-**Next Release**: v3.4.3 (minor version bump - new feature)
+**Next Release**: v3.5.0 (minor version bump - new feature)
 
 **Semantic Versioning**:
 - v3.4.1: Config directory migration (breaking change)
-- v3.4.3: npm update notifications (new feature) ← This feature
+- v3.5.0: npm update notifications (new feature) ← This feature
 
 ### Changelog Entry (Draft)
 
 ```markdown
-## [3.4.3](https://github.com/littlebearapps/mcp-delegator/compare/v3.4.1...v3.4.3) (TBD)
+## [3.5.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.4.1...v3.5.0) (TBD)
 
 ### Features
 
@@ -367,7 +367,7 @@ npm config set update-notifier false
    - Document opt-out methods
 
 4. **CHANGELOG.md**:
-   - Add v3.4.3 release entry with update notification feature
+   - Add v3.5.0 release entry with update notification feature
 
 ---
 
@@ -422,7 +422,7 @@ updateCheckInterval: 1000 * 60 * 60 * 24 * 7, // Weekly instead of daily
 
 ---
 
-**Status**: ✅ Implementation Complete - Ready for Next Release (v3.4.3)
+**Status**: ✅ Implementation Complete - Ready for Next Release (v3.5.0)
 
 **Files Changed**: 3 total
 - `package.json` (dependencies)

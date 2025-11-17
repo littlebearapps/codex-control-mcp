@@ -19,7 +19,7 @@ See detailed documentation in `quickrefs/`:
 
 ---
 
-## ⚠️ MCP Progress Notifications (v3.4.3 - DISABLED)
+## ⚠️ MCP Progress Notifications (v3.5.0 - DISABLED)
 
 **Implementation Status**: ✅ Complete but **DISABLED**
 
@@ -127,7 +127,7 @@ All MCP configs use: `"command": "mcp-delegator"`
 
 **Updating**:
 ```bash
-# Automatic notifications (v3.4.3+)
+# Automatic notifications (v3.5.0+)
 # Server shows update message when new version available
 
 # Manual check

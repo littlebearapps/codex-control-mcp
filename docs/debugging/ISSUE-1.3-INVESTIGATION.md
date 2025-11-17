@@ -543,7 +543,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 1. **Implement Option B (TimeoutWatchdog for SDK)**
    - Proper timeout semantics
    - Consistent behavior across tools
-   - Target: v3.4.3
+   - Target: v3.5.0
 
 2. **Add Registry Health Metrics**
    - Track update success/failure rates

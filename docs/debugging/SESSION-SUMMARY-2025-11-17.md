@@ -242,7 +242,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 ### Documentation Files (2 files)
 
 - `CHANGELOG.md`: Added v3.4.1 release notes with breaking change notice
-- `docs/debugging/CONFIG-MIGRATION-PLAN.md`: Updated v3.4.3 → v3.4.1
+- `docs/debugging/CONFIG-MIGRATION-PLAN.md`: Updated v3.5.0 → v3.4.1
 
 **Total**: 10 files changed
 
