@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/@littlebearapps/mcp-delegator)](https://nodejs.org)
 
-**Version**: 3.5.0
+**Version**: 3.4.3
 **Package**: `@littlebearapps/mcp-delegator`
 **Status**: ✅ Production Ready - MCP Progress Notifications Live
 **Repository**: [github.com/littlebearapps/mcp-delegator](https://github.com/littlebearapps/mcp-delegator)
@@ -17,7 +17,7 @@
 
 **MCP Delegator** enables Claude Code to delegate tasks to multiple AI agents with async execution. Currently supports **14 Codex primitives** with future support for Claude Code (Anthropic Agent SDK) and other agents.
 
-**🚀 v3.5.0 - MCP Progress Notifications**:
+**🚀 v3.4.3 - MCP Progress Notifications**:
 - 🔔 **Real-Time Status Bar Updates**: Running Codex tasks now appear in Claude Code's status bar with live progress
 - ⚡ **Non-Blocking Execution**: Claude Code remains responsive while Codex runs in background
 - 📊 **Multiple Update Strategies**:
@@ -82,7 +82,7 @@ Status returned
 **Pattern**: Claude Code delegates → Agent executes (async) → Claude Code continues → Results when ready
 
 **Version History**:
-- ✅ **v3.5.0 - MCP Progress Notifications**: Real-time status bar updates for all Codex executions
+- ✅ **v3.4.3 - MCP Progress Notifications**: Real-time status bar updates for all Codex executions
 - ✅ **v3.2.1 - Timeout Detection + Bug Fixes**: All 6 tools protected against hangs + sandbox mode fix
 - ✅ **v3.2.0 - Renamed to MCP Delegator**: Multi-agent delegation pattern
 - ✅ **v3.0.1 - npm Package Ready**: Scoped package with publishing safety

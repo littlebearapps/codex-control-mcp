@@ -1,12 +1,12 @@
 import { readFile } from 'fs/promises';
 import { homedir } from 'os';
 import { join } from 'path';
-const ENVIRONMENTS_CONFIG_PATH = join(homedir(), '.config', 'codex-control', 'environments.json');
+const ENVIRONMENTS_CONFIG_PATH = join(homedir(), '.config', 'mcp-delegator', 'environments.json');
 export class ListEnvironmentsTool {
     static getSchema() {
         return {
             name: '_codex_cloud_list_environments',
-            description: 'List your Codex Cloud environments - like checking which servers you have access to. Reads from local config file (~/.config/codex-control/environments.json) since there\'s no API for environment discovery. Use this when: you need an environment ID for _codex_cloud_submit, want to see which repos are configured, or are setting up a new project. Returns: environment IDs, names, repository URLs, tech stacks. Perfect for: "which environment should I use?", documentation of your setup, or finding that environment ID you forgot. This is local-only data you maintain manually. Avoid if: you just want to submit a task and already know the environment ID.',
+            description: 'List your Codex Cloud environments - like checking which servers you have access to. Reads from local config file (~/.config/mcp-delegator/environments.json) since there\'s no API for environment discovery. Use this when: you need an environment ID for _codex_cloud_submit, want to see which repos are configured, or are setting up a new project. Returns: environment IDs, names, repository URLs, tech stacks. Perfect for: "which environment should I use?", documentation of your setup, or finding that environment ID you forgot. This is local-only data you maintain manually. Avoid if: you just want to submit a task and already know the environment ID.',
             inputSchema: {
                 type: 'object',
                 properties: {},

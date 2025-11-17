@@ -354,6 +354,87 @@ codex_cloud_submit
 
 ---
 
+### Issue: Tasks Stuck in "Working" State
+
+**Symptoms**:
+```
+Tasks remain in "working" status for hours/days
+codex_local_status shows old tasks that never completed
+Task never marked as completed/failed/canceled
+```
+
+**Background**:
+SDK tasks (codex_local_exec, codex_local_resume) can get stuck if timeout detection fails to update registry due to SQLite exceptions or other errors. This is a known issue with root cause identified in Issue 1.3.
+
+**Diagnosis**:
+```bash
+# Check for stuck tasks
+# Use codex_local_status with showAll: true
+
+# Query database directly
+sqlite3 ~/.config/mcp-delegator/tasks.db "
+  SELECT id, status,
+    ROUND((julianday('now') - julianday(created_at/1000, 'unixepoch')) * 24, 1) as hours_ago
+  FROM tasks
+  WHERE status = 'working'
+  ORDER BY hours_ago DESC
+  LIMIT 10;
+"
+```
+
+**Solutions**:
+
+**Solution 1: Use Manual Cleanup Tool**
+```typescript
+// Clean up tasks stuck > 1 hour (default)
+{} // Call _codex_cleanup_registry tool
+
+// Custom threshold (e.g., 30 minutes)
+{
+  "stuckTaskMaxAgeSeconds": 1800
+}
+
+// Preview cleanup without changes
+{
+  "dryRun": true
+}
+```
+
+**Solution 2: Clean Up Via Database** (Emergency)
+```bash
+# Mark all tasks stuck > 2 hours as failed
+sqlite3 ~/.config/mcp-delegator/tasks.db "
+  UPDATE tasks
+  SET status = 'failed',
+      error = 'Manually cleaned up - stuck for >2 hours',
+      updated_at = $(date -u +%s)000,
+      completed_at = $(date -u +%s)000
+  WHERE status IN ('pending', 'working')
+    AND created_at < $(date -u +%s)000 - 7200000;
+"
+
+# Verify cleanup
+sqlite3 ~/.config/mcp-delegator/tasks.db "
+  SELECT COUNT(*) FROM tasks WHERE status = 'working';
+"
+```
+
+**Solution 3: Restart MCP Server**
+```bash
+# Restart Claude Code (MCP server restart)
+# Future versions will have automatic cleanup on startup
+```
+
+**Prevention**:
+- ✅ Future versions (v3.4.2+) will have automatic cleanup
+- ✅ Cleanup will run on MCP server startup
+- ✅ Periodic cleanup every 15 minutes
+- ✅ See Issue 1.3 investigation for complete details
+
+**See**: `docs/debugging/ISSUE-1.3-INVESTIGATION.md` for root cause analysis
+
+---
+
 ### Issue: Codex CLI Exits with Error
 
 **Symptoms**:
@@ -686,6 +767,36 @@ task: "Fix null pointer in utils.ts line 42"
   outputSchema: { /* JSON schema */ }
 }
 ```
+
+---
+
+## Update Notifications (v3.4.3+)
+
+### Disable Update Notifications
+
+**If you don't want to see update notifications** when starting the server:
+
+**Method 1: Environment Variable** (Recommended)
+```bash
+export NO_UPDATE_NOTIFIER=1
+
+# Or add to shell profile
+echo "export NO_UPDATE_NOTIFIER=1" >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Method 2: Config File**
+```bash
+mkdir -p ~/.config/configstore
+echo '{"optOut": true}' > ~/.config/configstore/update-notifier-@littlebearapps-mcp-delegator.json
+```
+
+**Method 3: Global npm Setting**
+```bash
+npm config set update-notifier false
+```
+
+**See**: `docs/NPM-UPDATE-NOTIFICATIONS.md` for complete details
 
 ---
 

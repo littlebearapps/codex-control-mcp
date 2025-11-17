@@ -116,7 +116,7 @@ export class LocalRunTool {
             workingDir: input.workingDir,
             envPolicy: input.envPolicy,
             envAllowList: input.envAllowList,
-            // MCP Progress Notifications (v3.5.0)
+            // MCP Progress Notifications (v3.4.3)
             onMcpProgress: async (elapsed) => {
                 await sendProgressNotification(extra, createElapsedTimeNotification(taskIdForProgress, elapsed), `LocalRun:${taskIdForProgress}`);
             },
@@ -213,7 +213,7 @@ export class LocalRunTool {
             if (redactedOutput.stderr.trim()) {
                 message += `\n**Warnings/Debug Info**:\n\`\`\`\n${redactedOutput.stderr.substring(0, 1000)}\n\`\`\`\n`;
             }
-            // Send final completion notification (v3.5.0)
+            // Send final completion notification (v3.4.3)
             await sendProgressNotification(extra, createCompletionNotification(taskIdForProgress, 'Codex execution complete'), `LocalRun:${taskIdForProgress}`);
             return {
                 content: [

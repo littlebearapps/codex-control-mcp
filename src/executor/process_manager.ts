@@ -47,7 +47,7 @@ export interface CodexProcessOptions {
   onWarning?: (warning: TimeoutWarning) => void;
   onTimeout?: (timeout: TimeoutError) => void;
 
-  // MCP Progress Notifications (v3.5.0)
+  // MCP Progress Notifications (v3.4.3)
   /**
    * Callback for MCP progress notifications (sent every 30 seconds)
    * Receives elapsed time in seconds
@@ -201,7 +201,7 @@ export class ProcessManager {
             onTimeout(timeout);
           }
 
-          // Stop MCP progress interval (v3.5.0)
+          // Stop MCP progress interval (v3.4.3)
           if (mcpProgressInterval) {
             clearInterval(mcpProgressInterval);
           }
@@ -229,7 +229,7 @@ export class ProcessManager {
         },
       });
 
-      // MCP Progress Notifications (v3.5.0)
+      // MCP Progress Notifications (v3.4.3)
       // Send progress updates every 30 seconds
       const startTime = Date.now();
       let mcpProgressInterval: NodeJS.Timeout | undefined;
@@ -274,7 +274,7 @@ export class ProcessManager {
         // Stop watchdog
         watchdog.stop();
 
-        // Stop MCP progress interval (v3.5.0)
+        // Stop MCP progress interval (v3.4.3)
         if (mcpProgressInterval) {
           clearInterval(mcpProgressInterval);
         }
@@ -306,7 +306,7 @@ export class ProcessManager {
         // Stop watchdog
         watchdog.stop();
 
-        // Stop MCP progress interval (v3.5.0)
+        // Stop MCP progress interval (v3.4.3)
         if (mcpProgressInterval) {
           clearInterval(mcpProgressInterval);
         }

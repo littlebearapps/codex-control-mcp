@@ -1,6 +1,6 @@
 {
   "name": "@littlebearapps/mcp-delegator",
-  "version": "3.3.2",
+  "version": "3.4.3",
   "description": "Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution",
   "main": "dist/index.js",
   "type": "module",
@@ -61,7 +61,8 @@
     "@openai/codex-sdk": "^0.57.0",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.4.1",
-    "tree-kill": "^1.2.2"
+    "tree-kill": "^1.2.2",
+    "update-notifier": "^7.3.1"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -70,6 +71,7 @@
     "@semantic-release/npm": "^13.1.2",
     "@types/jest": "^29.5.0",
     "@types/node": "^22.19.0",
+    "@types/update-notifier": "^6.0.8",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",

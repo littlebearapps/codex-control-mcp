@@ -259,7 +259,7 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
                             const progress = progressEngine.getProgress();
                             globalTaskRegistry.updateProgress(taskId, progress);
                             console.error(`[LocalExec:${taskId}] Progress: ${progress.progressPercentage}% (${progress.currentAction || 'processing'})`);
-                            // Send MCP progress notification (v3.5.0)
+                            // Send MCP progress notification (v3.4.3)
                             await sendProgressNotification(extra, createStepProgressNotification(taskId, progress.completedSteps, progress.totalSteps, progress.currentAction ?? undefined), `LocalExec:${taskId}`);
                         }
                     }
@@ -268,7 +268,7 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
                     const finalProgress = progressEngine.getProgress();
                     globalTaskRegistry.updateProgress(taskId, finalProgress);
                     console.error(`[LocalExec:${taskId}] Final progress: ${finalProgress.progressPercentage}%`);
-                    // Send final completion notification (v3.5.0)
+                    // Send final completion notification (v3.4.3)
                     await sendProgressNotification(extra, createCompletionNotification(taskId, 'Codex SDK execution complete'), `LocalExec:${taskId}`);
                     // Clear timeout timers (v3.2.1)
                     clearTimeout(hardTimeoutTimer);

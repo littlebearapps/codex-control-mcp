@@ -19,7 +19,7 @@ See detailed documentation in `quickrefs/`:
 
 ---
 
-## ⚠️ MCP Progress Notifications (v3.5.0 - DISABLED)
+## ⚠️ MCP Progress Notifications (v3.4.3 - DISABLED)
 
 **Implementation Status**: ✅ Complete but **DISABLED**
 
@@ -112,7 +112,7 @@ All MCP configs use: `"command": "mcp-delegator"`
 
 **Updating**:
 ```bash
-# Automatic notifications (v3.5.0+)
+# Automatic notifications (v3.4.3+)
 # Server shows update message when new version available
 
 # Manual check
@@ -655,7 +655,7 @@ npm run build
   - **Phase 2 (v3.4.0)**: Multimodal + Web Search (MEDIUM priority)
     - `_codex_local_run_with_images` - Image analysis support
     - `_codex_local_run_with_search` - Web search integration
-  - **Phase 3 (v3.5.0)**: Session Commands + Profiles (MEDIUM priority)
+  - **Phase 3 (v3.6.0)**: Session Commands + Profiles (MEDIUM priority)
     - `_codex_session_init`, `_codex_session_review` - Session management
     - `_codex_list_profiles`, `_codex_set_profile` - Configuration profiles
   - See `docs/MISSING-CODEX-FEATURES-IMPLEMENTATION-GUIDE.md` for complete specs

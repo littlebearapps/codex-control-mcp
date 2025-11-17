@@ -6,17 +6,96 @@
  */
 export class ErrorMapper {
     /**
-     * Map a failed process result to MCP error format
+     * Parse stderr to extract meaningful error messages (Issue 3.3 fix)
+     */
+    static parseStderrForErrors(stderr) {
+        if (!stderr)
+            return null;
+        // Authentication errors
+        if (stderr.includes('Not authenticated') || stderr.includes('Authentication failed')) {
+            return {
+                message: 'Codex authentication failed',
+                suggestion: 'Run `codex auth` or set CODEX_API_KEY environment variable',
+            };
+        }
+        // Git repository errors
+        if (stderr.includes('Not inside a trusted directory') || stderr.includes('not a git repository')) {
+            return {
+                message: 'Task requires a git repository',
+                suggestion: 'Run `git init` in your project directory or use skipGitRepoCheck=true',
+            };
+        }
+        // Network/API errors
+        if (stderr.includes('ECONNREFUSED') || stderr.includes('ENOTFOUND')) {
+            return {
+                message: 'Network connection failed',
+                suggestion: 'Check your internet connection and try again',
+            };
+        }
+        // Rate limit errors
+        if (stderr.includes('rate limit') || stderr.includes('429')) {
+            return {
+                message: 'API rate limit exceeded',
+                suggestion: 'Wait a few minutes and try again',
+            };
+        }
+        // File permission errors
+        if (stderr.includes('EACCES') || stderr.includes('permission denied')) {
+            return {
+                message: 'Permission denied',
+                suggestion: 'Check file permissions in your working directory',
+            };
+        }
+        // Timeout errors
+        if (stderr.includes('timeout') || stderr.includes('timed out')) {
+            return {
+                message: 'Task execution timed out',
+                suggestion: 'Try breaking the task into smaller steps or use cloud execution',
+            };
+        }
+        // Extract first meaningful error line
+        const lines = stderr.split('\n').filter((line) => line.trim());
+        const errorLine = lines.find((line) => line.includes('Error:') || line.includes('error') || line.includes('failed'));
+        if (errorLine) {
+            return {
+                message: errorLine.trim(),
+                suggestion: 'Check the error details above and correct the issue',
+            };
+        }
+        return null;
+    }
+    /**
+     * Detect silent failures (Issue 1.2 fix) - when task reports success but did no work
+     */
+    static detectSilentFailure(result) {
+        // If exit code is 0 but no events were captured, something went wrong
+        if (result.exitCode === 0 && result.events.length === 0) {
+            return true;
+        }
+        // If there's a turn.completed but no actual work (no file changes, no commands)
+        const hasCompleted = result.events.some((e) => e.type === 'turn.completed');
+        const hasWork = result.events.some((e) => e.type === 'item.completed' &&
+            (e.data?.type === 'file_change' || e.data?.type === 'command_execution')) ||
+            result.events.some((e) => e.type === 'agent.message' || e.type === 'item.completed');
+        if (hasCompleted && !hasWork) {
+            return true;
+        }
+        return false;
+    }
+    /**
+     * Map a failed process result to MCP error format (Enhanced for Issues 1.2 + 3.3)
      */
     static mapProcessError(result) {
         // Spawn error (codex not found, permission denied, etc.)
         if (result.error) {
+            const stderrError = this.parseStderrForErrors(result.stderr);
             return {
                 code: 'SPAWN_ERROR',
-                message: `Failed to spawn codex process: ${result.error.message}`,
+                message: stderrError?.message || `Failed to spawn codex process: ${result.error.message}`,
                 details: {
                     error: result.error.message,
                     stderr: result.stderr,
+                    suggestion: stderrError?.suggestion || 'Ensure codex CLI is installed: npm install -g @openai/codex',
                 },
             };
         }
@@ -28,6 +107,21 @@ export class ErrorMapper {
                 details: {
                     signal: result.signal,
                     stderr: result.stderr,
+                    suggestion: result.signal === 'SIGTERM'
+                        ? 'Process timed out - try breaking task into smaller steps'
+                        : 'Process was killed unexpectedly - check system resources',
+                },
+            };
+        }
+        // Silent failure detection (Issue 1.2)
+        if (this.detectSilentFailure(result)) {
+            return {
+                code: 'SILENT_FAILURE',
+                message: 'Task completed but no work was performed',
+                details: {
+                    exitCode: result.exitCode,
+                    events: result.events.length,
+                    suggestion: 'Task may have failed silently - check task description and try again',
                 },
             };
         }
@@ -43,6 +137,20 @@ export class ErrorMapper {
                         exitCode: result.exitCode,
                         error: failedEvent.data?.error,
                         stderr: result.stderr,
+                        suggestion: 'Review the error message and adjust your task description',
+                    },
+                };
+            }
+            // Parse stderr for better error message (Issue 3.3)
+            const stderrError = this.parseStderrForErrors(result.stderr);
+            if (stderrError) {
+                return {
+                    code: 'EXIT_ERROR',
+                    message: stderrError.message,
+                    details: {
+                        exitCode: result.exitCode,
+                        stderr: result.stderr,
+                        suggestion: stderrError.suggestion,
                     },
                 };
             }
@@ -52,6 +160,7 @@ export class ErrorMapper {
                 details: {
                     exitCode: result.exitCode,
                     stderr: result.stderr,
+                    suggestion: 'Check stderr output above for details',
                 },
             };
         }
@@ -62,6 +171,7 @@ export class ErrorMapper {
             details: {
                 exitCode: result.exitCode,
                 stderr: result.stderr,
+                suggestion: 'Check system logs and ensure codex CLI is working correctly',
             },
         };
     }

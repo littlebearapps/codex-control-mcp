@@ -555,7 +555,7 @@ jobs:
 
 ---
 
-## Repository CI/CD (v3.2.2+)
+## Repository CI/CD (v3.4.0+)
 
 **Fully automated pipeline** - No manual versioning or publishing required.
 
@@ -566,12 +566,19 @@ jobs:
 
 ### Automated on Main Commits
 - **semantic-release** determines version from conventional commits:
-  - `fix:` → Patch (3.2.x)
+  - `fix:` → Patch (3.x.x)
   - `feat:` → Minor (3.x.0)
   - `feat!:` or `BREAKING CHANGE:` → Major (x.0.0)
-- Auto-publish to npm with provenance
+- Auto-publish to npm with provenance (✅ E409 race condition fixed)
 - Generate CHANGELOG.md
 - Create GitHub releases
+
+### Provenance E409 Fix (v3.3.3+)
+- **Problem**: npm registry race condition causes E409 "packument save" errors
+- **Solution**: Post-publish verification script (based on CKEditor solution)
+- Handles case where package publishes successfully despite error message
+- Verification script confirms package exists in registry (60s timeout)
+- **See**: `docs/PROVENANCE-E409-FIX.md` for complete details
 
 ### Continuous Security
 - Weekly CodeQL scans

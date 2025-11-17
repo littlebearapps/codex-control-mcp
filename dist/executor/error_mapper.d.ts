@@ -13,7 +13,15 @@ export interface MCPError {
 }
 export declare class ErrorMapper {
     /**
-     * Map a failed process result to MCP error format
+     * Parse stderr to extract meaningful error messages (Issue 3.3 fix)
+     */
+    private static parseStderrForErrors;
+    /**
+     * Detect silent failures (Issue 1.2 fix) - when task reports success but did no work
+     */
+    private static detectSilentFailure;
+    /**
+     * Map a failed process result to MCP error format (Enhanced for Issues 1.2 + 3.3)
      */
     static mapProcessError(result: CodexProcessResult): MCPError;
     /**

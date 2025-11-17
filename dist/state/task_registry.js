@@ -18,8 +18,29 @@ export class TaskRegistry {
     db;
     dbPath;
     constructor(dbPath) {
-        // Default: ~/.config/codex-control/tasks.db
-        const configDir = path.join(os.homedir(), '.config', 'codex-control');
+        // Config directory migration: codex-control → mcp-delegator (v3.4.1)
+        const oldConfigDir = path.join(os.homedir(), '.config', 'codex-control');
+        const newConfigDir = path.join(os.homedir(), '.config', 'mcp-delegator');
+        // Auto-migrate if old directory exists and new doesn't
+        let configDir = newConfigDir;
+        if (fs.existsSync(oldConfigDir) && !fs.existsSync(newConfigDir)) {
+            try {
+                console.error('[TaskRegistry] Migrating config from codex-control to mcp-delegator...');
+                fs.renameSync(oldConfigDir, newConfigDir);
+                console.error('[TaskRegistry] ✅ Migration complete! Config now at:', newConfigDir);
+            }
+            catch (error) {
+                console.error('[TaskRegistry] ⚠️  Migration failed:', error);
+                console.error('[TaskRegistry] Falling back to old directory for safety');
+                configDir = oldConfigDir; // Fallback to old directory
+            }
+        }
+        else if (fs.existsSync(oldConfigDir) && fs.existsSync(newConfigDir)) {
+            // Both exist - use new directory, warn about old
+            console.error('[TaskRegistry] ⚠️  Both config directories exist. Using new directory:', newConfigDir);
+            console.error('[TaskRegistry] Old directory still present:', oldConfigDir);
+            console.error('[TaskRegistry] You can manually remove the old directory if migration is complete.');
+        }
         this.dbPath = dbPath || path.join(configDir, 'tasks.db');
         // Ensure config directory exists
         if (!fs.existsSync(configDir)) {
@@ -227,8 +248,26 @@ export class TaskRegistry {
         metadata = @metadata
       WHERE id = @id
     `);
-        stmt.run(updatedTask);
-        return updatedTask;
+        // Add error handling with retry logic (Issue 1.3 fix)
+        try {
+            stmt.run(updatedTask);
+            return updatedTask;
+        }
+        catch (error) {
+            console.error(`[TaskRegistry] Failed to update task ${taskId}:`, error);
+            // Retry after short delay (1 second) for transient errors
+            setTimeout(() => {
+                try {
+                    stmt.run(updatedTask);
+                    console.error(`[TaskRegistry] ✅ Retry succeeded for task ${taskId}`);
+                }
+                catch (retryError) {
+                    console.error(`[TaskRegistry] ❌ Retry FAILED for task ${taskId}:`, retryError);
+                    // Task will remain in previous state - periodic cleanup will catch it
+                }
+            }, 1000);
+            return null; // Indicate failure
+        }
     }
     /**
      * Get a specific task by ID
@@ -348,6 +387,29 @@ export class TaskRegistry {
         AND completed_at < ?
     `);
         const result = stmt.run(cutoff);
+        return result.changes;
+    }
+    /**
+     * Clean up stuck tasks (tasks in 'working' or 'pending' status for too long)
+     *
+     * @param maxAgeSeconds Maximum age in seconds before considering a task stuck (default: 3600 = 1 hour)
+     * @returns Number of tasks marked as failed
+     */
+    cleanupStuckTasks(maxAgeSeconds = 3600) {
+        const now = Date.now();
+        const maxAgeMs = maxAgeSeconds * 1000;
+        const cutoff = now - maxAgeMs;
+        const stmt = this.db.prepare(`
+      UPDATE tasks
+      SET status = 'failed',
+          error = ?,
+          updated_at = ?,
+          completed_at = ?
+      WHERE status IN ('pending', 'working')
+        AND created_at < ?
+    `);
+        const errorMessage = `Task timeout - no activity for over ${maxAgeSeconds} seconds (${Math.floor(maxAgeSeconds / 60)} minutes). The task may have crashed or hung. Please check logs and retry if needed.`;
+        const result = stmt.run(errorMessage, now, now, cutoff);
         return result.changes;
     }
     /**

@@ -132,17 +132,29 @@ export class LocalResultsTool {
       }
     }
 
-    // Include Codex output
+    // Include Codex output (Issue 3.1 fix: Increased limit + smart truncation)
     if (resultData.finalOutput) {
       const output = globalRedactor.redact(resultData.finalOutput);
-      const maxLength = 10000;
-      const truncated = output.substring(0, maxLength);
+      const maxLength = 50000; // Increased from 10KB to 50KB
       const wasTruncated = output.length > maxLength;
 
-      message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
+      let displayOutput: string;
+      if (wasTruncated) {
+        // Smart truncation: Show first 40KB and last 5KB with separator
+        const firstPortion = output.substring(0, 40000);
+        const lastPortion = output.substring(output.length - 5000);
+        const truncatedChars = output.length - 45000;
+        const truncatedLines = output.substring(40000, output.length - 5000).split('\n').length;
+
+        displayOutput = `${firstPortion}\n\n... [Truncated ${truncatedChars.toLocaleString()} characters (~${truncatedLines} lines)] ...\n\n${lastPortion}`;
+      } else {
+        displayOutput = output;
+      }
+
+      message += `**Codex Output**:\n\`\`\`\n${displayOutput}\n\`\`\`\n`;
 
       if (wasTruncated) {
-        message += `\n*(Output truncated - showing first ${maxLength} characters)*\n`;
+        message += `\n*Output size: ${output.length.toLocaleString()} chars (showing first 40KB + last 5KB)*\n`;
       }
     }
 

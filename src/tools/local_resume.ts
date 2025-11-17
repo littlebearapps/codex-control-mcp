@@ -184,7 +184,7 @@ export class LocalResumeTool {
         let lastEventTime = Date.now();
         let timedOut = false;
 
-        // MCP Progress Notifications (v3.5.0)
+        // MCP Progress Notifications (v3.4.3)
         const startTime = Date.now();
 
         // Hard timeout watchdog
@@ -222,7 +222,7 @@ export class LocalResumeTool {
             eventCount++;
             console.error(`[LocalResume:${validated.threadId}] Event ${eventCount}:`, event.type);
 
-            // Send MCP progress notification every 10 events (v3.5.0)
+            // Send MCP progress notification every 10 events (v3.4.3)
             if (eventCount % 10 === 0) {
               const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
               await sendProgressNotification(
@@ -239,7 +239,7 @@ export class LocalResumeTool {
 
           console.error(`[LocalResume:${validated.threadId}] ✅ Execution complete, ${eventCount} events processed`);
 
-          // Send final completion notification (v3.5.0)
+          // Send final completion notification (v3.4.3)
           await sendProgressNotification(
             extra,
             createCompletionNotification(validated.threadId, 'Codex SDK thread resumed - execution complete'),

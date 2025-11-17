@@ -123,7 +123,7 @@ export class ProcessManager {
                     if (onTimeout) {
                         onTimeout(timeout);
                     }
-                    // Stop MCP progress interval (v3.5.0)
+                    // Stop MCP progress interval (v3.4.3)
                     if (mcpProgressInterval) {
                         clearInterval(mcpProgressInterval);
                     }
@@ -146,7 +146,7 @@ export class ProcessManager {
                     });
                 },
             });
-            // MCP Progress Notifications (v3.5.0)
+            // MCP Progress Notifications (v3.4.3)
             // Send progress updates every 30 seconds
             const startTime = Date.now();
             let mcpProgressInterval;
@@ -185,7 +185,7 @@ export class ProcessManager {
             proc.on('close', (exitCode, signal) => {
                 // Stop watchdog
                 watchdog.stop();
-                // Stop MCP progress interval (v3.5.0)
+                // Stop MCP progress interval (v3.4.3)
                 if (mcpProgressInterval) {
                     clearInterval(mcpProgressInterval);
                 }
@@ -211,7 +211,7 @@ export class ProcessManager {
             proc.on('error', (error) => {
                 // Stop watchdog
                 watchdog.stop();
-                // Stop MCP progress interval (v3.5.0)
+                // Stop MCP progress interval (v3.4.3)
                 if (mcpProgressInterval) {
                     clearInterval(mcpProgressInterval);
                 }
