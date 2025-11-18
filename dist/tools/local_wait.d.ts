@@ -1,30 +1,13 @@
 /**
- * Local Wait Tool - Server-side polling with intelligent backoff
- *
- * Waits for local task completion with automatic progress updates.
- * Reduces tool call spam by handling polling internally.
+ * Local Wait Tool - Block until completion and return results
  */
-/**
- * Local wait tool handler
- */
-export declare function handleLocalWait(params: {
+export interface LocalWaitInput {
     task_id: string;
     timeout_sec?: number;
-    poll_interval_sec?: number;
-}): Promise<{
-    success: boolean;
-    task_id: string;
-    status: string;
-    progress?: any;
-    result?: string;
-    error?: string;
-    message: string;
-    elapsed_ms: number;
-    timed_out: boolean;
-}>;
-/**
- * MCP Tool Class
- */
+    include_output?: boolean;
+    max_output_bytes?: number;
+    format?: 'json' | 'markdown';
+}
 export declare class LocalWaitTool {
     static getSchema(): {
         name: string;
@@ -39,20 +22,40 @@ export declare class LocalWaitTool {
                 timeout_sec: {
                     type: string;
                     description: string;
+                    default: number;
                 };
-                poll_interval_sec: {
+                include_output: {
                     type: string;
                     description: string;
+                    default: boolean;
+                };
+                max_output_bytes: {
+                    type: string;
+                    description: string;
+                    default: number;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
                 };
             };
             required: string[];
         };
     };
-    execute(params: any): Promise<{
+    private isTerminal;
+    execute(input: LocalWaitInput): Promise<import("./local_results.js").LocalResultsResult | {
         content: {
-            type: "text";
+            type: string;
             text: string;
         }[];
+        isError: boolean;
+    } | {
+        content: {
+            type: string;
+            text: string;
+        }[];
+        isError?: undefined;
     }>;
 }
 //# sourceMappingURL=local_wait.d.ts.map

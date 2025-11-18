@@ -121,6 +121,12 @@ export class LocalCancelTool {
                         type: 'string',
                         description: 'Optional: Why canceling (e.g., "User aborted", "Stuck on step 3"). Helps with debugging.',
                     },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
+                    },
                 },
                 required: ['task_id'],
             },
@@ -128,6 +134,22 @@ export class LocalCancelTool {
     }
     async execute(params) {
         const result = await handleLocalCancel(params);
+        if (params?.format === 'json') {
+            const json = {
+                version: '3.6',
+                schema_id: 'codex/v3.6/registry_info/v1',
+                tool: '_codex_local_cancel',
+                tool_category: 'registry_info',
+                request_id: (await import('crypto')).randomUUID(),
+                ts: new Date().toISOString(),
+                status: result.success ? 'ok' : 'error',
+                meta: { ack_ts: new Date().toISOString() },
+                ...(result.success
+                    ? { data: { operation: 'cancel', task_id: result.task_id, state: result.status } }
+                    : { error: { code: 'TOOL_ERROR', message: result.error || result.message, retryable: false } }),
+            };
+            return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: !result.success };
+        }
         return {
             content: [
                 {

@@ -29,6 +29,12 @@ export class CleanupRegistryTool {
                         description: 'Preview changes without applying them. Shows what would be cleaned up.',
                         default: false,
                     },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
+                    },
                 },
             },
         };
@@ -37,6 +43,52 @@ export class CleanupRegistryTool {
         const stuckTaskMaxAgeSeconds = input.stuckTaskMaxAgeSeconds || 3600;
         const oldTaskMaxAgeHours = input.oldTaskMaxAgeHours || 24;
         const dryRun = input.dryRun || false;
+        // JSON output (registry_info)
+        if (input.format === 'json') {
+            // Preview-only calculations for JSON to avoid side effects when dryRun=true
+            const now = Date.now();
+            const stuckCutoff = now - (stuckTaskMaxAgeSeconds * 1000);
+            const oldCutoff = now - (oldTaskMaxAgeHours * 60 * 60 * 1000);
+            const all = globalTaskRegistry.queryTasks({});
+            const stuckCandidates = all.filter(t => (t.status === 'pending' || t.status === 'working') && t.createdAt < stuckCutoff);
+            const oldCandidates = all.filter(t => (t.completedAt !== undefined &&
+                (t.status === 'completed' || t.status === 'completed_with_warnings' || t.status === 'completed_with_errors' || t.status === 'failed' || t.status === 'canceled') &&
+                t.completedAt < oldCutoff));
+            let stuckCleaned = 0;
+            let oldDeleted = 0;
+            if (!dryRun) {
+                stuckCleaned = globalTaskRegistry.cleanupStuckTasks(stuckTaskMaxAgeSeconds);
+                oldDeleted = globalTaskRegistry.cleanupOldTasks(oldTaskMaxAgeHours * 60 * 60 * 1000);
+            }
+            const json = {
+                version: '3.6',
+                schema_id: 'codex/v3.6/registry_info/v1',
+                tool: '_codex_cleanup_registry',
+                tool_category: 'registry_info',
+                request_id: (await import('crypto')).randomUUID(),
+                ts: new Date().toISOString(),
+                status: 'ok',
+                meta: {
+                    dry_run: dryRun,
+                    stuck_threshold_seconds: stuckTaskMaxAgeSeconds,
+                    old_threshold_hours: oldTaskMaxAgeHours,
+                },
+                data: {
+                    stuck_tasks: {
+                        found: stuckCandidates.length,
+                        cleaned: dryRun ? 0 : stuckCleaned,
+                        task_ids: stuckCandidates.slice(0, 50).map(t => t.id),
+                    },
+                    old_tasks: {
+                        found: oldCandidates.length,
+                        deleted: dryRun ? 0 : oldDeleted,
+                        oldest_age_hours: oldCandidates.length > 0 ? Math.max(...oldCandidates.map(t => Math.floor((now - (t.completedAt || now)) / 3600000))) : 0,
+                    },
+                    summary: `${dryRun ? 'Would clean' : 'Cleaned'} ${dryRun ? stuckCandidates.length : stuckCleaned} stuck task(s), ${dryRun ? oldCandidates.length : oldDeleted} old task(s)`,
+                },
+            };
+            return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+        }
         let message = `## 🧹 Task Registry Cleanup\n\n`;
         if (dryRun) {
             message += `**Mode**: 🔍 Dry Run (Preview Only)\n\n`;

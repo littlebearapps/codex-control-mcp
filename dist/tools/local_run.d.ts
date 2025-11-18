@@ -17,6 +17,7 @@ export interface LocalRunToolInput {
     envAllowList?: string[];
     async?: boolean;
     allow_destructive_git?: boolean;
+    format?: 'json' | 'markdown';
 }
 export interface LocalRunToolResult {
     content: Array<{
@@ -50,6 +51,12 @@ export declare class LocalRunTool {
                 };
                 confirm: {
                     type: string;
+                    description: string;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
                     description: string;
                 };
                 model: {

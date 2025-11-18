@@ -1,277 +1,94 @@
 /**
- * Cloud Wait Tool - Server-side polling for cloud tasks
- *
- * Waits for cloud task completion with automatic progress updates.
- * Uses Codex CLI to check status periodically.
+ * Cloud Wait Tool - Block until completion and return results summary
  */
-import { spawn } from 'child_process';
-import { globalTaskRegistry } from '../state/task_registry.js';
-/**
- * Sleep utility
- */
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-/**
- * Add jitter to polling interval (±20%)
- */
-function addJitter(ms) {
-    const jitter = ms * 0.2;
-    return ms + (Math.random() * 2 - 1) * jitter;
-}
-/**
- * Check cloud task status via CLI
- */
-async function checkCloudStatus(taskId) {
-    return new Promise((resolve, reject) => {
-        const proc = spawn('codex', ['cloud', 'status', taskId], {
-            stdio: ['ignore', 'pipe', 'pipe'],
-        });
-        let stdout = '';
-        let stderr = '';
-        proc.stdout.on('data', (data) => {
-            stdout += data.toString();
-        });
-        proc.stderr.on('data', (data) => {
-            stderr += data.toString();
-        });
-        proc.on('close', (code) => {
-            if (code !== 0) {
-                reject(new Error(`codex cloud status failed: ${stderr}`));
-                return;
-            }
-            try {
-                // Parse output to determine status
-                // This is a simplified version - actual implementation would parse CLI output
-                if (stdout.includes('completed') || stdout.includes('succeeded')) {
-                    resolve({ status: 'completed', details: stdout });
-                }
-                else if (stdout.includes('failed') || stdout.includes('error')) {
-                    resolve({ status: 'failed', details: stdout });
-                }
-                else if (stdout.includes('canceled') || stdout.includes('cancelled')) {
-                    resolve({ status: 'canceled', details: stdout });
-                }
-                else {
-                    resolve({ status: 'working', details: stdout });
-                }
-            }
-            catch (error) {
-                reject(error);
-            }
-        });
-    });
-}
-/**
- * Cloud wait tool handler
- */
-export async function handleCloudWait(params) {
-    const { task_id, timeout_sec = 300, poll_interval_sec = 10 } = params;
-    const startTime = Date.now();
-    const timeoutMs = timeout_sec * 1000;
-    const maxWaitTime = Math.min(timeoutMs, 1800_000); // Cap at 30 minutes for cloud
-    // Cloud tasks typically take longer - use longer backoff
-    const backoffSchedule = [10000, 15000, 30000, 60000]; // 10s → 15s → 30s → 60s
-    let backoffIndex = 0;
-    // Override first interval if specified
-    if (poll_interval_sec) {
-        backoffSchedule[0] = poll_interval_sec * 1000;
-    }
-    const webUiUrl = `https://chatgpt.com/codex/tasks/${task_id}`;
-    try {
-        // Get task from registry
-        const task = globalTaskRegistry.getTask(task_id);
-        if (!task) {
-            return {
-                success: false,
-                task_id,
-                status: 'unknown',
-                message: `Task ${task_id} not found in registry`,
-                error: 'Task not found',
-                elapsed_ms: 0,
-                timed_out: false,
-                web_ui_url: webUiUrl,
-            };
-        }
-        // Check if task is cloud
-        if (task.origin !== 'cloud') {
-            return {
-                success: false,
-                task_id,
-                status: task.status,
-                message: `Task ${task_id} is a local task. Use _codex_local_wait instead.`,
-                error: 'Wrong wait tool for local task',
-                elapsed_ms: 0,
-                timed_out: false,
-                web_ui_url: webUiUrl,
-            };
-        }
-        // Check initial status
-        if (task.status === 'completed' || task.status === 'failed' || task.status === 'canceled') {
-            return {
-                success: true,
-                task_id,
-                status: task.status,
-                progress: task.progressSteps ? JSON.parse(task.progressSteps) : undefined,
-                result: task.result,
-                error: task.error,
-                message: `Task ${task_id} already ${task.status}`,
-                elapsed_ms: Date.now() - startTime,
-                timed_out: false,
-                web_ui_url: webUiUrl,
-            };
-        }
-        // Poll with backoff
-        while (Date.now() - startTime < maxWaitTime) {
-            // Wait with jitter
-            const currentInterval = backoffSchedule[Math.min(backoffIndex, backoffSchedule.length - 1)];
-            const waitTime = addJitter(currentInterval);
-            await sleep(waitTime);
-            // Check status via CLI
-            try {
-                const cloudStatus = await checkCloudStatus(task_id);
-                // Update registry with latest status
-                if (cloudStatus.status === 'completed') {
-                    globalTaskRegistry.updateStatus(task_id, 'completed');
-                }
-                else if (cloudStatus.status === 'failed') {
-                    globalTaskRegistry.updateStatus(task_id, 'failed');
-                }
-                else if (cloudStatus.status === 'canceled') {
-                    globalTaskRegistry.updateStatus(task_id, 'canceled');
-                }
-                // Check if completed
-                if (cloudStatus.status === 'completed' ||
-                    cloudStatus.status === 'failed' ||
-                    cloudStatus.status === 'canceled') {
-                    const updatedTask = globalTaskRegistry.getTask(task_id);
-                    return {
-                        success: true,
-                        task_id,
-                        status: cloudStatus.status,
-                        progress: updatedTask?.progressSteps
-                            ? JSON.parse(updatedTask.progressSteps)
-                            : undefined,
-                        result: cloudStatus.details,
-                        message: `Task ${task_id} ${cloudStatus.status} after ${Math.round((Date.now() - startTime) / 1000)}s`,
-                        elapsed_ms: Date.now() - startTime,
-                        timed_out: false,
-                        web_ui_url: webUiUrl,
-                    };
-                }
-            }
-            catch (error) {
-                // Ignore individual check failures, continue polling
-                console.error(`[CloudWait] Status check failed:`, error);
-            }
-            // Increase backoff index for next iteration
-            backoffIndex++;
-        }
-        // Timeout reached
-        const finalTask = globalTaskRegistry.getTask(task_id);
-        return {
-            success: false,
-            task_id,
-            status: finalTask?.status || 'working',
-            progress: finalTask?.progressSteps ? JSON.parse(finalTask.progressSteps) : undefined,
-            message: `Timeout after ${timeout_sec}s. Task still running. Check Web UI for updates.`,
-            error: `Timeout reached after ${timeout_sec}s`,
-            elapsed_ms: Date.now() - startTime,
-            timed_out: true,
-            web_ui_url: webUiUrl,
-        };
-    }
-    catch (error) {
-        return {
-            success: false,
-            task_id,
-            status: 'unknown',
-            message: error instanceof Error ? error.message : String(error),
-            error: error instanceof Error ? error.message : String(error),
-            elapsed_ms: Date.now() - startTime,
-            timed_out: false,
-            web_ui_url: webUiUrl,
-        };
-    }
-}
-/**
- * MCP Tool Class
- */
+import { globalTaskRegistry } from '../state/cloud_task_registry.js';
 export class CloudWaitTool {
     static getSchema() {
         return {
             name: '_codex_cloud_wait',
-            description: 'Wait for cloud task completion with automatic progress updates - like watching a long-running build. Internally polls Codex Cloud status with intelligent backoff (10s → 15s → 30s → 60s) until completion or timeout. Use this for cloud tasks where you want continuous feedback without manual status checking. Cloud tasks often take 5-60 minutes, so this uses longer intervals than local wait. Returns: final state (completed/failed/canceled) or partial progress if timeout reached. Always includes Web UI link for detailed monitoring.',
+            description: 'Wait for a cloud task to complete and return a structured summary. Use _codex_cloud_results to view details/PR links in Web UI.',
             inputSchema: {
                 type: 'object',
                 properties: {
-                    task_id: {
-                        type: 'string',
-                        description: 'The cloud task identifier to wait for (format: T-cloud-abc123).',
-                    },
-                    timeout_sec: {
-                        type: 'number',
-                        description: 'Max seconds to wait (default: 300, i.e., 5 minutes). Server caps this at 30 minutes for cloud tasks.',
-                    },
-                    poll_interval_sec: {
-                        type: 'number',
-                        description: 'Initial polling interval in seconds (default: 10). Server adjusts with backoff for efficiency.',
-                    },
+                    task_id: { type: 'string', description: 'Cloud task ID (T-cloud-...)' },
+                    timeout_sec: { type: 'number', description: 'Maximum seconds to wait (default 600)', default: 600 },
+                    include_output: { type: 'boolean', description: 'No effect for cloud; logs not available via registry', default: false },
+                    format: { type: 'string', enum: ['json', 'markdown'], default: 'markdown' },
                 },
                 required: ['task_id'],
             },
         };
     }
-    async execute(params) {
-        // Add hard timeout wrapper (v3.2.1) - ensures wait can't hang indefinitely
-        const maxExecutionTime = 31 * 60 * 1000; // 31 minutes (slightly longer than max wait)
-        const timeoutPromise = new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({
-                    success: false,
-                    task_id: params.task_id,
-                    status: 'unknown',
-                    message: `Wait operation timed out after ${maxExecutionTime / 1000}s (hard limit)`,
-                    error: 'Wait operation exceeded hard timeout',
-                    elapsed_ms: maxExecutionTime,
-                    timed_out: true,
-                    web_ui_url: `https://chatgpt.com/codex/tasks/${params.task_id}`,
-                });
-            }, maxExecutionTime);
-        });
-        // Race between actual wait and hard timeout
-        const result = await Promise.race([handleCloudWait(params), timeoutPromise]);
-        // Format progress info if available
-        let displayText = `**Task ${result.task_id}** - ${result.status}\n\n`;
-        if (result.progress) {
-            const progress = typeof result.progress === 'string'
-                ? JSON.parse(result.progress)
-                : result.progress;
-            displayText += `**Progress**: ${progress.progressPercentage || 0}% complete\n`;
-            if (progress.currentAction) {
-                displayText += `**Current**: ${progress.currentAction}\n`;
+    isTerminal(status) {
+        return status === 'completed' || status === 'failed' || status === 'cancelled';
+    }
+    async execute(input) {
+        const preferred = input.format || 'markdown';
+        const timeoutSec = typeof input.timeout_sec === 'number' ? input.timeout_sec : 600;
+        const start = Date.now();
+        let task = await globalTaskRegistry.getTask(input.task_id);
+        if (!task) {
+            if (preferred === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/wait_result/v1',
+                    tool: '_codex_cloud_wait',
+                    tool_category: 'wait_result',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'error',
+                    meta: {},
+                    error: { code: 'NOT_FOUND', message: 'Task not found in cloud registry', details: { task_id: input.task_id }, retryable: false },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
             }
-            displayText += `**Completed**: ${progress.completedSteps}/${progress.totalSteps} steps\n`;
-            if (progress.filesChanged > 0) {
-                displayText += `**Files Changed**: ${progress.filesChanged}\n`;
-            }
-            if (progress.commandsExecuted > 0) {
-                displayText += `**Commands Executed**: ${progress.commandsExecuted}\n`;
-            }
-            displayText += '\n';
+            return { content: [{ type: 'text', text: `❌ Task not found in cloud registry: ${input.task_id}` }], isError: true };
         }
-        displayText += result.message;
-        if (result.elapsed_ms) {
-            displayText += `\n\n⏱️ Elapsed: ${Math.round(result.elapsed_ms / 1000)}s`;
+        // Poll
+        while (!this.isTerminal(task.status) && (Date.now() - start) / 1000 < timeoutSec) {
+            await new Promise(r => setTimeout(r, 3000));
+            task = (await globalTaskRegistry.getTask(input.task_id)) || task;
         }
-        displayText += `\n\n🔗 **Web UI**: ${result.web_ui_url}`;
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: displayText,
+        const timedOut = !this.isTerminal(task.status);
+        const completedTs = new Date();
+        if (preferred === 'json') {
+            const state = timedOut ? 'timeout' : task.status;
+            const json = {
+                version: '3.6',
+                schema_id: 'codex/v3.6/wait_result/v1',
+                tool: '_codex_cloud_wait',
+                tool_category: 'wait_result',
+                request_id: (await import('crypto')).randomUUID(),
+                ts: new Date().toISOString(),
+                status: 'ok',
+                meta: {
+                    started_ts: task.timestamp,
+                    completed_ts: completedTs.toISOString(),
+                    duration_ms: Math.max(0, completedTs.getTime() - new Date(task.timestamp).getTime()),
                 },
-            ],
+                data: {
+                    task_id: input.task_id,
+                    state,
+                    summary: state === 'completed' ? 'Cloud task completed' : state === 'failed' ? 'Cloud task failed' : state === 'cancelled' ? 'Cloud task cancelled' : 'Cloud task wait timeout',
+                    metadata: {
+                        task_status: state,
+                    },
+                    output: {
+                        included: false,
+                        reason: 'Output/logs available via Web UI',
+                        truncated: false,
+                        max_bytes: 0,
+                    },
+                },
+            };
+            return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+        }
+        if (timedOut) {
+            return { content: [{ type: 'text', text: `⏱️ Timed out waiting for cloud task ${input.task_id} after ${timeoutSec}s.` }], isError: true };
+        }
+        const url = `https://chatgpt.com/codex/tasks/${input.task_id}`;
+        return {
+            content: [{ type: 'text', text: `✅ Cloud task ${input.task_id} ${task.status}. View results: ${url}` }],
         };
     }
 }

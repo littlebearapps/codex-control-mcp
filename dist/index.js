@@ -18,7 +18,9 @@ import { LocalResumeTool } from './tools/local_resume.js';
 import { ListEnvironmentsTool } from './tools/list_environments.js';
 import { LocalResultsTool } from './tools/local_results.js';
 import { LocalCancelTool } from './tools/local_cancel.js';
+import { LocalWaitTool } from './tools/local_wait.js';
 import { CloudCancelTool } from './tools/cloud_cancel.js';
+import { CloudWaitTool } from './tools/cloud_wait.js';
 import { CleanupRegistryTool } from './tools/cleanup_registry.js';
 import { templates } from './resources/environment_templates.js';
 import { globalLogger } from './utils/logger.js';
@@ -51,13 +53,38 @@ class MCPDelegatorServer {
     localResumeTool;
     localResultsTool;
     localCancelTool;
+    localWaitTool;
     cloudSubmitTool;
     cloudStatusTool;
     cloudResultsTool;
     cloudCancelTool;
+    cloudWaitTool;
     listEnvironmentsTool;
     githubSetupTool;
     cleanupRegistryTool;
+    /**
+     * Build tool schema list once to ensure consistent counting and registration
+     */
+    getToolSchemas() {
+        return [
+            // Hidden primitives
+            LocalRunTool.getSchema(),
+            LocalStatusTool.getSchema(),
+            LocalExecTool.getSchema(),
+            LocalResumeTool.getSchema(),
+            LocalResultsTool.getSchema(),
+            LocalWaitTool.getSchema(),
+            LocalCancelTool.getSchema(),
+            CloudSubmitTool.getSchema(),
+            CloudStatusTool.getSchema(),
+            CloudResultsTool.getSchema(),
+            CloudWaitTool.getSchema(),
+            CloudCancelTool.getSchema(),
+            ListEnvironmentsTool.getSchema(),
+            GitHubSetupTool.getSchema(),
+            CleanupRegistryTool.getSchema(),
+        ];
+    }
     constructor() {
         // Initialize process manager
         this.processManager = new ProcessManager(MAX_CONCURRENCY);
@@ -68,10 +95,12 @@ class MCPDelegatorServer {
         this.localResumeTool = new LocalResumeTool();
         this.localResultsTool = new LocalResultsTool();
         this.localCancelTool = new LocalCancelTool();
+        this.localWaitTool = new LocalWaitTool();
         this.cloudSubmitTool = new CloudSubmitTool();
         this.cloudStatusTool = new CloudStatusTool();
         this.cloudResultsTool = new CloudResultsTool();
         this.cloudCancelTool = new CloudCancelTool();
+        this.cloudWaitTool = new CloudWaitTool();
         this.listEnvironmentsTool = new ListEnvironmentsTool();
         this.githubSetupTool = new GitHubSetupTool();
         this.cleanupRegistryTool = new CleanupRegistryTool();
@@ -97,22 +126,7 @@ class MCPDelegatorServer {
         // List available tools
         this.server.setRequestHandler(ListToolsRequestSchema, async () => {
             return {
-                tools: [
-                    // Hidden primitives (13 tools with _ prefix)
-                    LocalRunTool.getSchema(),
-                    LocalStatusTool.getSchema(),
-                    LocalExecTool.getSchema(),
-                    LocalResumeTool.getSchema(),
-                    LocalResultsTool.getSchema(),
-                    LocalCancelTool.getSchema(),
-                    CloudSubmitTool.getSchema(),
-                    CloudStatusTool.getSchema(),
-                    CloudResultsTool.getSchema(),
-                    CloudCancelTool.getSchema(),
-                    ListEnvironmentsTool.getSchema(),
-                    GitHubSetupTool.getSchema(),
-                    CleanupRegistryTool.getSchema(),
-                ],
+                tools: this.getToolSchemas(),
             };
         });
         // Handle tool calls
@@ -180,6 +194,9 @@ class MCPDelegatorServer {
                     case '_codex_local_results':
                         result = await this.localResultsTool.execute(args);
                         break;
+                    case '_codex_local_wait':
+                        result = await this.localWaitTool.execute(args);
+                        break;
                     case '_codex_local_cancel':
                         result = await this.localCancelTool.execute(args);
                         break;
@@ -191,6 +208,9 @@ class MCPDelegatorServer {
                         break;
                     case '_codex_cloud_results':
                         result = await this.cloudResultsTool.execute(args);
+                        break;
+                    case '_codex_cloud_wait':
+                        result = await this.cloudWaitTool.execute(args);
                         break;
                     case '_codex_cloud_cancel':
                         result = await this.cloudCancelTool.execute(args);
@@ -313,7 +333,7 @@ class MCPDelegatorServer {
         console.error(`[MCPDelegator] Name: ${SERVER_NAME}`);
         console.error(`[MCPDelegator] Version: ${SERVER_VERSION}`);
         console.error(`[MCPDelegator] Max Concurrency: ${MAX_CONCURRENCY}`);
-        console.error(`[MCPDelegator] Tools: 14 Codex primitives (all with _ prefix)`);
+        console.error(`[MCPDelegator] Tools: ${this.getToolSchemas().length} Codex primitives (all with _ prefix)`);
         console.error(`[MCPDelegator] Resources: ${templates.length} environment templates`);
         // Run cleanup on startup to clear any stuck tasks from previous sessions
         console.error('[MCPDelegator] Running stuck task cleanup on startup...');

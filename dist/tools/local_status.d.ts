@@ -8,6 +8,8 @@ import { ProcessManager } from '../executor/process_manager.js';
 export interface LocalStatusToolInput {
     workingDir?: string;
     showAll?: boolean;
+    limit?: number;
+    format?: 'json' | 'markdown';
 }
 export interface LocalStatusToolResult {
     content: Array<{
@@ -33,6 +35,17 @@ export declare class LocalStatusTool {
                 showAll: {
                     type: string;
                     default: boolean;
+                    description: string;
+                };
+                limit: {
+                    type: string;
+                    default: number;
+                    description: string;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
                     description: string;
                 };
             };

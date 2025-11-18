@@ -12,6 +12,40 @@ export interface MCPError {
   code: string;
   message: string;
   details?: any;
+  retryable?: boolean;
+  duration_ms?: number;
+}
+
+// Error envelope used for timeout mapping
+export type ErrorObject = {
+  code: string;
+  message: string;
+  details?: any;
+  retryable?: boolean;
+  duration_ms?: number;
+};
+
+export function mapTimeoutError(
+  timeoutType: 'idle' | 'hard',
+  elapsedSeconds: number,
+  partialResults?: { lastEvents?: any[]; lastOutput?: string }
+): ErrorObject {
+  return {
+    code: 'TIMEOUT',
+    message: `Task exceeded ${timeoutType} timeout (${elapsedSeconds}s elapsed)`,
+    details: {
+      timeout_type: timeoutType,
+      elapsed_seconds: elapsedSeconds,
+      partial_results: partialResults
+        ? {
+            last_events: partialResults.lastEvents?.slice(-50),
+            last_output: partialResults.lastOutput?.slice(-2000),
+          }
+        : undefined,
+    },
+    retryable: false,
+    duration_ms: elapsedSeconds * 1000,
+  };
 }
 
 export class ErrorMapper {
@@ -115,6 +149,23 @@ export class ErrorMapper {
    * Map a failed process result to MCP error format (Enhanced for Issues 1.2 + 3.3)
    */
   static mapProcessError(result: CodexProcessResult): MCPError {
+    // Timeout handling with partial results (Bug 1 fix)
+    if (result.timeout) {
+      const t = result.timeout;
+      const timeoutType: 'idle' | 'hard' = t.kind === 'inactivity' ? 'idle' : 'hard';
+      const elapsedMs = t.wallClockMs ?? t.idleMs ?? 0;
+      const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+      const partial = result.partial;
+      const partialResults = partial
+        ? {
+            lastEvents: partial.lastEvents,
+            lastOutput: partial.stdoutTail,
+          }
+        : undefined;
+
+      return mapTimeoutError(timeoutType, elapsedSeconds, partialResults);
+    }
+
     // Spawn error (codex not found, permission denied, etc.)
     if (result.error) {
       const stderrError = this.parseStderrForErrors(result.stderr);

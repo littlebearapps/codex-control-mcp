@@ -48,6 +48,12 @@ export class GitHubSetupTool {
                         type: 'string',
                         description: 'Git user email (optional, defaults to "codex@example.com")',
                     },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
+                    },
                 },
                 required: ['repoUrl', 'stack'],
             },
@@ -59,6 +65,25 @@ export class GitHubSetupTool {
     async execute(input) {
         // Validate repository URL
         if (!input.repoUrl.startsWith('https://github.com/')) {
+            if (input.format === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/registry_info/v1',
+                    tool: '_codex_cloud_github_setup',
+                    tool_category: 'registry_info',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'error',
+                    meta: {},
+                    error: {
+                        code: 'VALIDATION',
+                        message: 'Invalid repository URL (must start with https://github.com/)',
+                        details: { repoUrl: input.repoUrl },
+                        retryable: false,
+                    },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+            }
             return {
                 content: [
                     {
@@ -351,6 +376,28 @@ Once setup is complete, you can use Codex Cloud for:
 **Repository**: ${input.repoUrl}
 
 🎉 **You're all set! Happy coding with Codex Cloud!**`;
+        if (input.format === 'json') {
+            const json = {
+                version: '3.6',
+                schema_id: 'codex/v3.6/registry_info/v1',
+                tool: '_codex_cloud_github_setup',
+                tool_category: 'registry_info',
+                request_id: (await import('crypto')).randomUUID(),
+                ts: new Date().toISOString(),
+                status: 'ok',
+                meta: { repository: input.repoUrl, tech_stack: input.stack },
+                data: {
+                    guide: message,
+                    steps: [
+                        { step: 1, title: 'Create Fine-Grained Token', instructions: 'Visit https://github.com/settings/tokens?type=beta and create a token with required permissions.' },
+                        { step: 2, title: 'Configure Environment', instructions: 'Add token as GITHUB_TOKEN secret and environment variables, paste setup scripts, save.' },
+                        { step: 3, title: 'Verify Setup', instructions: 'Submit a verification task to create a PR and validate integration.' },
+                    ],
+                    verification_task: "Create a test branch and PR to verify setup",
+                },
+            };
+            return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+        }
         return {
             content: [
                 {

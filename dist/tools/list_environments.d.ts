@@ -9,6 +9,7 @@ export interface ListEnvironmentsResult {
         type: 'text';
         text: string;
     }>;
+    isError?: boolean;
 }
 export declare class ListEnvironmentsTool {
     static getSchema(): {
@@ -16,11 +17,20 @@ export declare class ListEnvironmentsTool {
         description: string;
         inputSchema: {
             type: string;
-            properties: {};
+            properties: {
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
+                };
+            };
             required: never[];
         };
     };
-    execute(): Promise<ListEnvironmentsResult>;
+    execute(input?: {
+        format?: 'json' | 'markdown';
+    }): Promise<ListEnvironmentsResult>;
     /**
      * Helper method to generate example config
      */

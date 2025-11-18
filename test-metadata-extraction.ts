@@ -55,6 +55,112 @@ Finished in 12.45s
     },
   },
 
+  // JSON format: result_set with Jest output in stdout
+  {
+    name: 'JSON result_set with Jest output',
+    output: JSON.stringify({
+      version: '3.6',
+      schema_id: 'codex/v3.6/result_set/v1',
+      tool: '_codex_local_results',
+      tool_category: 'result_set',
+      status: 'ok',
+      data: {
+        task_id: 'T-local-json1',
+        state: 'completed',
+        output: {
+          included: true,
+          stdout: 'Tests: 1 failed, 12 passed, 13 total\nTime: 3.21 s',
+          stderr: '',
+          truncated: false,
+        },
+      },
+    }),
+    exitCode: 1,
+    expectedMetadata: {
+      success: false,
+      test_results: { passed: 12, failed: 1, total: 13 },
+      duration_seconds: 3.21,
+    },
+  },
+
+  // JSON format: file operations embedded in stdout
+  {
+    name: 'JSON result_set with file ops',
+    output: JSON.stringify({
+      version: '3.6',
+      schema_id: 'codex/v3.6/result_set/v1',
+      tool: '_codex_local_results',
+      status: 'ok',
+      data: {
+        task_id: 'T-local-json2',
+        state: 'completed',
+        output: {
+          included: true,
+          stdout: 'modified: src/api.ts\nadded: src/new.ts\ndeleted: src/old.ts\n\n3 files changed, 10 insertions(+), 2 deletions(-)\n',
+          stderr: '',
+          truncated: false,
+        },
+      },
+    }),
+    exitCode: 0,
+    expectedMetadata: {
+      success: true,
+      file_operations: {
+        files_changed: ['src/api.ts'],
+        files_added: ['src/new.ts'],
+        files_deleted: ['src/old.ts'],
+        lines_added: 10,
+        lines_removed: 2,
+      },
+    },
+  },
+
+  // JSON format: error context in stderr
+  {
+    name: 'JSON result_set with TypeError in stderr',
+    output: JSON.stringify({
+      version: '3.6',
+      schema_id: 'codex/v3.6/result_set/v1',
+      tool: '_codex_local_results',
+      status: 'ok',
+      data: {
+        task_id: 'T-local-json3',
+        state: 'failed',
+        output: {
+          included: true,
+          stdout: '',
+          stderr: 'TypeError: Cannot read property \'name\' of null\n    at main (main.ts:12:5)\n',
+          truncated: false,
+        },
+      },
+    }),
+    exitCode: 1,
+    expectedMetadata: {
+      success: false,
+      error_context: {
+        error_type: 'TypeError',
+        failed_files: ['main.ts'],
+        suggestions: expect.any(Array) as any,
+      },
+    },
+  },
+
+  // JSON format: no extractable data
+  {
+    name: 'JSON result_set no extractable data',
+    output: JSON.stringify({
+      version: '3.6',
+      schema_id: 'codex/v3.6/result_set/v1',
+      tool: '_codex_local_results',
+      status: 'ok',
+      data: { task_id: 'T-local-empty', state: 'completed', output: { included: true, stdout: 'Done.', stderr: '' } },
+    }),
+    exitCode: 0,
+    expectedMetadata: {
+      success: true,
+    },
+  },
+
   // Test 2: File operations (git diff style)
   {
     name: 'File operations from git diff',

@@ -5,6 +5,10 @@
  */
 export interface LocalResultsInput {
     task_id: string;
+    format?: 'json' | 'markdown';
+    include_output?: boolean;
+    include_events?: boolean;
+    max_output_bytes?: number;
 }
 export interface LocalResultsResult {
     content: Array<{

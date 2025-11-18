@@ -17,6 +17,7 @@ export class LocalRunTool {
         this.processManager = processManager;
     }
     async execute(input, extra) {
+        const preferredFormat = input.format || 'markdown';
         // Default to read-only mode
         const mode = input.mode || 'read-only';
         // GIT SAFETY CHECK: Detect and block risky git operations (RUNS FIRST)
@@ -29,6 +30,25 @@ export class LocalRunTool {
             if (highestTier === GitOperationTier.ALWAYS_BLOCKED) {
                 const blockedOps = riskyOps.filter((op) => op.tier === GitOperationTier.ALWAYS_BLOCKED);
                 const errorMessage = detector.formatBlockedMessage(blockedOps);
+                if (preferredFormat === 'json') {
+                    const json = {
+                        version: '3.6',
+                        schema_id: 'codex/v3.6/execution_ack/v1',
+                        tool: '_codex_local_run',
+                        tool_category: 'execution_ack',
+                        request_id: (await import('crypto')).randomUUID(),
+                        ts: new Date().toISOString(),
+                        status: 'error',
+                        meta: {},
+                        error: {
+                            code: 'VALIDATION',
+                            message: 'Blocked risky git operation',
+                            details: { message: errorMessage },
+                            retryable: false,
+                        },
+                    };
+                    return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+                }
                 return {
                     content: [
                         {
@@ -44,6 +64,25 @@ export class LocalRunTool {
                 const riskyOpsToConfirm = riskyOps.filter((op) => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
                 const confirmMessage = detector.formatConfirmationMessage(riskyOpsToConfirm);
                 const confirmMetadata = detector.formatConfirmationMetadata(riskyOpsToConfirm);
+                if (preferredFormat === 'json') {
+                    const json = {
+                        version: '3.6',
+                        schema_id: 'codex/v3.6/execution_ack/v1',
+                        tool: '_codex_local_run',
+                        tool_category: 'execution_ack',
+                        request_id: (await import('crypto')).randomUUID(),
+                        ts: new Date().toISOString(),
+                        status: 'error',
+                        meta: {},
+                        error: {
+                            code: 'VALIDATION',
+                            message: 'Confirmation required for risky git operations',
+                            details: confirmMetadata,
+                            retryable: true,
+                        },
+                    };
+                    return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+                }
                 return {
                     content: [
                         {
@@ -72,6 +111,25 @@ export class LocalRunTool {
         // SAFETY GATE: Require confirmation for mutations
         const isMutationMode = mode === 'workspace-write' || mode === 'danger-full-access';
         if (isMutationMode && input.confirm !== true) {
+            if (preferredFormat === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_local_run',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'error',
+                    meta: {},
+                    error: {
+                        code: 'VALIDATION',
+                        message: 'Confirmation required for mutation modes',
+                        details: { task: input.task, mode },
+                        retryable: true,
+                    },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+            }
             return {
                 content: [
                     {
@@ -95,6 +153,24 @@ export class LocalRunTool {
             confirm: input.confirm,
         });
         if (!validation.valid) {
+            if (preferredFormat === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_local_run',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'error',
+                    meta: {},
+                    error: {
+                        code: 'VALIDATION',
+                        message: `Validation error: ${validation.error}`,
+                        retryable: false,
+                    },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+            }
             return {
                 content: [
                     {
@@ -153,6 +229,34 @@ export class LocalRunTool {
                         });
                     }
                 })();
+                if (preferredFormat === 'json') {
+                    const pmStats = this.processManager.getStats();
+                    const json = {
+                        version: '3.6',
+                        schema_id: 'codex/v3.6/execution_ack/v1',
+                        tool: '_codex_local_run',
+                        tool_category: 'execution_ack',
+                        request_id: (await import('crypto')).randomUUID(),
+                        ts: new Date().toISOString(),
+                        status: 'ok',
+                        meta: {
+                            queue_position: pmStats.queued ?? undefined,
+                            estimated_start_ms: undefined,
+                        },
+                        data: {
+                            task_id: taskId,
+                            thread_id: undefined,
+                            accepted: true,
+                            capability: 'background',
+                            expected_duration: undefined,
+                            started_at: new Date().toISOString(),
+                        },
+                    };
+                    // Remove undefineds to satisfy conditional output
+                    Object.keys(json.meta).forEach((k) => json.meta[k] === undefined && delete json.meta[k]);
+                    Object.keys(json.data).forEach((k) => json.data[k] === undefined && delete json.data[k]);
+                    return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+                }
                 const modeLabel = mode === 'preview' ? 'preview (read-only)' : mode;
                 return {
                     content: [
@@ -173,6 +277,26 @@ export class LocalRunTool {
             // Check for success
             if (!result.success) {
                 const error = ErrorMapper.mapProcessError(result);
+                if (preferredFormat === 'json') {
+                    const json = {
+                        version: '3.6',
+                        schema_id: 'codex/v3.6/execution_ack/v1',
+                        tool: '_codex_local_run',
+                        tool_category: 'execution_ack',
+                        request_id: (await import('crypto')).randomUUID(),
+                        ts: new Date().toISOString(),
+                        status: 'error',
+                        meta: {},
+                        error: {
+                            code: error.code,
+                            message: error.message,
+                            details: error.details,
+                            retryable: error.retryable ?? false,
+                            duration_ms: error.duration_ms,
+                        },
+                    };
+                    return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+                }
                 return {
                     content: [
                         {
@@ -215,6 +339,26 @@ export class LocalRunTool {
             }
             // Send final completion notification (v3.5.0)
             await sendProgressNotification(extra, createCompletionNotification(taskIdForProgress, 'Codex execution complete'), `LocalRun:${taskIdForProgress}`);
+            if (preferredFormat === 'json') {
+                // For sync execution, still return execution_ack per spec category
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_local_run',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'ok',
+                    meta: {},
+                    data: {
+                        task_id: taskIdForProgress,
+                        accepted: true,
+                        capability: 'foreground',
+                        started_at: new Date().toISOString(),
+                    },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+            }
             return {
                 content: [
                     {
@@ -225,6 +369,24 @@ export class LocalRunTool {
             };
         }
         catch (error) {
+            if (preferredFormat === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_local_run',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'error',
+                    meta: {},
+                    error: {
+                        code: 'INTERNAL',
+                        message: error instanceof Error ? error.message : String(error),
+                        retryable: true,
+                    },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+            }
             return {
                 content: [
                     {
@@ -299,6 +461,12 @@ export class LocalRunTool {
                     confirm: {
                         type: 'boolean',
                         description: 'REQUIRED for workspace-write and danger-full-access modes. Set to true to confirm file modifications.',
+                    },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
                     },
                     model: {
                         type: 'string',

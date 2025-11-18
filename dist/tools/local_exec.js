@@ -14,6 +14,7 @@ const LocalExecInputSchema = z.object({
     skipGitRepoCheck: z.boolean().optional().default(false).describe('Skip Git repository check (use with caution)'),
     model: z.string().optional().describe('Model to use (e.g., gpt-5-codex, gpt-5)'),
     allow_destructive_git: z.boolean().optional().default(false).describe('Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.'),
+    format: z.enum(['json', 'markdown']).optional().default('markdown').describe('Output format. Default markdown for backward compatibility.'),
 });
 export class LocalExecTool {
     static getSchema() {
@@ -64,6 +65,12 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
                         description: 'Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.',
                         default: false,
                     },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
+                    },
                 },
                 required: ['task'],
             },
@@ -85,8 +92,32 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
                     ],
                 };
             }
-            // Validate input
-            const validated = LocalExecInputSchema.parse(input);
+            // Validate input (Bug 2 fix: structured envelope on validation error)
+            const validationResult = LocalExecInputSchema.safeParse(input);
+            if (!validationResult.success) {
+                if (input?.format === 'json') {
+                    const json = {
+                        version: '3.6',
+                        schema_id: 'codex/v3.6/error/v1',
+                        tool: '_codex_local_exec',
+                        request_id: (await import('crypto')).randomUUID(),
+                        ts: new Date().toISOString(),
+                        status: 'error',
+                        error: {
+                            code: 'VALIDATION',
+                            message: 'Invalid parameters',
+                            details: validationResult.error.errors,
+                            retryable: false,
+                        },
+                    };
+                    return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }], isError: true };
+                }
+                return {
+                    content: [{ type: 'text', text: JSON.stringify(validationResult.error.errors, null, 2) }],
+                    isError: true,
+                };
+            }
+            const validated = validationResult.data;
             console.error('[LocalExec] Input validated:', validated);
             // GIT SAFETY CHECK: Detect and block risky git operations
             const detector = new RiskyOperationDetector();
@@ -330,6 +361,29 @@ Returns: thread ID (use with _codex_local_resume), real-time events, final outpu
             }
             responseText += `✅ Codex SDK Task Started (Async)\n\n**Task ID**: \`${taskId}\`\n\n**Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Working Directory**: ${validated.workingDir || process.cwd()}\n\n**Status**: Running in background\n\n💡 **Check Progress**:\n- Use \`_codex_local_wait\` to wait for completion: \`{ "task_id": "${taskId}" }\`\n- Use \`_codex_local_status\` to check status\n- Use \`_codex_local_results\` with task ID to get results when complete\n- Use \`_codex_local_cancel\` to cancel: \`{ "task_id": "${taskId}" }\`\n\n**Note**: Task tracked in unified SQLite registry. Thread data persists in \`~/.codex/sessions/\` for resumption with \`_codex_local_resume\`.`;
             // Return unified registry task ID immediately (non-blocking)
+            if (validated.format === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_local_exec',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'ok',
+                    meta: {},
+                    data: {
+                        task_id: taskId,
+                        thread_id: thread.id || undefined,
+                        accepted: true,
+                        capability: 'background',
+                        started_at: new Date().toISOString(),
+                    },
+                };
+                Object.keys(json.data).forEach((k) => json.data[k] === undefined && delete json.data[k]);
+                console.error('[LocalExec] ✅ Returned JSON execution_ack');
+                console.error('[LocalExec] ==================== EXECUTE END (ASYNC) ====================');
+                return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+            }
             const mcpResponse = {
                 content: [
                     {

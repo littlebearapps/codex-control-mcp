@@ -4,6 +4,24 @@
  * Maps Codex CLI errors and failures to MCP error format
  * Provides structured error responses for MCP clients
  */
+export function mapTimeoutError(timeoutType, elapsedSeconds, partialResults) {
+    return {
+        code: 'TIMEOUT',
+        message: `Task exceeded ${timeoutType} timeout (${elapsedSeconds}s elapsed)`,
+        details: {
+            timeout_type: timeoutType,
+            elapsed_seconds: elapsedSeconds,
+            partial_results: partialResults
+                ? {
+                    last_events: partialResults.lastEvents?.slice(-50),
+                    last_output: partialResults.lastOutput?.slice(-2000),
+                }
+                : undefined,
+        },
+        retryable: false,
+        duration_ms: elapsedSeconds * 1000,
+    };
+}
 export class ErrorMapper {
     /**
      * Parse stderr to extract meaningful error messages (Issue 3.3 fix)
@@ -86,6 +104,21 @@ export class ErrorMapper {
      * Map a failed process result to MCP error format (Enhanced for Issues 1.2 + 3.3)
      */
     static mapProcessError(result) {
+        // Timeout handling with partial results (Bug 1 fix)
+        if (result.timeout) {
+            const t = result.timeout;
+            const timeoutType = t.kind === 'inactivity' ? 'idle' : 'hard';
+            const elapsedMs = t.wallClockMs ?? t.idleMs ?? 0;
+            const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+            const partial = result.partial;
+            const partialResults = partial
+                ? {
+                    lastEvents: partial.lastEvents,
+                    lastOutput: partial.stdoutTail,
+                }
+                : undefined;
+            return mapTimeoutError(timeoutType, elapsedSeconds, partialResults);
+        }
         // Spawn error (codex not found, permission denied, etc.)
         if (result.error) {
             const stderrError = this.parseStderrForErrors(result.stderr);

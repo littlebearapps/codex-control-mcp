@@ -6,9 +6,14 @@
 
 import { globalTaskRegistry } from '../state/task_registry.js';
 import { globalRedactor } from '../security/redactor.js';
+import { extractMetadata } from '../utils/metadata_extractor.js';
 
 export interface LocalResultsInput {
   task_id: string;
+  format?: 'json' | 'markdown';
+  include_output?: boolean;
+  include_events?: boolean; // reserved for future SDK integration
+  max_output_bytes?: number; // default 65536
 }
 
 export interface LocalResultsResult {
@@ -24,6 +29,25 @@ export class LocalResultsTool {
     const task = globalTaskRegistry.getTask(input.task_id);
 
     if (!task) {
+      if (input.format === 'json') {
+        const json = {
+          version: '3.6',
+          schema_id: 'codex/v3.6/result_set/v1',
+          tool: '_codex_local_results',
+          tool_category: 'result_set',
+          request_id: (await import('crypto')).randomUUID(),
+          ts: new Date().toISOString(),
+          status: 'error' as const,
+          meta: {},
+          error: {
+            code: 'NOT_FOUND' as const,
+            message: 'Task not found in registry',
+            details: { task_id: input.task_id },
+            retryable: false,
+          },
+        };
+        return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+      }
       return {
         content: [
           {
@@ -37,6 +61,25 @@ export class LocalResultsTool {
 
     // Check if still running
     if (task.status === 'working') {
+      if (input.format === 'json') {
+        const json = {
+          version: '3.6',
+          schema_id: 'codex/v3.6/result_set/v1',
+          tool: '_codex_local_results',
+          tool_category: 'result_set',
+          request_id: (await import('crypto')).randomUUID(),
+          ts: new Date().toISOString(),
+          status: 'error' as const,
+          meta: {},
+          error: {
+            code: 'VALIDATION' as const,
+            message: 'Task still running',
+            details: { task_id: input.task_id, status: task.status },
+            retryable: true,
+          },
+        };
+        return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+      }
       return {
         content: [
           {
@@ -49,6 +92,61 @@ export class LocalResultsTool {
 
     // Check if failed
     if (task.status === 'failed') {
+      if (input.format === 'json') {
+        // Build minimal metadata from error
+        const metadata = extractMetadata(task.error || '', 1, task.threadId, input.task_id);
+        const includeOutput = true; // Always include on failure per spec
+        const maxBytes = input.max_output_bytes || 65536;
+        const resultData = task.result ? JSON.parse(task.result) : {};
+        const stdout = resultData.stdout || resultData.finalOutput || '';
+        const stderr = resultData.stderr || (task.error || '');
+
+        const truncate = (s: string) => {
+          if (!s) return { text: '', truncated: false, original: 0 };
+          const b = Buffer.from(s, 'utf-8');
+          if (b.length <= maxBytes) return { text: s, truncated: false, original: b.length };
+          // first 16KB + last 16KB
+          const half = Math.floor(maxBytes / 2);
+          const first = b.subarray(0, half);
+          const last = b.subarray(b.length - half);
+          return { text: Buffer.concat([first, Buffer.from('\n... [truncated] ...\n'), last]).toString('utf-8'), truncated: true, original: b.length };
+        };
+
+        const tOut = truncate(stdout);
+        const tErr = truncate(stderr);
+
+        const json: any = {
+          version: '3.6',
+          schema_id: 'codex/v3.6/result_set/v1',
+          tool: '_codex_local_results',
+          tool_category: 'result_set',
+          request_id: (await import('crypto')).randomUUID(),
+          ts: new Date().toISOString(),
+          status: 'ok',
+          meta: { count: 1 },
+          data: {
+            task_id: input.task_id,
+            state: 'failed',
+            summary: `Task failed${task.error ? `: ${task.error}` : ''}`,
+            duration_seconds: task.completedAt && task.createdAt ? Math.max(0, Math.floor((task.completedAt - task.createdAt) / 1000)) : undefined,
+            completed_ts: task.completedAt ? new Date(task.completedAt).toISOString() : undefined,
+            metadata,
+            output: {
+              included: includeOutput,
+              stdout: tOut.text,
+              stderr: tErr.text,
+              truncated: tOut.truncated || tErr.truncated,
+              max_bytes: maxBytes,
+            },
+          },
+        };
+        if (tOut.truncated || tErr.truncated) {
+          json.data.output.original_size = (tOut.original || 0) + (tErr.original || 0);
+        }
+        if (json.data.duration_seconds === undefined) delete json.data.duration_seconds;
+        if (json.data.completed_ts === undefined) delete json.data.completed_ts;
+        return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+      }
       return {
         content: [
           {
@@ -79,6 +177,24 @@ export class LocalResultsTool {
     try {
       resultData = JSON.parse(resultStr);
     } catch (error) {
+      if (input.format === 'json') {
+        const json = {
+          version: '3.6',
+          schema_id: 'codex/v3.6/result_set/v1',
+          tool: '_codex_local_results',
+          tool_category: 'result_set',
+          request_id: (await import('crypto')).randomUUID(),
+          ts: new Date().toISOString(),
+          status: 'error' as const,
+          meta: {},
+          error: {
+            code: 'INTERNAL' as const,
+            message: 'Could not parse task result',
+            retryable: false,
+          },
+        };
+        return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+      }
       return {
         content: [
           {
@@ -88,6 +204,72 @@ export class LocalResultsTool {
         ],
         isError: true,
       };
+    }
+
+    // JSON: result_set
+    if (input.format === 'json') {
+      const success = resultData?.success === true || resultData?.exitCode === 0;
+      const state = success ? 'completed' : 'failed';
+      const rawOut = (resultData.finalOutput || resultData.stdout || '') as string;
+      const rawErr = (resultData.stderr || '') as string;
+      const stdout = globalRedactor.redact(rawOut || '');
+      const stderr = globalRedactor.redact(rawErr || '');
+      const includeOutput = state === 'failed' || input.include_output === true;
+      const maxBytes = input.max_output_bytes || 65536;
+      const truncate = (s: string) => {
+        if (!s) return { text: '', truncated: false, original: 0 };
+        const b = Buffer.from(s, 'utf-8');
+        if (b.length <= maxBytes) return { text: s, truncated: false, original: b.length };
+        const half = Math.floor(maxBytes / 2);
+        const first = b.subarray(0, half);
+        const last = b.subarray(b.length - half);
+        return { text: Buffer.concat([first, Buffer.from('\n... [truncated] ...\n'), last]).toString('utf-8'), truncated: true, original: b.length };
+      };
+
+      const tOut = truncate(stdout);
+      const tErr = truncate(stderr);
+      const metadata = extractMetadata(stdout + (stderr ? `\n${stderr}` : ''), resultData.exitCode ?? (success ? 0 : 1), task.threadId, input.task_id);
+
+      const json: any = {
+        version: '3.6',
+        schema_id: 'codex/v3.6/result_set/v1',
+        tool: '_codex_local_results',
+        tool_category: 'result_set',
+        request_id: (await import('crypto')).randomUUID(),
+        ts: new Date().toISOString(),
+        status: 'ok',
+        meta: { count: 1 },
+        data: {
+          task_id: input.task_id,
+          state,
+          summary: success ? 'Task completed successfully' : `Task failed${task.error ? `: ${task.error}` : ''}`,
+          duration_seconds: task.completedAt && task.createdAt ? Math.max(0, Math.floor((task.completedAt - task.createdAt) / 1000)) : undefined,
+          completed_ts: task.completedAt ? new Date(task.completedAt).toISOString() : undefined,
+          metadata,
+        },
+      };
+      if (includeOutput) {
+        (json.data as any).output = {
+          included: true,
+          stdout: tOut.text,
+          stderr: tErr.text,
+          truncated: tOut.truncated || tErr.truncated,
+          max_bytes: maxBytes,
+        };
+        if (tOut.truncated || tErr.truncated) {
+          (json.data as any).output.original_size = (tOut.original || 0) + (tErr.original || 0);
+        }
+      } else {
+        (json.data as any).output = {
+          included: false,
+          reason: 'Output excluded by default (use include_output=true)',
+          truncated: false,
+          max_bytes: 0,
+        };
+      }
+      if (json.data.duration_seconds === undefined) delete json.data.duration_seconds;
+      if (json.data.completed_ts === undefined) delete json.data.completed_ts;
+      return { content: [{ type: 'text', text: JSON.stringify(json) }] };
     }
 
     // Build result message for SDK execution

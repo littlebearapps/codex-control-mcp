@@ -12,6 +12,8 @@ import type { Task } from '../state/task_registry.js';
 export interface LocalStatusToolInput {
   workingDir?: string;
   showAll?: boolean; // Show all tasks, not just current directory
+  limit?: number; // Limit for recently completed (default 5)
+  format?: 'json' | 'markdown';
 }
 
 export interface LocalStatusToolResult {
@@ -31,6 +33,94 @@ export class LocalStatusTool {
   async execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult> {
     const workingDir = input.workingDir || process.cwd();
     const showAll = input.showAll ?? true; // Default to true (Issue 3.2 fix)
+    const preferredFormat: 'json' | 'markdown' = input.format || 'markdown';
+    const limit = typeof input.limit === 'number' && input.limit > 0 ? input.limit : 5;
+
+    // JSON mode (status_snapshot)
+    if (preferredFormat === 'json') {
+      const allTasks = globalTaskRegistry.queryTasks({
+        origin: 'local',
+        workingDir: showAll ? undefined : workingDir,
+      });
+
+      const runningTasks = allTasks.filter((t: Task) => t.status === 'working');
+      const queuedTasks = allTasks.filter((t: Task) => t.status === 'pending');
+      const completedTasksAll = allTasks.filter(
+        (t: Task) => t.status === 'completed' || t.status === 'completed_with_warnings' || t.status === 'completed_with_errors'
+      );
+      const recentlyCompleted = completedTasksAll
+        .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))
+        .slice(0, limit);
+
+      const json: any = {
+        version: '3.6',
+        schema_id: 'codex/v3.6/status_snapshot/v1',
+        tool: '_codex_local_status',
+        tool_category: 'status_snapshot',
+        request_id: (await import('crypto')).randomUUID(),
+        ts: new Date().toISOString(),
+        status: 'ok',
+        meta: {
+          snapshot_ts: new Date().toISOString(),
+          total: allTasks.length,
+        },
+        data: {
+          summary: {
+            running: runningTasks.length,
+            queued: queuedTasks.length,
+            recently_completed: completedTasksAll.length,
+          },
+        },
+      };
+
+      if (runningTasks.length > 0) {
+        json.data.tasks = runningTasks.map((t: Task) => {
+          let progress: any = null;
+          if (t.progressSteps) {
+            try {
+              const p = JSON.parse(t.progressSteps);
+              progress = {
+                percent: p.progressPercentage ?? 0,
+                completed_steps: p.completedSteps ?? 0,
+                total_steps: p.totalSteps ?? 0,
+                current_activity: p.currentAction ?? null,
+              };
+            } catch {}
+          }
+          return {
+            task_id: t.id,
+            state: t.status,
+            started_ts: new Date(t.createdAt).toISOString(),
+            elapsed_seconds: Math.max(0, Math.floor((Date.now() - t.createdAt) / 1000)),
+            progress,
+          };
+        });
+      }
+
+      if (queuedTasks.length > 0) {
+        const sorted = queuedTasks.sort((a, b) => a.createdAt - b.createdAt);
+        json.data.queue = sorted.map((t: Task, idx: number) => ({
+          task_id: t.id,
+          position: idx,
+        }));
+      }
+
+      if (recentlyCompleted.length > 0) {
+        json.data.recently_completed = recentlyCompleted.map((t: Task) => ({
+          task_id: t.id,
+          state: 'completed',
+          duration_seconds:
+            t.completedAt && t.createdAt ? Math.max(0, Math.floor((t.completedAt - t.createdAt) / 1000)) : undefined,
+          completed_ts: t.completedAt ? new Date(t.completedAt).toISOString() : undefined,
+        }));
+        json.data.recently_completed.forEach((x: any) => {
+          if (x.duration_seconds === undefined) delete x.duration_seconds;
+          if (x.completed_ts === undefined) delete x.completed_ts;
+        });
+      }
+
+      return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+    }
 
     let message = `## 📊 Codex Execution Status\n\n`;
 
@@ -181,6 +271,17 @@ export class LocalStatusTool {
             default: true,
             description:
               'Show all tasks from all directories (default: true). Set to false with workingDir to filter by specific directory. Note: MCP server cannot auto-detect user\'s current directory.',
+          },
+          limit: {
+            type: 'number',
+            default: 5,
+            description: 'Limit for recently_completed array (default 5).',
+          },
+          format: {
+            type: 'string',
+            enum: ['json', 'markdown'],
+            default: 'markdown',
+            description: 'Response format. Default markdown for backward compatibility.',
           },
         },
       },

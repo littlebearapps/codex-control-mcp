@@ -10,7 +10,20 @@ export interface MCPError {
     code: string;
     message: string;
     details?: any;
+    retryable?: boolean;
+    duration_ms?: number;
 }
+export type ErrorObject = {
+    code: string;
+    message: string;
+    details?: any;
+    retryable?: boolean;
+    duration_ms?: number;
+};
+export declare function mapTimeoutError(timeoutType: 'idle' | 'hard', elapsedSeconds: number, partialResults?: {
+    lastEvents?: any[];
+    lastOutput?: string;
+}): ErrorObject;
 export declare class ErrorMapper {
     /**
      * Parse stderr to extract meaningful error messages (Issue 3.3 fix)

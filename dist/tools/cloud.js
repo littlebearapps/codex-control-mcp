@@ -31,6 +31,24 @@ export class CloudSubmitTool {
             };
         }
         if (!input.envId) {
+            if (input.format === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_cloud_submit',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'error',
+                    meta: {},
+                    error: {
+                        code: 'VALIDATION',
+                        message: 'Environment ID required',
+                        retryable: false,
+                    },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+            }
             return {
                 content: [
                     {
@@ -103,6 +121,25 @@ export class CloudSubmitTool {
                 stderr: result.stderr,
             });
             if (!result.success) {
+                if (input.format === 'json') {
+                    const json = {
+                        version: '3.6',
+                        schema_id: 'codex/v3.6/execution_ack/v1',
+                        tool: '_codex_cloud_submit',
+                        tool_category: 'execution_ack',
+                        request_id: (await import('crypto')).randomUUID(),
+                        ts: new Date().toISOString(),
+                        status: 'error',
+                        meta: {},
+                        error: {
+                            code: 'TOOL_ERROR',
+                            message: 'Cloud task submission failed',
+                            details: { stderr_tail: redactedOutput.stderr.substring(Math.max(0, redactedOutput.stderr.length - 1000)) },
+                            retryable: true,
+                        },
+                    };
+                    return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+                }
                 return {
                     content: [
                         {
@@ -169,6 +206,29 @@ export class CloudSubmitTool {
             if (redactedOutput.stdout.trim()) {
                 message += `\n**Submission Output**:\n\`\`\`\n${redactedOutput.stdout.trim()}\n\`\`\`\n`;
             }
+            if (input.format === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_cloud_submit',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'ok',
+                    meta: {},
+                    data: {
+                        task_id: taskId || undefined,
+                        thread_id: undefined,
+                        accepted: true,
+                        capability: 'background',
+                        started_at: new Date().toISOString(),
+                    },
+                };
+                if (json.data) {
+                    Object.keys(json.data).forEach((k) => json.data[k] === undefined && delete json.data[k]);
+                }
+                return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+            }
             return {
                 content: [
                     {
@@ -179,6 +239,24 @@ export class CloudSubmitTool {
             };
         }
         catch (error) {
+            if (input?.format === 'json') {
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/execution_ack/v1',
+                    tool: '_codex_cloud_submit',
+                    tool_category: 'execution_ack',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'error',
+                    meta: {},
+                    error: {
+                        code: 'INTERNAL',
+                        message: error instanceof Error ? error.message : String(error),
+                        retryable: true,
+                    },
+                };
+                return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+            }
             return {
                 content: [
                     {
@@ -297,6 +375,12 @@ export class CloudSubmitTool {
                         description: 'Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.',
                         default: false,
                     },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
+                    },
                 },
                 required: ['task', 'envId'],
             },
@@ -314,6 +398,10 @@ export class CloudStatusTool {
      */
     async execute(input = {}) {
         try {
+            // JSON snapshot mode across modes
+            if (input.format === 'json') {
+                return await this.jsonSnapshot(input);
+            }
             // MODE 1: Show pending tasks (default behavior, like check_reminder)
             if (!input.taskId && !input.list) {
                 return await this.showPendingTasks();
@@ -495,6 +583,79 @@ export class CloudStatusTool {
         };
     }
     /**
+     * JSON status_snapshot generator
+     */
+    async jsonSnapshot(input) {
+        const all = await globalTaskRegistry.listTasks({
+            workingDir: input.workingDir || undefined,
+            envId: input.envId || undefined,
+            status: input.status,
+            limit: input.limit || undefined,
+        });
+        const running = all.filter(t => t.status === 'submitted');
+        const completedAll = all.filter(t => t.status === 'completed' || t.status === 'failed' || t.status === 'cancelled');
+        const recentlyCompleted = completedAll
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .slice(0, Math.max(1, Math.min(5, input.limit || 5)));
+        const json = {
+            version: '3.6',
+            schema_id: 'codex/v3.6/status_snapshot/v1',
+            tool: '_codex_cloud_status',
+            tool_category: 'status_snapshot',
+            request_id: (await import('crypto')).randomUUID(),
+            ts: new Date().toISOString(),
+            status: 'ok',
+            meta: {
+                snapshot_ts: new Date().toISOString(),
+                total: all.length,
+            },
+            data: {
+                summary: {
+                    running: running.length,
+                    queued: running.length, // cloud registry treats submitted as queued
+                    recently_completed: completedAll.length,
+                },
+            },
+        };
+        if (running.length > 0) {
+            json.data.tasks = running.map((t) => ({
+                task_id: t.taskId,
+                state: 'working',
+                started_ts: t.timestamp,
+                elapsed_seconds: Math.max(0, Math.floor((Date.now() - new Date(t.timestamp).getTime()) / 1000)),
+                progress: t.progress ? {
+                    percent: t.progress.progressPercentage ?? 0,
+                    completed_steps: t.progress.completedSteps ?? 0,
+                    total_steps: t.progress.totalSteps ?? 0,
+                    current_activity: t.progress.currentAction ?? null,
+                } : null,
+            }));
+        }
+        if (running.length > 0) {
+            json.data.queue = running.map((t, idx) => ({
+                task_id: t.taskId,
+                position: idx,
+                estimated_start_ms: undefined,
+            }));
+            // strip undefineds from queue entries
+            json.data.queue.forEach((q) => { if (q.estimated_start_ms === undefined)
+                delete q.estimated_start_ms; });
+        }
+        if (recentlyCompleted.length > 0) {
+            json.data.recently_completed = recentlyCompleted.map((t) => ({
+                task_id: t.taskId,
+                state: t.status,
+                duration_seconds: undefined,
+                completed_ts: t.lastCheckedStatus || t.timestamp,
+            }));
+            json.data.recently_completed.forEach((x) => {
+                if (x.duration_seconds === undefined)
+                    delete x.duration_seconds;
+            });
+        }
+        return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+    }
+    /**
      * Get status emoji for visual clarity
      */
     getStatusEmoji(status) {
@@ -572,6 +733,12 @@ export class CloudStatusTool {
                         description: 'Include statistics about all tasks (MODE 3 only)',
                         default: false,
                     },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
+                    },
                 },
             },
         };
@@ -594,6 +761,89 @@ export class CloudResultsTool {
             };
         }
         try {
+            if (input.format === 'json') {
+                const task = await globalTaskRegistry.getTask(input.taskId);
+                if (!task) {
+                    const jsonErr = {
+                        version: '3.6',
+                        schema_id: 'codex/v3.6/result_set/v1',
+                        tool: '_codex_cloud_results',
+                        tool_category: 'result_set',
+                        request_id: (await import('crypto')).randomUUID(),
+                        ts: new Date().toISOString(),
+                        status: 'error',
+                        meta: {},
+                        error: {
+                            code: 'NOT_FOUND',
+                            message: 'Task not found in cloud registry',
+                            details: { task_id: input.taskId },
+                            retryable: false,
+                        },
+                    };
+                    return { content: [{ type: 'text', text: JSON.stringify(jsonErr) }], isError: true };
+                }
+                const state = task.status === 'submitted' ? 'working' : task.status;
+                const includeOutput = state === 'failed' || input.include_output === true;
+                const maxBytes = input.max_output_bytes || 65536;
+                const truncate = (s) => {
+                    if (!s)
+                        return { text: '', truncated: false, original: 0 };
+                    const b = Buffer.from(s, 'utf-8');
+                    if (b.length <= maxBytes)
+                        return { text: s, truncated: false, original: b.length };
+                    const half = Math.floor(maxBytes / 2);
+                    return { text: Buffer.concat([b.subarray(0, half), Buffer.from('\n... [truncated] ...\n'), b.subarray(b.length - half)]).toString('utf-8'), truncated: true, original: b.length };
+                };
+                const stdout = '';
+                const stderr = task.notes || '';
+                const tOut = truncate(stdout);
+                const tErr = truncate(stderr);
+                const json = {
+                    version: '3.6',
+                    schema_id: 'codex/v3.6/result_set/v1',
+                    tool: '_codex_cloud_results',
+                    tool_category: 'result_set',
+                    request_id: (await import('crypto')).randomUUID(),
+                    ts: new Date().toISOString(),
+                    status: 'ok',
+                    meta: { count: 1 },
+                    data: {
+                        task_id: input.taskId,
+                        state,
+                        summary: state === 'failed' ? 'Task failed (see Web UI for details)' : state === 'completed' ? 'Task completed (see Web UI for details)' : 'Task in progress',
+                        duration_seconds: undefined,
+                        completed_ts: undefined,
+                        metadata: {
+                            task_status: state,
+                        },
+                    },
+                };
+                if (includeOutput) {
+                    json.data.output = {
+                        included: true,
+                        stdout: tOut.text,
+                        stderr: tErr.text,
+                        truncated: tOut.truncated || tErr.truncated,
+                        max_bytes: maxBytes,
+                    };
+                    if (tOut.truncated || tErr.truncated) {
+                        json.data.output.original_size = (tOut.original || 0) + (tErr.original || 0);
+                    }
+                }
+                else {
+                    json.data.output = {
+                        included: false,
+                        reason: 'Output not available via registry; use Web UI',
+                        truncated: false,
+                        max_bytes: 0,
+                    };
+                }
+                if (json.data.duration_seconds === undefined)
+                    delete json.data.duration_seconds;
+                if (json.data.completed_ts === undefined)
+                    delete json.data.completed_ts;
+                return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+            }
             let message = `📄 Codex Cloud Task Results\n\n`;
             message += `**Task ID**: ${input.taskId}\n\n`;
             // Try to get task from registry
@@ -658,6 +908,22 @@ export class CloudResultsTool {
                     taskId: {
                         type: 'string',
                         description: 'Task ID to get results for (from codex_cloud_submit)',
+                    },
+                    format: {
+                        type: 'string',
+                        enum: ['json', 'markdown'],
+                        default: 'markdown',
+                        description: 'Response format. Default markdown for backward compatibility.',
+                    },
+                    include_output: {
+                        type: 'boolean',
+                        description: 'Include stdout/stderr output if available. For errors, always included.',
+                        default: false,
+                    },
+                    max_output_bytes: {
+                        type: 'number',
+                        description: 'Maximum bytes of output to include (default 65536).',
+                        default: 65536,
                     },
                 },
                 required: ['taskId'],

@@ -1,6 +1,6 @@
-# Tools Quick Reference (v3.0.1)
+# Tools Quick Reference (v3.6.0)
 
-Complete guide to Codex Control MCP's 15 hidden primitives.
+Complete guide to MCP Delegator's 15 hidden primitives with JSON format support.
 
 ---
 
@@ -107,6 +107,322 @@ User: "Use codex control to clean up stuck tasks"
 User: "Use codex control to preview cleanup of old tasks"
 → Claude Code selects: _codex_cleanup_registry (with dryRun: true)
 ```
+
+---
+
+## JSON Format Support (v3.6.0)
+
+### Overview
+
+All 15 tools now support structured JSON output for AI agent consumption. This provides:
+- **97% token reduction**: 18,000 → 500 tokens per response
+- **Structured parsing**: No markdown parsing needed
+- **Metadata extraction**: Test results, file changes, errors extracted automatically
+- **Type safety**: Consistent schema across all responses
+
+### Requesting JSON Format
+
+Add `format: "json"` parameter to any tool call:
+
+```typescript
+{
+  "task": "Run tests and fix failures",
+  "mode": "workspace-write",
+  "format": "json"  // Request JSON output
+}
+```
+
+**Default**: Markdown format (human-readable)
+**JSON format**: Optimized for AI agents
+
+### JSON Response Categories
+
+All tools return one of 5 envelope types:
+
+#### 1. **execution_ack** (Task Started)
+Tools: `_codex_local_run`, `_codex_local_exec`, `_codex_local_resume`, `_codex_cloud_submit`
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/execution_ack/v1",
+  "tool": "_codex_local_exec",
+  "tool_category": "execution_ack",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "ts": "2025-11-18T15:30:00Z",
+  "status": "ok",
+  "meta": {
+    "thread_id": "thread_abc123xyz"
+  },
+  "data": {
+    "task_id": "T-local-mi42qev9rfxri9",
+    "accepted": true,
+    "capability": "background",
+    "started_at": "2025-11-18T15:30:00Z"
+  }
+}
+```
+
+**Tokens**: ~150 (vs 2,500 markdown)
+
+#### 2. **result_set** (Task Completed)
+Tools: `_codex_local_results`, `_codex_cloud_results`
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/result_set/v1",
+  "tool": "_codex_local_results",
+  "tool_category": "result_set",
+  "request_id": "550e8400-e29b-41d4-a716-446655440001",
+  "ts": "2025-11-18T15:45:00Z",
+  "status": "ok",
+  "meta": {
+    "thread_id": "thread_abc123xyz",
+    "cache_hit_rate": 0.968
+  },
+  "data": {
+    "task_id": "T-local-mi42qev9rfxri9",
+    "result": "success",
+    "summary": "All tests passed (117/117)",
+    "metadata": {
+      "test_results": {
+        "passed": 117,
+        "failed": 0,
+        "skipped": 0
+      },
+      "file_operations": {
+        "modified": ["src/api.ts", "src/utils.ts"],
+        "added": [],
+        "deleted": [],
+        "lines_changed": 42
+      },
+      "duration_seconds": 245
+    },
+    "output": {
+      "included": false,
+      "truncated": false,
+      "max_bytes": 65536
+    }
+  }
+}
+```
+
+**Tokens**: ~300 (vs 18,000 markdown with full output)
+
+**Note**: `output.included: false` when task succeeds - output omitted to save tokens. Set to `true` on errors for debugging.
+
+#### 3. **status_snapshot** (Current State)
+Tools: `_codex_local_status`, `_codex_cloud_status`
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/status_snapshot/v1",
+  "tool": "_codex_local_status",
+  "tool_category": "status_snapshot",
+  "request_id": "550e8400-e29b-41d4-a716-446655440002",
+  "ts": "2025-11-18T15:32:00Z",
+  "status": "ok",
+  "meta": {
+    "snapshot_ts": "2025-11-18T15:32:00Z",
+    "total": 74,
+    "filtered": 3
+  },
+  "data": {
+    "running": [
+      {
+        "task_id": "T-local-mi42qev9rfxri9",
+        "task_desc": "Run tests and fix failures",
+        "mode": "workspace-write",
+        "elapsed_seconds": 120
+      }
+    ],
+    "queued": [],
+    "completed_recent": [],
+    "failed_recent": []
+  }
+}
+```
+
+**Tokens**: ~200 (vs 3,500 markdown)
+
+**Note**: Empty arrays omitted when no tasks in that state.
+
+#### 4. **wait_result** (Polling Complete)
+Tools: `_codex_local_wait`, `_codex_cloud_wait`
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/wait_result/v1",
+  "tool": "_codex_local_wait",
+  "tool_category": "wait_result",
+  "request_id": "550e8400-e29b-41d4-a716-446655440003",
+  "ts": "2025-11-18T15:45:00Z",
+  "status": "ok",
+  "meta": {
+    "wait_duration_seconds": 245,
+    "poll_count": 49
+  },
+  "data": {
+    "task_id": "T-local-mi42qev9rfxri9",
+    "final_status": "completed",
+    "result": "success",
+    "summary": "All tests passed",
+    "metadata": {
+      "test_results": {
+        "passed": 117,
+        "failed": 0
+      }
+    }
+  }
+}
+```
+
+**Tokens**: ~180 (vs 2,800 markdown)
+
+#### 5. **registry_info** (System Info)
+Tools: `_codex_cloud_list_environments`, `_codex_cleanup_registry`, `_codex_local_cancel`, `_codex_cloud_cancel`, `_codex_cloud_github_setup`
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/registry_info/v1",
+  "tool": "_codex_cloud_list_environments",
+  "tool_category": "registry_info",
+  "request_id": "550e8400-e29b-41d4-a716-446655440004",
+  "ts": "2025-11-18T15:30:00Z",
+  "status": "ok",
+  "meta": {
+    "source": "~/.config/mcp-delegator/environments.json"
+  },
+  "data": {
+    "environments": [
+      {
+        "env_id": "env_illustrations",
+        "name": "Illustrations Project",
+        "repo_url": "https://github.com/user/illustrations",
+        "tech_stack": "node"
+      }
+    ],
+    "count": 1
+  }
+}
+```
+
+**Tokens**: ~150 (vs 1,200 markdown)
+
+### Error Responses (All Categories)
+
+When errors occur, all tools return consistent error envelopes:
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/error/v1",
+  "tool": "_codex_local_exec",
+  "request_id": "550e8400-e29b-41d4-a716-446655440005",
+  "ts": "2025-11-18T15:30:05Z",
+  "status": "error",
+  "error": {
+    "code": "TIMEOUT",
+    "message": "Task exceeded idle timeout (300s elapsed)",
+    "details": {
+      "timeout_type": "idle",
+      "elapsed_seconds": 305,
+      "partial_results": {
+        "last_events": [...],
+        "last_output": "..."
+      }
+    },
+    "retryable": false,
+    "duration_ms": 305000
+  }
+}
+```
+
+**Error Codes**:
+- `TIMEOUT`: Task exceeded time limits (includes partial results)
+- `VALIDATION`: Invalid parameters (returned for Zod validation failures)
+- `TOOL_ERROR`: Codex execution failed
+- `NOT_FOUND`: Task/resource not found
+- `UNSUPPORTED`: Feature not supported
+- `INTERNAL`: Server error
+
+### When to Use JSON Format
+
+**✅ Use JSON when**:
+- Building AI agent workflows
+- Need structured data extraction (test results, file changes)
+- Want minimal token usage
+- Parsing markdown is complex
+- Need type-safe responses
+
+**❌ Use Markdown when**:
+- Presenting to human users
+- Need detailed explanations
+- Debugging/troubleshooting interactively
+- Don't need structured parsing
+
+### Token Savings Examples
+
+| Scenario | Markdown Tokens | JSON Tokens | Savings |
+|----------|----------------|-------------|---------|
+| Task started | 2,500 | 150 | 94% |
+| Tests passed (no output) | 18,000 | 300 | 98% |
+| Status check | 3,500 | 200 | 94% |
+| Error with partial results | 8,000 | 400 | 95% |
+| **Average** | **8,000** | **260** | **97%** |
+
+### Metadata Extraction
+
+All `result_set` and `wait_result` responses include extracted metadata:
+
+```json
+{
+  "metadata": {
+    "test_results": {
+      "passed": 45,
+      "failed": 2,
+      "skipped": 0,
+      "failed_tests": ["test_auth_timeout", "test_api_rate_limit"]
+    },
+    "file_operations": {
+      "modified": ["src/auth.ts", "src/api.ts"],
+      "added": ["tests/auth.test.ts"],
+      "deleted": [],
+      "lines_changed": 127
+    },
+    "error_context": {
+      "error_message": "TypeError: Cannot read property 'id' of null",
+      "error_type": "TypeError",
+      "failed_files": ["src/auth.ts"],
+      "error_locations": [
+        {
+          "file": "src/auth.ts",
+          "line": 42,
+          "column": 15
+        }
+      ],
+      "suggestions": [
+        "Start investigation at src/auth.ts:42",
+        "Check for null/undefined values",
+        "Run failing tests individually"
+      ]
+    },
+    "duration_seconds": 245,
+    "thread_info": {
+      "thread_id": "thread_abc123xyz",
+      "cache_hit_rate": 0.968,
+      "input_tokens": 11373,
+      "cached_tokens": 11008
+    }
+  }
+}
+```
+
+**Metadata is automatically extracted** - no additional work needed!
 
 ---
 

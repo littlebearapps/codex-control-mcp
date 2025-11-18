@@ -16,6 +16,7 @@ const LocalResumeInputSchema = z.object({
   outputSchema: z.any().optional().describe('Optional JSON Schema for structured output'),
   model: z.string().optional().describe('Model to use (e.g., gpt-5-codex, gpt-5)'),
   allow_destructive_git: z.boolean().optional().default(false).describe('Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.'),
+  format: z.enum(['json', 'markdown']).optional().default('markdown').describe('Output format. Default markdown for backward compatibility.'),
 });
 
 export type LocalResumeInput = z.infer<typeof LocalResumeInputSchema>;
@@ -63,6 +64,12 @@ export class LocalResumeTool {
             type: 'string',
             description: 'Model to use (e.g., gpt-5-codex, gpt-5)',
           },
+          format: {
+            type: 'string',
+            enum: ['json', 'markdown'],
+            default: 'markdown',
+            description: 'Response format. Default markdown for backward compatibility.',
+          },
         },
         required: ['threadId', 'task'],
       },
@@ -74,8 +81,33 @@ export class LocalResumeTool {
     console.error('[LocalResume] Resuming thread with:', JSON.stringify(input, null, 2));
 
     try {
-      // Validate input
-      const validated = LocalResumeInputSchema.parse(input);
+      // Validate input (Bug 2 fix: structured envelope on validation error)
+      const validationResult = LocalResumeInputSchema.safeParse(input);
+      if (!validationResult.success) {
+        if ((input as any)?.format === 'json') {
+          const json = {
+            version: '3.6',
+            schema_id: 'codex/v3.6/error/v1',
+            tool: '_codex_local_resume',
+            request_id: (await import('crypto')).randomUUID(),
+            ts: new Date().toISOString(),
+            status: 'error',
+            error: {
+              code: 'VALIDATION' as const,
+              message: 'Invalid parameters',
+              details: validationResult.error.errors,
+              retryable: false,
+            },
+          } as const;
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }], isError: true };
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(validationResult.error.errors, null, 2) }],
+          isError: true,
+        };
+      }
+
+      const validated = validationResult.data;
       console.error('[LocalResume] ✅ Input validated successfully');
       let checkpointInfo: string | null = null; // Store checkpoint info for inclusion in output
 
@@ -267,6 +299,29 @@ export class LocalResumeTool {
       responseText += `✅ Codex SDK Thread Resumed (Async)\n\n**Thread ID**: \`${validated.threadId}\`\n\n**Follow-up Task**: ${validated.task}\n\n**Mode**: ${validated.mode}\n\n**Status**: Executing in background\n\n💡 **Thread Persistence**: Results are saved to \`~/.codex/sessions/${validated.threadId}/\`\n\n**Check Progress**:\n- Call \`codex_local_resume\` again with this thread ID to check results or continue\n- Thread data persists across Claude Code sessions\n- High cache rates (45-93%) on resumed threads\n\n**Note**: Execution continues in background. The conversation history is preserved and you can continue interacting with this thread.`;
 
       // Return thread ID immediately (non-blocking)
+      if (validated.format === 'json') {
+        const json = {
+          version: '3.6',
+          schema_id: 'codex/v3.6/execution_ack/v1',
+          tool: '_codex_local_resume',
+          tool_category: 'execution_ack',
+          request_id: (await import('crypto')).randomUUID(),
+          ts: new Date().toISOString(),
+          status: 'ok',
+          meta: {},
+          data: {
+            task_id: `T-local-resume-${Date.now()}`,
+            thread_id: validated.threadId,
+            accepted: true,
+            capability: 'background',
+            started_at: new Date().toISOString(),
+          },
+        } as const;
+        console.error('[LocalResume] ✅ Returned JSON execution_ack');
+        console.error('[LocalResume] ==================== EXECUTE END (ASYNC) ====================');
+        return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+      }
+
       const mcpResponse = {
         content: [
           {

@@ -9,6 +9,7 @@ export interface CleanupRegistryToolInput {
     stuckTaskMaxAgeSeconds?: number;
     oldTaskMaxAgeHours?: number;
     dryRun?: boolean;
+    format?: 'json' | 'markdown';
 }
 export interface CleanupRegistryToolResult {
     content: Array<{
@@ -37,6 +38,12 @@ export declare class CleanupRegistryTool {
                     type: string;
                     description: string;
                     default: boolean;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
                 };
             };
         };

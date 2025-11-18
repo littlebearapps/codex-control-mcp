@@ -16,6 +16,8 @@ export interface GitHubSetupInput {
     gitUserName?: string;
     /** Git user email (optional, defaults to "codex@example.com") */
     gitUserEmail?: string;
+    /** Optional response format */
+    format?: 'json' | 'markdown';
 }
 /**
  * Tool result interface
@@ -67,6 +69,12 @@ export declare class GitHubSetupTool {
                 };
                 gitUserEmail: {
                     type: string;
+                    description: string;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
                     description: string;
                 };
             };

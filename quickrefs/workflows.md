@@ -1,6 +1,6 @@
-# Workflows Quick Reference
+# Workflows Quick Reference (v3.6.0)
 
-Common development workflows using Codex Control MCP.
+Common development workflows using MCP Delegator with JSON format optimization.
 
 ---
 
@@ -11,6 +11,146 @@ Common development workflows using Codex Control MCP.
 3. **Testing Workflows** - Test execution, failure debugging, coverage
 4. **Cloud Workflows** - Long-running tasks, background processing
 5. **GitHub Workflows** - PR creation, automated fixes, CI integration
+6. **JSON Format Optimization** - AI agent workflows with 97% token reduction (NEW in v3.6)
+
+---
+
+## JSON Format Optimization (v3.6.0)
+
+### Why Use JSON Format
+
+**Token Savings**: 97% reduction (18,000 → 500 tokens per task)
+- Faster AI agent responses
+- Lower costs
+- Structured data extraction
+- No markdown parsing needed
+
+### Optimized Workflow Pattern
+
+**Traditional (Markdown)**:
+```typescript
+// 1. Submit task
+{ "task": "Run tests", "mode": "read-only" }
+// Returns: 2,500 tokens of markdown
+
+// 2. Get results
+{ "task_id": "T-local-abc123" }
+// Returns: 18,000 tokens of markdown with full output
+```
+
+**Optimized (JSON)** ✅:
+```typescript
+// 1. Submit task
+{ "task": "Run tests", "mode": "read-only", "format": "json" }
+// Returns: 150 tokens (execution_ack)
+
+// 2. Get results
+{ "task_id": "T-local-abc123", "format": "json" }
+// Returns: 300 tokens (result_set with metadata, output omitted on success)
+```
+
+**Total Savings**: 20,500 → 450 tokens = **97.8% reduction**
+
+### When to Use JSON Format
+
+**✅ Always use JSON for**:
+- AI agent automation
+- Multi-task workflows
+- Batch processing
+- Background tasks
+- CI/CD pipelines
+
+**❌ Use Markdown for**:
+- Human-readable output
+- Interactive debugging
+- One-off manual tasks
+
+### JSON Workflow Example: Test Suite Automation
+
+**Goal**: Run tests, extract results, fix failures, verify fixes
+
+**Step 1: Run Tests (JSON)**
+```typescript
+{
+  "task": "Run complete test suite and report results",
+  "mode": "read-only",
+  "format": "json"
+}
+```
+
+**Response** (150 tokens):
+```json
+{
+  "version": "3.6",
+  "tool": "_codex_local_run",
+  "status": "ok",
+  "data": {
+    "task_id": "T-local-abc123",
+    "accepted": true
+  }
+}
+```
+
+**Step 2: Get Results (JSON)**
+```typescript
+{
+  "task_id": "T-local-abc123",
+  "format": "json"
+}
+```
+
+**Response** (300 tokens with metadata):
+```json
+{
+  "version": "3.6",
+  "tool": "_codex_local_results",
+  "status": "ok",
+  "data": {
+    "result": "failure",
+    "metadata": {
+      "test_results": {
+        "passed": 115,
+        "failed": 2,
+        "failed_tests": ["test_auth_timeout", "test_api_validation"]
+      },
+      "error_context": {
+        "error_message": "TypeError: Cannot read property 'id' of null",
+        "failed_files": ["src/auth.ts"],
+        "suggestions": [
+          "Start investigation at src/auth.ts:42",
+          "Check for null/undefined values"
+        ]
+      }
+    },
+    "output": {
+      "included": true  // Included because test failed
+    }
+  }
+}
+```
+
+**Step 3: Fix Failures (JSON)**
+```typescript
+{
+  "task": "Fix the 2 failing tests: test_auth_timeout and test_api_validation. Issue is TypeError at src/auth.ts:42 - check for null values.",
+  "mode": "workspace-write",
+  "format": "json"
+}
+```
+
+**Step 4: Verify Fixes (JSON)**
+```typescript
+{
+  "task": "Run only the 2 previously failing tests to verify fixes",
+  "mode": "read-only",
+  "format": "json"
+}
+```
+
+**Total Token Usage**:
+- Markdown: ~40,000 tokens
+- JSON: ~1,200 tokens
+- **Savings**: 97%
 
 ---
 
