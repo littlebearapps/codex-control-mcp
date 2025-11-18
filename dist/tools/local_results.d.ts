@@ -29,6 +29,20 @@ export declare class LocalResultsTool {
                     type: string;
                     description: string;
                 };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
+                };
+                include_output: {
+                    type: string;
+                    description: string;
+                };
+                max_output_bytes: {
+                    type: string;
+                    description: string;
+                };
             };
             required: string[];
         };

@@ -20,6 +20,7 @@ export default {
     ],
   },
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/test-drafts/'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.test.ts',

@@ -361,6 +361,20 @@ export class LocalResultsTool {
             type: 'string',
             description: 'Task ID from codex_run async execution',
           },
+          format: {
+            type: 'string',
+            enum: ['json', 'markdown'],
+            default: 'markdown',
+            description: 'Response format: "json" for structured data (97% token reduction), "markdown" for human-readable (default).',
+          },
+          include_output: {
+            type: 'boolean',
+            description: 'Include stdout/stderr in response (JSON format only). Default: false for success, true for failure.',
+          },
+          max_output_bytes: {
+            type: 'number',
+            description: 'Maximum bytes of output to include (default: 65536). Output truncated if exceeded.',
+          },
         },
         required: ['task_id'],
       },
