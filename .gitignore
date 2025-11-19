@@ -15,3 +15,4 @@ test-*.ts
 git-merge-sandbox/
 test-write-permission/
 
+.envrc
