@@ -69,7 +69,7 @@ jobs:
         run: |
           REQUIRED_TEMPLATES=("github-node-typescript" "github-python" "github-go" "github-rust" "basic-codex-cloud")
           for template in "${REQUIRED_TEMPLATES[@]}"; do
-            if ! grep -q "name: '$template'" src/resources/environment_templates.ts; then
+            if ! grep -q "name: \"$template\"" src/resources/environment_templates.ts; then
               echo "❌ Required template missing: $template"
               exit 1
             fi
