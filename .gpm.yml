@@ -1,0 +1,95 @@
+# .gpm.yml - Git PR Manager Configuration
+# Generated: 2025-11-19T01:45:19.233Z
+# Template: basic
+#
+# 💡 AI Agent Guidance:
+#   - Use 'gpm ship' for full PR workflow (create, wait, merge)
+#   - Use 'gpm auto' for quick PR creation
+#   - Use 'gpm security' before creating PRs
+#   - Use 'gpm checks <pr-number>' to monitor CI status
+#
+# 🎯 Optional Features:
+#   - Run 'gpm install-hooks' to get reminders before push
+#   - Run 'gpm docs' for full documentation
+
+# Branch Protection
+# Solo developer? Set requireReviews: 0
+# Small team (2-5)? Set requireReviews: 1
+# Enterprise? Set requireReviews: 2+
+branchProtection:
+  enabled: false
+  requireReviews: 0  # 0 = no reviews (solo dev), 1+ = team
+  requireStatusChecks:
+    []
+  enforceAdmins: false
+
+# CI Configuration
+# waitForChecks: true  = gpm waits for all CI checks to pass
+# failFast: true       = stop on first critical failure
+# retryFlaky: true     = retry flaky tests automatically
+ci:
+  waitForChecks: true
+  failFast: true
+  retryFlaky: false
+  timeout: 30  # minutes
+
+# Security Scanning
+# scanSecrets: true     = check for hardcoded secrets/tokens
+# scanDependencies: true = check for vulnerable packages
+security:
+  scanSecrets: true
+  scanDependencies: true
+  allowedVulnerabilities: []
+
+# Pull Request Settings
+# autoAssign: []  = list of GitHub usernames to auto-assign
+# autoLabel: []   = list of labels to auto-add
+pr:
+  templatePath: null
+  autoAssign: []
+  autoLabel: []
+
+# Auto-Fix Configuration
+# enabled: true        = attempt to auto-fix linting/formatting errors
+# maxAttempts: 2       = max fix attempts per failure
+# createPR: true       = create separate PR for fixes
+autoFix:
+  enabled: true
+  maxAttempts: 2
+  maxChangedLines: 1000
+  requireTests: true
+  enableDryRun: false
+  autoMerge: false
+  createPR: true
+
+# Git Hooks (Optional - install with 'gpm install-hooks')
+# These track installation state - updated by gpm install-hooks/uninstall-hooks
+# enabled: false       = hook not installed
+# enabled: true        = hook installed in .git/hooks/
+# reminder: true       = show reminder message (can be disabled per hook)
+hooks:
+  prePush:
+    enabled: false
+    reminder: true
+  postCommit:
+    enabled: false
+    reminder: true
+
+# Multi-Language Verification (Phase 1a)
+# detectionEnabled: true  = auto-detect language from project markers
+# preferMakefile: true    = prefer Makefile targets over package manager commands
+# For advanced configuration, see: gpm docs --guide=MULTI-LANGUAGE-SUPPORT
+verification:
+  detectionEnabled: true
+  preferMakefile: true
+
+# 📚 Documentation:
+#   gpm docs                                  - View all guides
+#   gpm docs --guide=AI-AGENT-INTEGRATION     - AI agent setup
+#   gpm docs --guide=GITHUB-ACTIONS-INTEGRATION - CI/CD setup
+#
+# 🎯 Next Steps:
+#   1. Review this configuration
+#   2. Run 'gpm install-hooks' for workflow reminders (optional)
+#   3. Run 'gpm feature <name>' to start your first feature branch
+#   4. Run 'gpm ship' to create PR and merge
