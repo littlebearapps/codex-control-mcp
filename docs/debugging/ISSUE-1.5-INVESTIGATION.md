@@ -9,6 +9,7 @@
 ## Issue Summary
 
 **Reported Symptom**:
+
 - No stderr/stdout from Codex execution visible to users
 - No MCP server logs available
 - Can't diagnose execution failures
@@ -31,15 +32,16 @@
 **Created**: 2025-11-15 (per `docs/SESSION-COMPLETION-2025-11-15.md`)
 
 **Complete Feature Set**:
+
 ```typescript
 export class CodexLogger {
   private logFile: string | null;
-  private logLevel: 'debug' | 'info' | 'warn' | 'error';
+  private logLevel: "debug" | "info" | "warn" | "error";
 
   constructor() {
     // Support ${PWD} variable in log file path
     this.logFile = process.env.CODEX_LOG_FILE || null;
-    this.logLevel = (process.env.CODEX_LOG_LEVEL as any) || 'info';
+    this.logLevel = (process.env.CODEX_LOG_LEVEL as any) || "info";
   }
 
   // Core logging methods
@@ -51,7 +53,12 @@ export class CodexLogger {
   // Tool-specific helpers
   toolStart(toolName: string, input: any, workingDir?: string);
   toolSuccess(toolName: string, result: any, workingDir?: string);
-  toolFailure(toolName: string, error: Error | string, input: any, workingDir?: string);
+  toolFailure(
+    toolName: string,
+    error: Error | string,
+    input: any,
+    workingDir?: string,
+  );
   toolTimeout(toolName: string, timeoutMs: number, workingDir?: string);
 }
 
@@ -60,6 +67,7 @@ export const globalLogger = new CodexLogger();
 ```
 
 **Features**:
+
 - ✅ Structured JSON logging (easy parsing)
 - ✅ Multiple log levels (debug/info/warn/error)
 - ✅ Tool-specific helpers (start/success/failure/timeout)
@@ -69,6 +77,7 @@ export const globalLogger = new CodexLogger();
 - ✅ Automatic directory creation
 
 **Configuration** (from `.mcp.full.json`):
+
 ```json
 {
   "env": {
@@ -89,12 +98,14 @@ export const globalLogger = new CodexLogger();
 **File**: `src/index.ts` lines 38, 159, 190, 273, 287, 305, 311
 
 **Logs**:
+
 1. **Tool invocations** - Every tool call wrapped with logging
 2. **Parameter validation errors** - Invalid snake_case parameters
 3. **MCP server errors** - Unknown tools, invalid results
 4. **Tool completion** - Success/failure with context
 
 **Example Integration**:
+
 ```typescript
 // src/index.ts - Tool call wrapper
 const workingDir = (args as any)?.workingDir || process.cwd();
@@ -109,26 +120,29 @@ try {
   // Log success
   globalLogger.toolSuccess(name, result, workingDir);
   return result;
-
 } catch (error) {
   // Log failure
   globalLogger.toolFailure(name, error, args, workingDir);
 
   return {
-    content: [{
-      type: 'text',
-      text: `❌ Tool execution failed: ${error.message}\n\nCheck .codex-errors.log for full stack trace.`
-    }],
-    isError: true
+    content: [
+      {
+        type: "text",
+        text: `❌ Tool execution failed: ${error.message}\n\nCheck .codex-errors.log for full stack trace.`,
+      },
+    ],
+    isError: true,
   };
 }
 ```
 
 **User-Facing Error Messages**:
+
 - "Check .codex-errors.log for details."
 - "Check .codex-errors.log for full stack trace."
 
 **What MCP Logger Captures**:
+
 - ✅ Tool name and input parameters
 - ✅ Tool execution start time
 - ✅ Tool execution end time
@@ -143,11 +157,13 @@ try {
 **Problem**: Individual tools still use `console.error()` for internal logging
 
 **Evidence**:
+
 - `src/tools/local_exec.ts` - **36 console.error() calls**
 - All `src/tools/*.ts` files - **114 total console.error() calls**
 - **NO** imports of `globalLogger` in any tool file
 
 **What's Missing from Logs**:
+
 - ❌ Codex CLI stdout/stderr output
 - ❌ JSONL event stream details
 - ❌ Timeout detection events
@@ -158,16 +174,25 @@ try {
 - ❌ Process spawning details
 
 **Current Logging Approach** (local_exec.ts lines 91-372):
+
 ```typescript
 // All logging goes to stderr (not captured by logger)
-console.error('[LocalExec] Starting execution with:', { task, mode, workingDir });
-console.error('[LocalExec] Input validated:', validated);
-console.error('[LocalExec] Starting thread with options:', runOptions);
-console.error('[LocalExec] Registered task in SQLite registry:', taskId);
+console.error("[LocalExec] Starting execution with:", {
+  task,
+  mode,
+  workingDir,
+});
+console.error("[LocalExec] Input validated:", validated);
+console.error("[LocalExec] Starting thread with options:", runOptions);
+console.error("[LocalExec] Registered task in SQLite registry:", taskId);
 console.error(`[LocalExec:${taskId}] Background execution started`);
 console.error(`[LocalExec:${taskId}] Event ${eventLog.length}: ${event.type}`);
-console.error(`[LocalExec:${taskId}] ⏱️ IDLE TIMEOUT after ${idleTimeoutMs / 1000}s`);
-console.error(`[LocalExec:${taskId}] ⏱️ HARD TIMEOUT after ${hardTimeoutMs / 1000}s`);
+console.error(
+  `[LocalExec:${taskId}] ⏱️ IDLE TIMEOUT after ${idleTimeoutMs / 1000}s`,
+);
+console.error(
+  `[LocalExec:${taskId}] ⏱️ HARD TIMEOUT after ${hardTimeoutMs / 1000}s`,
+);
 console.error(`[LocalExec:${taskId}] ✅ Execution complete`);
 // ... 26 more console.error() calls
 ```
@@ -181,6 +206,7 @@ console.error(`[LocalExec:${taskId}] ✅ Execution complete`);
 ### The Disconnect
 
 **User's Experience**:
+
 1. Task fails or behaves unexpectedly
 2. Error message says: "Check .codex-errors.log for details"
 3. User checks log file (if CODEX_LOG_FILE configured)
@@ -200,6 +226,7 @@ console.error(`[LocalExec:${taskId}] ✅ Execution complete`);
 4. **console.error() still used** for all internal logging (goes to stderr, not log file)
 
 **Timeline**:
+
 - **2025-11-15**: Logger created and integrated at MCP layer
 - **2025-11-16**: Auditor-toolkit reports "no execution logs" issue
 - **2025-11-17**: Investigation reveals partial integration
@@ -209,12 +236,13 @@ console.error(`[LocalExec:${taskId}] ✅ Execution complete`);
 ### Configuration Gap
 
 **User's MCP Config** (auditor-toolkit):
+
 ```json
 {
   "mcpServers": {
     "codex-control": {
       "command": "npx",
-      "args": ["-y", "@openai/mcp-codex-control@latest"],
+      "args": ["-y", "@openai/mcp-codex-control@latest"]
       // ❌ NO CODEX_LOG_FILE configured
       // ❌ NO CODEX_LOG_LEVEL configured
     }
@@ -223,16 +251,18 @@ console.error(`[LocalExec:${taskId}] ✅ Execution complete`);
 ```
 
 **Result**:
+
 - `globalLogger.logFile === null` (logging disabled)
 - All `globalLogger.*()` calls silently no-op
 - Even MCP-level events not logged
 
 **Reference Config** (`.mcp.full.json`):
+
 ```json
 {
   "env": {
-    "CODEX_LOG_FILE": "${PWD}/.codex-errors.log",  // ✅ Enables logging
-    "CODEX_LOG_LEVEL": "debug"                      // ✅ Verbose logs
+    "CODEX_LOG_FILE": "${PWD}/.codex-errors.log", // ✅ Enables logging
+    "CODEX_LOG_LEVEL": "debug" // ✅ Verbose logs
   }
 }
 ```
@@ -246,6 +276,7 @@ console.error(`[LocalExec:${taskId}] ✅ Execution complete`);
 **Implementation**: Replace `console.error()` with `globalLogger.*()` in all tools
 
 **Benefits**:
+
 - ✅ Comprehensive execution logs
 - ✅ Structured JSON format (easy parsing)
 - ✅ Per-working-directory logs
@@ -255,39 +286,52 @@ console.error(`[LocalExec:${taskId}] ✅ Execution complete`);
 **Changes Required**:
 
 #### 1. Import Logger in Each Tool
+
 ```typescript
 // src/tools/local_exec.ts (and all other tools)
-import { globalLogger } from '../utils/logger.js';
+import { globalLogger } from "../utils/logger.js";
 ```
 
 #### 2. Replace console.error() Calls
+
 ```typescript
 // ❌ Before
-console.error('[LocalExec] Starting execution with:', { task, mode });
+console.error("[LocalExec] Starting execution with:", { task, mode });
 
 // ✅ After
-globalLogger.info('[LocalExec] Starting execution', { task, mode }, workingDir);
+globalLogger.info("[LocalExec] Starting execution", { task, mode }, workingDir);
 ```
 
 #### 3. Use Tool-Specific Helpers
+
 ```typescript
 // Timeout events
-globalLogger.toolTimeout('_codex_local_exec', idleTimeoutMs, workingDir);
+globalLogger.toolTimeout("_codex_local_exec", idleTimeoutMs, workingDir);
 
 // Background execution
-globalLogger.debug(`[LocalExec:${taskId}] Background execution started`, {}, workingDir);
+globalLogger.debug(
+  `[LocalExec:${taskId}] Background execution started`,
+  {},
+  workingDir,
+);
 
 // Event processing
-globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type }, workingDir);
+globalLogger.debug(
+  `[LocalExec:${taskId}] Processing event`,
+  { type: event.type },
+  workingDir,
+);
 ```
 
 #### 4. Log Levels Strategy
+
 - **error**: Failures, exceptions, critical issues
 - **warn**: Timeouts, deprecations, non-critical issues
 - **info**: Tool start/end, major milestones
 - **debug**: Detailed execution flow, events, intermediate steps
 
 **Files to Modify** (12 tool files):
+
 1. `src/tools/local_exec.ts` (36 calls)
 2. `src/tools/local_resume.ts` (console.error calls)
 3. `src/tools/local_run.ts` (console.error calls)
@@ -312,15 +356,18 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 **Add**: Documentation explaining logging limitations
 
 **Benefits**:
+
 - ✅ No code changes needed
 - ✅ Current MCP-level logs useful for tool invocation tracking
 
 **Limitations**:
+
 - ⚠️ Internal execution details still missing
 - ⚠️ Can't diagnose complex failures
 - ⚠️ User expectations not met ("Check .codex-errors.log for details" implies more detail than available)
 
 **Documentation Updates**:
+
 1. Clarify what's logged (tool invocations only, not internal details)
 2. Document how to enable logging (CODEX_LOG_FILE env var)
 3. Add troubleshooting section explaining stderr vs log file
@@ -330,17 +377,20 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ### Option C: Hybrid Approach (Quick Win)
 
 **Phase 1** (Quick - 30 minutes):
+
 - ✅ Update documentation to explain logging configuration
 - ✅ Add CODEX_LOG_FILE to all MCP config examples
 - ✅ Clarify what's currently logged vs what's not
 
 **Phase 2** (Medium - 2-3 hours):
+
 - ✅ Integrate logger in highest-value tools first:
   - `local_exec.ts` - Most complex, most likely to fail
   - `cloud.ts` - Cloud submission failures hard to debug
   - `process_manager.ts` - Process spawning issues common
 
 **Phase 3** (Later):
+
 - ✅ Complete integration across all remaining tools
 
 ---
@@ -350,6 +400,7 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ### Test 1: Verify Current MCP Logging
 
 **Setup**:
+
 ```json
 // .mcp.json
 {
@@ -361,6 +412,7 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ```
 
 **Test Case**:
+
 ```typescript
 // Trigger parameter validation error
 {
@@ -370,12 +422,14 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ```
 
 **Expected Log** (`.codex-errors.log`):
+
 ```json
 {"timestamp":"2025-11-17T...","level":"info","message":"Tool started: _codex_local_run","meta":{...},"pid":12345}
 {"timestamp":"2025-11-17T...","level":"error","message":"Invalid parameter used","meta":{"tool":"_codex_local_run","wrongParam":"working_dir","correctParam":"workingDir"},"pid":12345}
 ```
 
 **Success Criteria**:
+
 - ✅ Log file created at `.codex-errors.log`
 - ✅ Contains tool start event
 - ✅ Contains validation error with helpful context
@@ -385,6 +439,7 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ### Test 2: Verify Enhanced Tool Logging (After Option A Implementation)
 
 **Test Case**:
+
 ```typescript
 {
   "task": "Run tests and fix failures",
@@ -393,6 +448,7 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ```
 
 **Expected Log Entries** (`.codex-errors.log`):
+
 ```json
 {"level":"info","message":"[LocalExec] Starting execution","meta":{"task":"Run tests...","mode":"workspace-write"},"pid":12345}
 {"level":"debug","message":"[LocalExec] Input validated","meta":{"validated":{...}},"pid":12345}
@@ -405,6 +461,7 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ```
 
 **Success Criteria**:
+
 - ✅ Full execution trace visible
 - ✅ Events logged with timestamps
 - ✅ Task ID in all log lines
@@ -415,6 +472,7 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ### Test 3: Timeout Logging
 
 **Test Case**:
+
 ```typescript
 // Task that times out
 {
@@ -424,12 +482,14 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ```
 
 **Expected Log** (after 5 min idle timeout):
+
 ```json
 {"level":"warn","message":"[LocalExec:T-local-xyz789] Idle timeout warning","meta":{"idleSeconds":270},"pid":12345}
 {"level":"error","message":"Tool timeout: _codex_local_exec","meta":{"timeoutMs":300000},"pid":12345}
 ```
 
 **Success Criteria**:
+
 - ✅ Timeout event logged
 - ✅ Warning before timeout (if implemented)
 - ✅ Task ID and timing context
@@ -439,23 +499,26 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 ## Implementation Checklist
 
 **Phase 1: Documentation** (Priority 1)
+
 - [ ] Update CLAUDE.md with logging configuration
 - [ ] Update quickrefs/troubleshooting.md with log file location
 - [ ] Add logging section to README.md
-- [ ] Update all .mcp.*.json examples with CODEX_LOG_FILE
+- [ ] Update all .mcp.\*.json examples with CODEX_LOG_FILE
 - [ ] Explain MCP-level vs tool-level logging
 
 **Phase 2: High-Value Integration** (Priority 2)
+
 - [ ] Import globalLogger in local_exec.ts
-- [ ] Replace console.error() with globalLogger.*() in local_exec.ts
+- [ ] Replace console.error() with globalLogger.\*() in local_exec.ts
 - [ ] Import globalLogger in cloud.ts
-- [ ] Replace console.error() with globalLogger.*() in cloud.ts
+- [ ] Replace console.error() with globalLogger.\*() in cloud.ts
 - [ ] Import globalLogger in process_manager.ts
-- [ ] Replace console.error() with globalLogger.*() in process_manager.ts
+- [ ] Replace console.error() with globalLogger.\*() in process_manager.ts
 - [ ] Test with real tasks
 - [ ] Verify log output useful for debugging
 
 **Phase 3: Complete Integration** (Future)
+
 - [ ] Systematic replacement across all 12 tool files
 - [ ] Add log level configuration to tool descriptions
 - [ ] Consider log rotation for long-running servers
@@ -524,6 +587,7 @@ globalLogger.debug(`[LocalExec:${taskId}] Processing event`, { type: event.type 
 **Root Cause**: Logger infrastructure exists and is integrated at MCP layer, but individual tools still use console.error() for internal logging. User's MCP config lacked CODEX_LOG_FILE env var, so even MCP-level logging was disabled. Need to: 1) Document logging configuration, 2) Integrate logger in high-value tools.
 
 **Next Action**:
+
 - **Documentation**: Update all MCP configs with CODEX_LOG_FILE examples (Priority 1)
 - **Code**: Integrate logger in local_exec.ts, cloud.ts, process_manager.ts (Priority 2)
 - **Testing**: Verify logs useful for diagnosing real failures (Priority 2)

@@ -23,7 +23,10 @@ export function extractMetadata(output, exitCode, threadId, taskId) {
     }
     // Extract file operations
     const fileOps = extractFileOperations(output);
-    if (fileOps && (fileOps.files_changed.length > 0 || fileOps.files_added.length > 0 || fileOps.files_deleted.length > 0)) {
+    if (fileOps &&
+        (fileOps.files_changed.length > 0 ||
+            fileOps.files_added.length > 0 ||
+            fileOps.files_deleted.length > 0)) {
         metadata.file_operations = fileOps;
     }
     // Extract thread info
@@ -33,7 +36,7 @@ export function extractMetadata(output, exitCode, threadId, taskId) {
     // Extract task status
     if (taskId) {
         metadata.task_status = {
-            status: metadata.success ? 'completed' : 'failed',
+            status: metadata.success ? "completed" : "failed",
             task_id: taskId,
         };
     }
@@ -213,9 +216,9 @@ function extractErrorContext(output, exitCode) {
             /^[\s:]+$/, // Just whitespace/colons
             /^[)]+$/, // Just closing parens
         ];
-        const isNoise = noisePatterns.some(pattern => pattern.test(message));
+        const isNoise = noisePatterns.some((pattern) => pattern.test(message));
         if (isNoise) {
-            message = ''; // Clear noise messages
+            message = ""; // Clear noise messages
         }
         // Create unique key for deduplication
         const key = `${file}:${line}:${column || 0}`;
@@ -232,7 +235,9 @@ function extractErrorContext(output, exitCode) {
     }
     if (errorLocations.length > 0) {
         errorContext.error_locations = errorLocations.slice(0, 5); // Limit to 5 locations
-        errorContext.failed_files = [...new Set(errorLocations.map(loc => loc.file))];
+        errorContext.failed_files = [
+            ...new Set(errorLocations.map((loc) => loc.file)),
+        ];
     }
     // Extract stack trace (first 5 lines)
     const stackMatch = output.match(/(?:Stack trace|Traceback)[:\s]*\n((?:.*\n){1,5})/i);
@@ -250,31 +255,32 @@ function generateSuggestions(errorContext, output, exitCode) {
     const suggestions = [];
     // File-specific suggestions
     if (errorContext?.failed_files && errorContext.failed_files.length > 0) {
-        suggestions.push(`Check ${errorContext.failed_files.join(', ')} for errors`);
+        suggestions.push(`Check ${errorContext.failed_files.join(", ")} for errors`);
     }
     // Error location suggestions
-    if (errorContext?.error_locations && errorContext.error_locations.length > 0) {
+    if (errorContext?.error_locations &&
+        errorContext.error_locations.length > 0) {
         const firstError = errorContext.error_locations[0];
         suggestions.push(`Start investigation at ${firstError.file}:${firstError.line}`);
     }
     // Test failure suggestions
-    if (output.includes('test') && output.includes('fail')) {
-        suggestions.push('Run failing tests individually to isolate issues');
-        suggestions.push('Check test setup and teardown logic');
+    if (output.includes("test") && output.includes("fail")) {
+        suggestions.push("Run failing tests individually to isolate issues");
+        suggestions.push("Check test setup and teardown logic");
     }
     // Common error patterns
-    if (errorContext?.error_type === 'TypeError') {
-        suggestions.push('Check variable types and null/undefined values');
+    if (errorContext?.error_type === "TypeError") {
+        suggestions.push("Check variable types and null/undefined values");
     }
-    else if (errorContext?.error_type === 'SyntaxError') {
-        suggestions.push('Review syntax near the error location');
+    else if (errorContext?.error_type === "SyntaxError") {
+        suggestions.push("Review syntax near the error location");
     }
-    else if (errorContext?.error_type === 'ReferenceError') {
-        suggestions.push('Verify all variables and imports are defined');
+    else if (errorContext?.error_type === "ReferenceError") {
+        suggestions.push("Verify all variables and imports are defined");
     }
     // Exit code suggestions
     if (exitCode === 1) {
-        suggestions.push('Review command output for specific error messages');
+        suggestions.push("Review command output for specific error messages");
     }
     else if (exitCode && exitCode > 1) {
         suggestions.push(`Exit code ${exitCode} indicates specific failure type - check documentation`);

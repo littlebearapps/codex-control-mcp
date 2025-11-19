@@ -42,6 +42,7 @@
 ### Step 1: Configure npm Trusted Publisher
 
 1. **Navigate to npm Package Settings**
+
    ```
    https://www.npmjs.com/settings/littlebearapps/packages/@littlebearapps/mcp-delegator/access
    ```
@@ -55,6 +56,7 @@
    - Click "Add GitHub Actions"
 
 4. **Configure Publisher Details**
+
    ```
    Repository owner: littlebearapps
    Repository name: mcp-delegator
@@ -82,6 +84,7 @@ Add `publishConfig` to enable public access and provenance:
 ```
 
 **Key Points**:
+
 - `version`: Set to `0.0.0-development` (semantic-release manages actual version)
 - `access`: `"public"` (changes from restricted to public on first release)
 - `provenance`: `true` (enables attestation generation)
@@ -119,8 +122,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-          cache: 'npm'
+          node-version: "lts/*"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm clean-install
@@ -203,6 +206,7 @@ npx semantic-release --dry-run
 ```
 
 **Expected Output**:
+
 - Analyzes commits since last release
 - Determines version bump (major, minor, patch)
 - Shows changelog that would be generated
@@ -211,11 +215,13 @@ npx semantic-release --dry-run
 ### First Release Test
 
 1. **Create a test commit**:
+
    ```bash
    git commit --allow-empty -m "feat: test automated release"
    ```
 
 2. **Push to main**:
+
    ```bash
    git push origin main
    ```
@@ -237,6 +243,7 @@ npx semantic-release --dry-run
 ### What is Provenance?
 
 npm provenance is a cryptographically signed attestation that links:
+
 - **Package**: The .tgz file on npm
 - **Source Code**: Exact commit in GitHub
 - **Build**: The GitHub Actions workflow that built it
@@ -248,6 +255,7 @@ npm provenance is a cryptographically signed attestation that links:
    - Click to expand attestation details
 
 2. **Using npm CLI**:
+
    ```bash
    npm view @littlebearapps/mcp-delegator --json | jq .dist.attestations
    ```
@@ -274,6 +282,7 @@ npm provenance is a cryptographically signed attestation that links:
 **Cause**: Trusted Publisher not configured or misconfigured
 
 **Solution**:
+
 1. Verify Trusted Publisher configuration on npm
 2. Check repository name matches exactly
 3. Ensure workflow file path is correct
@@ -285,6 +294,7 @@ npm provenance is a cryptographically signed attestation that links:
 
 **Solution**:
 Add to workflow job permissions:
+
 ```yaml
 permissions:
   id-token: write
@@ -295,6 +305,7 @@ permissions:
 **Cause**: `provenance: true` not in package.json or npm version <9.5
 
 **Solution**:
+
 1. Add `"provenance": true` to publishConfig
 2. Update workflow Node.js version to 18+
 3. Ensure npm 9.5+ is being used
@@ -304,6 +315,7 @@ permissions:
 **Cause**: No conventional commits since last release
 
 **Solution**:
+
 - Commits must follow format: `feat:`, `fix:`, etc.
 - Check commit messages meet conventional commit spec
 - Run `npx semantic-release --dry-run` to debug
@@ -326,18 +338,19 @@ semantic-release analyzes commit messages to determine version bumps.
 
 ### Version Bumps
 
-| Commit Type | Version Change | Example |
-|-------------|---------------|---------|
-| `fix:` | Patch (3.2.1 → 3.2.2) | `fix: resolve timeout issue` |
-| `feat:` | Minor (3.2.1 → 3.3.0) | `feat: add new API endpoint` |
-| `BREAKING CHANGE:` | Major (3.2.1 → 4.0.0) | See below |
-| `docs:`, `chore:`, `style:` | No release | - |
+| Commit Type                 | Version Change        | Example                      |
+| --------------------------- | --------------------- | ---------------------------- |
+| `fix:`                      | Patch (3.2.1 → 3.2.2) | `fix: resolve timeout issue` |
+| `feat:`                     | Minor (3.2.1 → 3.3.0) | `feat: add new API endpoint` |
+| `BREAKING CHANGE:`          | Major (3.2.1 → 4.0.0) | See below                    |
+| `docs:`, `chore:`, `style:` | No release            | -                            |
 
 ### Breaking Changes
 
 Two ways to trigger major version:
 
 **Option 1: Footer**
+
 ```
 feat: change API signature
 
@@ -345,6 +358,7 @@ BREAKING CHANGE: userId parameter is now required
 ```
 
 **Option 2: Type with !**
+
 ```
 feat!: remove deprecated methods
 ```
@@ -352,6 +366,7 @@ feat!: remove deprecated methods
 ### Examples
 
 **Patch Release**:
+
 ```
 fix: handle null values in metadata extraction
 
@@ -359,6 +374,7 @@ Fixes #123
 ```
 
 **Minor Release**:
+
 ```
 feat: add support for multiple environments
 
@@ -370,6 +386,7 @@ Closes #456
 ```
 
 **Major Release**:
+
 ```
 feat!: public release of mcp-delegator
 
@@ -412,6 +429,7 @@ Changes:
 1. **Don't Panic**: npm packages are immutable (can't change published version)
 
 2. **Deprecate Faulty Version**:
+
    ```bash
    npm deprecate @littlebearapps/mcp-delegator@4.0.0 "Critical bug - use 4.0.1 instead"
    ```
@@ -471,17 +489,16 @@ A: Yes, but you must have an npm Pro/Teams/Enterprise plan.
 
 **Q: How do I publish a pre-release?**
 A: Use a pre-release branch (e.g., `next`). Add to `.releaserc.json`:
+
 ```json
 {
-  "branches": [
-    "main",
-    {"name": "next", "prerelease": true}
-  ]
+  "branches": ["main", { "name": "next", "prerelease": true }]
 }
 ```
 
 **Q: Can I manually trigger a release?**
 A: semantic-release runs automatically on push to main. To force a release, create an empty commit:
+
 ```bash
 git commit --allow-empty -m "chore: trigger release"
 ```

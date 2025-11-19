@@ -1,7 +1,9 @@
 # Recommended Polling Strategy for AI Agents
 
 ## Problem
+
 Manual polling with `sleep` + `_codex_local_status` is inefficient:
+
 - Wastes tokens on repeated full status dumps
 - Agent manages timing manually
 - Same data returned multiple times
@@ -12,6 +14,7 @@ Manual polling with `sleep` + `_codex_local_status` is inefficient:
 ### Option 1: Use Wait Tools (BEST for most cases)
 
 **For local tasks:**
+
 ```typescript
 // ❌ Don't do this:
 sleep 60 → _codex_local_status → sleep 60 → _codex_local_status
@@ -22,12 +25,14 @@ _codex_local_wait({ task_id: "T-local-xyz" })
 ```
 
 **For cloud tasks:**
+
 ```typescript
-_codex_cloud_wait({ task_id: "T-cloud-xyz" })
+_codex_cloud_wait({ task_id: "T-cloud-xyz" });
 // Returns automatically when complete (max 31 min timeout)
 ```
 
 **Benefits:**
+
 - Single tool call
 - No manual sleep management
 - Server polls internally
@@ -55,6 +60,7 @@ sleep 30 → check → sleep 60 → check → sleep 120 → check → sleep 240 
 ```
 
 **Example Implementation:**
+
 ```typescript
 // Step 1: Quick check (catch failures early)
 await sleep(30);
@@ -79,6 +85,7 @@ const result = await _codex_local_wait({ task_id });
 ```
 
 **Token Comparison:**
+
 - Linear (current): 4-6 status checks = 2000-3000 tokens
 - Exponential + wait: 2 status checks + 1 wait = ~1000 tokens
 - **Savings: 50-66%**
@@ -111,6 +118,7 @@ const result = await _codex_local_wait({ task_id });
 ```
 
 **Token Comparison:**
+
 - Current (4-6 checks): 2000-3000 tokens
 - Conditional (1 check + wait): ~600 tokens
 - **Savings: 70-80%**
@@ -119,12 +127,12 @@ const result = await _codex_local_wait({ task_id });
 
 ## Decision Matrix
 
-| Scenario | Best Approach | Token Cost | User Experience |
-|----------|---------------|------------|-----------------|
-| **Quick task (<2 min)** | Direct wait | ~100 | Clean, no intermediate updates |
-| **Medium task (2-5 min)** | 1 check + wait | ~600 | One progress update |
-| **Long task (5-15 min)** | 2 checks + wait | ~1000 | Two progress updates |
-| **Very long task (>15 min)** | Cloud submission | ~200 | Background execution |
+| Scenario                     | Best Approach    | Token Cost | User Experience                |
+| ---------------------------- | ---------------- | ---------- | ------------------------------ |
+| **Quick task (<2 min)**      | Direct wait      | ~100       | Clean, no intermediate updates |
+| **Medium task (2-5 min)**    | 1 check + wait   | ~600       | One progress update            |
+| **Long task (5-15 min)**     | 2 checks + wait  | ~1000      | Two progress updates           |
+| **Very long task (>15 min)** | Cloud submission | ~200       | Background execution           |
 
 ---
 
@@ -175,7 +183,7 @@ For AI agents using MCP Delegator:
 ```typescript
 // 1. Start task
 const task = await _codex_local_exec({
-  task: "Implement user authentication"
+  task: "Implement user authentication",
 });
 
 // 2. Inform user
@@ -198,7 +206,7 @@ console.log(`✅ Task complete in ${result.duration}s`);
 ```typescript
 // 1. Start task
 const task = await _codex_local_exec({
-  task: "Refactor entire API layer with comprehensive tests"
+  task: "Refactor entire API layer with comprehensive tests",
 });
 
 // 2. Set expectations
@@ -215,7 +223,9 @@ const status = await _codex_local_status({ task_id: task.task_id });
 if (status.files_changed > 0) {
   console.log(`Progress: ${status.files_changed} files modified so far`);
 } else {
-  console.log(`Still analyzing and planning (no code changes yet - this is normal)`);
+  console.log(
+    `Still analyzing and planning (no code changes yet - this is normal)`,
+  );
 }
 
 // 5. Wait for completion
@@ -223,7 +233,9 @@ console.log(`Waiting for completion...`);
 const result = await _codex_local_wait({ task_id: task.task_id });
 
 // 6. Return results
-console.log(`✅ Complete! Modified ${result.files_changed} files in ${result.duration}s`);
+console.log(
+  `✅ Complete! Modified ${result.files_changed} files in ${result.duration}s`,
+);
 ```
 
 **Token usage:** ~800 tokens (start + 1 status + wait)
@@ -236,7 +248,7 @@ console.log(`✅ Complete! Modified ${result.files_changed} files in ${result.du
 // For tasks >15 minutes, use cloud submission
 const task = await _codex_cloud_submit({
   task: "Run comprehensive security audit and create PR with fixes",
-  envId: "env_myproject"
+  envId: "env_myproject",
 });
 
 console.log(`Task submitted to Codex Cloud (ID: ${task.task_id})`);
@@ -254,6 +266,7 @@ console.log(`I'll check back later when it's likely complete`);
 ## Anti-Patterns to Avoid
 
 ### ❌ Anti-Pattern 1: Linear Polling Forever
+
 ```typescript
 // DON'T DO THIS:
 while (!complete) {
@@ -264,6 +277,7 @@ while (!complete) {
 ```
 
 ### ❌ Anti-Pattern 2: Checking Too Frequently
+
 ```typescript
 // DON'T DO THIS:
 await sleep(30);
@@ -279,6 +293,7 @@ check(); // Wasteful - nothing changed
 ```
 
 ### ❌ Anti-Pattern 3: No User Communication
+
 ```typescript
 // DON'T DO THIS:
 const task = await start_task();

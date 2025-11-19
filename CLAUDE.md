@@ -9,6 +9,7 @@
 ## Quick Reference
 
 See detailed documentation in `quickrefs/`:
+
 - @quickrefs/tools.md - All tools with examples (updated for v3.0.1)
 - @quickrefs/architecture.md - System design and components
 - @quickrefs/workflows.md - Common development workflows
@@ -26,10 +27,12 @@ See detailed documentation in `quickrefs/`:
 **Why Disabled**: Claude Code does not yet support displaying MCP `notifications/progress` in the UI (as of 2025-11-17). Our implementation is correct and follows the MCP spec, but Claude Code simply doesn't show these notifications to users yet.
 
 **GitHub Issues**:
+
 - [#4157](https://github.com/anthropics/claude-code/issues/4157) - "How to report progress with an MCP Server"
 - [#3174](https://github.com/anthropics/claude-code/issues/3174) - "Claude Code Receives But Doesn't Display Messages"
 
 **What's Implemented**:
+
 - ✅ `src/types/progress.ts` - Full MCP progress notification support
 - ✅ 4 executor tools send notifications (local_run, local_exec, local_resume, cloud_submit)
 - ✅ Three notification strategies (30s elapsed, 10-event step progress, one-time completion)
@@ -38,6 +41,7 @@ See detailed documentation in `quickrefs/`:
 
 **When to Enable**:
 When Claude Code adds UI support for `notifications/progress`, simply change:
+
 ```typescript
 // In src/types/progress.ts line 28:
 const ENABLE_MCP_PROGRESS_NOTIFICATIONS = true; // Change false → true
@@ -54,22 +58,26 @@ Then rebuild with `npm run build` and notifications will start working automatic
 **✅ FULLY AUTOMATED** - Complete CI/CD pipeline operational
 
 **Automated on Every PR**:
+
 - Lint, build, type check, tests (Node 20.x/22.x, Ubuntu/macOS/Windows)
 - CodeQL security scanning, dependency audit
 
 **Automated on Main Commits**:
+
 - semantic-release (auto-versioning based on conventional commits)
 - npm publishing with provenance (OIDC Trusted Publisher)
 - GitHub releases + CHANGELOG generation
 
 **⚠️ IMPORTANT: semantic-release Version Control**:
 semantic-release automatically determines version numbers based on conventional commit messages:
+
 - `feat:` → **minor version bump** (3.4.0 → 3.5.0)
 - `fix:` → **patch version bump** (3.4.0 → 3.4.1)
 - `chore:` → **no version bump** (no release)
 - `BREAKING CHANGE:` or `feat!:` → **major version bump** (3.4.0 → 4.0.0)
 
 **This means**:
+
 - ❌ **DO NOT manually set version in package.json** - semantic-release will override it
 - ✅ **Use correct commit message prefix** to control version bumps
 - ✅ **Version is determined by commit messages**, not package.json
@@ -80,6 +88,7 @@ semantic-release automatically determines version numbers based on conventional 
 **Security**: Dependabot updates, secret scanning, weekly CodeQL scans
 
 **Provenance E409 Fix (v3.3.3+)**: Post-publish verification handles npm registry race condition
+
 - Package publishes successfully despite E409 "packument save" errors
 - Verification script confirms package exists in registry (60s timeout)
 - Based on proven CKEditor solution (ckeditor/ckeditor5#16625)
@@ -94,6 +103,7 @@ semantic-release automatically determines version numbers based on conventional 
 **✅ PUBLISHED TO NPM**: This MCP server is published as a **private npm package** under the `@littlebearapps` organization.
 
 **Package Details**:
+
 - **Name**: `@littlebearapps/mcp-delegator`
 - **Version**: 3.4.1 (automated via semantic-release)
 - **Access**: Public
@@ -101,6 +111,7 @@ semantic-release automatically determines version numbers based on conventional 
 - **Provenance**: ✅ Enabled (Sigstore attestations published)
 
 **Installation**:
+
 ```bash
 # Install globally (requires org membership)
 npm install -g @littlebearapps/mcp-delegator
@@ -112,6 +123,7 @@ mcp-delegator --version
 
 **MCP Configuration**:
 All MCP configs use: `"command": "mcp-delegator"`
+
 ```json
 {
   "mcpServers": {
@@ -126,6 +138,7 @@ All MCP configs use: `"command": "mcp-delegator"`
 ```
 
 **Updating**:
+
 ```bash
 # Automatic notifications (v3.5.0+)
 # Server shows update message when new version available
@@ -143,6 +156,7 @@ export NO_UPDATE_NOTIFIER=1
 **See**: `docs/NPM-UPDATE-NOTIFICATIONS.md` for update notification details
 
 **Benefits**:
+
 - ✅ Version management (rollback capability)
 - ✅ Works across all directories (no symlink fragility)
 - ✅ Clean installation (standard npm workflow)
@@ -156,29 +170,34 @@ export NO_UPDATE_NOTIFIER=1
 For active development, you can use **npm link** to test changes instantly:
 
 **Setup**:
+
 ```bash
 cd /Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/mcp-delegator
 npm link  # Creates global symlink
 ```
 
 **Development Cycle**:
+
 1. Edit files in `src/`
 2. Build with `npm run build`
 3. **Changes propagate immediately!**
 4. Restart Claude Code to test
 
 **Revert to npm package**:
+
 ```bash
 npm unlink -g @littlebearapps/mcp-delegator
 npm install -g @littlebearapps/mcp-delegator
 ```
 
 **When to use npm link**:
+
 - ✅ Active feature development
 - ✅ Bug fixing and iteration
 - ✅ Testing before publishing
 
 **When to use npm package**:
+
 - ✅ Production use across projects
 - ✅ Stable releases
 - ✅ Team collaboration
@@ -188,6 +207,7 @@ npm install -g @littlebearapps/mcp-delegator
 ### Publishing Updates
 
 **Publish workflow**:
+
 ```bash
 # 1. Update version
 npm version patch  # 3.2.1 → 3.2.2
@@ -205,6 +225,7 @@ npm view @littlebearapps/mcp-delegator
 ```
 
 **Org Requirements**:
+
 - Organization: `@littlebearapps` (has Pro plan)
 - Members can publish and install private packages
 - Cost: $7/month (org-wide)
@@ -216,18 +237,21 @@ npm view @littlebearapps/mcp-delegator
 **🚨 APPROVAL REQUIRED** for the following actions:
 
 ### 1. Merging Pull Requests to Main
+
 - ❌ **NEVER merge a PR to main without explicit approval**
 - ✅ Always wait for user confirmation before merging
 - ✅ Ensure all checks pass (CI/CD, tests, linting)
 - ✅ Complete pre-merge checklist (see below)
 
 ### 2. Building/Rebuilding the Package
+
 - ❌ **NEVER run `npm run build` without explicit approval**
 - ❌ **NEVER run `npm publish` without explicit approval**
 - ✅ Ask permission before any build/publish operation
 - ✅ Complete version update checklist (see below)
 
 ### 3. Version Updates
+
 - ❌ **NEVER update version numbers without completing the checklist**
 - ✅ semantic-release handles versioning automatically via conventional commits
 - ✅ Manual version updates ONLY when reverting or fixing semantic-release failures
@@ -239,6 +263,7 @@ npm view @littlebearapps/mcp-delegator
 **Before merging to main OR building the package**, ensure ALL of these files are updated:
 
 ### Version Number Files (CRITICAL)
+
 1. **`package.json`** (line 3)
    - Current: `"version": "3.3.2"`
    - Updated via: `npm version patch|minor|major` OR semantic-release
@@ -259,6 +284,7 @@ npm view @littlebearapps/mcp-delegator
    - **⚠️ This is MANUALLY updated** (not automated)
 
 ### Documentation Files (Update if behavior changes)
+
 5. **`README.md`**
    - Update feature lists, examples, version references
    - Update "What's New" section for major/minor releases
@@ -284,6 +310,7 @@ npm view @littlebearapps/mcp-delegator
     - Add new error messages and fixes
 
 ### Test Files (Update if tests change)
+
 11. **Test result documentation**
     - `ASYNC-COMPREHENSIVE-TEST-RESULTS.md`
     - `WEEK-5-COMPLETION-SUMMARY.md`
@@ -291,11 +318,11 @@ npm view @littlebearapps/mcp-delegator
 
 ### Version-Specific Update Matrix
 
-| Update Type | Files to Update |
-|-------------|----------------|
-| **Patch** (3.3.2 → 3.3.3) | 1, 2, 3, 4 + relevant docs |
+| Update Type               | Files to Update                        |
+| ------------------------- | -------------------------------------- |
+| **Patch** (3.3.2 → 3.3.3) | 1, 2, 3, 4 + relevant docs             |
 | **Minor** (3.3.2 → 3.4.0) | 1, 2, 3, 4, 5 + all relevant quickrefs |
-| **Major** (3.3.2 → 4.0.0) | ALL files + migration guide |
+| **Major** (3.3.2 → 4.0.0) | ALL files + migration guide            |
 
 ### Pre-Merge Verification
 
@@ -323,12 +350,14 @@ git status
 ## Common Commands
 
 ### Build & Development
+
 - `npm run build` - Build TypeScript to dist/
 - `npm run watch` - Watch mode for development
 - `npm test` - Run test suite
 - `npm start` - Run MCP server directly
 
 ### Testing & Validation
+
 - `node dist/index.js` - Test MCP server manually
 - `npx ts-node test-codex-simple.ts` - Core E2E tests (14 tests)
 - `npx ts-node test-codex-comprehensive.ts` - Natural language tests (51 tests)
@@ -337,6 +366,7 @@ git status
 - Check `WEEK-5-COMPLETION-SUMMARY.md` for comprehensive test results (98 tests, 100%)
 
 ### MCP Server Management
+
 - MCP config location: `~/.claude/config/.mcp.json`
 - Server runs via: `node dist/index.js`
 - Concurrency control: `CODEX_MAX_CONCURRENCY` env var (default: 2)
@@ -346,17 +376,20 @@ git status
 ## Code Style & Standards
 
 ### TypeScript
+
 - Use ES modules (`import`/`export`), not CommonJS
 - Prefer `async`/`await` over callbacks
 - Use explicit return types on exported functions
 - Use `strict` mode (enabled in tsconfig.json)
 
 ### Error Handling
+
 - Use MCP error codes (`INVALID_PARAMS`, `INTERNAL_ERROR`, etc.)
 - Redact secrets from error messages (see `security/redactor.ts`)
 - Map Codex CLI errors to MCP format (see `executor/error_mapper.ts`)
 
 ### File Organization
+
 - Tools go in `src/tools/` (one file per tool)
 - Utilities in `src/executor/`, `src/security/`, and `src/utils/`
 - Metadata extraction in `src/utils/metadata_extractor.ts`
@@ -364,6 +397,7 @@ git status
 - Build output to `dist/` (gitignored)
 
 ### Naming Conventions
+
 - Tool files: `snake_case.ts` (e.g., `local_exec.ts`)
 - Functions: `camelCase` (e.g., `executeCodexTask`)
 - Constants: `UPPER_SNAKE_CASE` (e.g., `MAX_TASK_LENGTH`)
@@ -374,6 +408,7 @@ git status
 ## Development Workflow
 
 ### Adding New Tools
+
 1. Create new file in `src/tools/` (e.g., `my_tool.ts`)
 2. Implement tool handler with MCP schema
 3. Export from `src/index.ts` in `tools` array
@@ -381,6 +416,7 @@ git status
 5. Build and test: `npm run build && npm test`
 
 ### Making Changes
+
 1. Always work in a feature branch (never main)
 2. Build after changes: `npm run build`
 3. Test MCP server manually before committing
@@ -388,6 +424,7 @@ git status
 5. Update version in package.json for releases
 
 ### Testing Locally
+
 ```bash
 # Terminal 1: Run MCP server
 node dist/index.js
@@ -398,6 +435,7 @@ claude
 ```
 
 ### Pre-Commit Checklist
+
 - [ ] TypeScript compiles without errors (`npm run build`)
 - [ ] All tests pass (`npm test` when available)
 - [ ] No secrets in code or logs
@@ -410,6 +448,7 @@ claude
 ## Key Architecture Points
 
 ### Execution Modes
+
 - **Local Execution** (5 tools): Simple one-shot + advanced SDK with thread persistence
 - **Cloud Execution** (3 tools): Background execution, sandboxed containers
 - **Configuration** (2 tools): Setup helpers
@@ -417,12 +456,14 @@ claude
 **All tools now support non-blocking async execution** - Claude Code never freezes waiting for Codex!
 
 ### Security Layers
+
 1. **Input Validation** - Sanitize all user inputs (paths, task descriptions)
 2. **Secret Redaction** - Strip API keys, tokens, passwords from outputs
 3. **Mutation Gating** - Require explicit `confirm=true` for file modifications
 4. **No Shell Injection** - Use `spawn(cmd, args)`, never `exec(string)`
 
 ### Process Management
+
 - Max concurrency: 2-4 processes (configurable via env var)
 - Queue-based execution for concurrent requests
 - Graceful cleanup on process termination
@@ -445,16 +486,17 @@ claude
 
 ## Environment Variables
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `CODEX_MAX_CONCURRENCY` | `2` | Max parallel Codex processes |
-| `CODEX_API_KEY` | (none) | Optional: Override ChatGPT Pro auth |
+| Variable                | Default | Purpose                             |
+| ----------------------- | ------- | ----------------------------------- |
+| `CODEX_MAX_CONCURRENCY` | `2`     | Max parallel Codex processes        |
+| `CODEX_API_KEY`         | (none)  | Optional: Override ChatGPT Pro auth |
 
 ---
 
 ## Unified Tool Interface (v3.0.0)
 
 ### User-Facing Tool
+
 - **`codex`** - Single unified tool accepting natural language instructions
   - Automatically routes to appropriate backend primitive
   - Detects local vs cloud execution mode
@@ -464,6 +506,7 @@ claude
 ### Hidden Implementation (14 Primitives)
 
 **Local Execution** (7 primitives):
+
 - `_codex_local_run` - Simple one-shot execution
 - `_codex_local_exec` - SDK execution with threading
 - `_codex_local_resume` - Resume threaded conversations
@@ -473,6 +516,7 @@ claude
 - `_codex_local_cancel` - Cancel running tasks
 
 **Cloud Execution** (5 primitives):
+
 - `_codex_cloud_submit` - Background task submission
 - `_codex_cloud_status` - Cloud task status
 - `_codex_cloud_results` - Retrieve cloud results
@@ -480,6 +524,7 @@ claude
 - `_codex_cloud_cancel` - Cancel cloud tasks
 
 **Configuration** (2 primitives):
+
 - `_codex_cloud_list_environments` - List environments
 - `_codex_cloud_github_setup` - GitHub integration guide
 
@@ -488,6 +533,7 @@ claude
 ## Key Decisions & Rationale
 
 ### Why Remove Unified Natural Language Interface? (v3.0.1)
+
 - **Problem**: Unified `codex` tool caused intermittent hanging issues
 - **Root Cause**: Complex routing layer duplicated Claude Code's native NLP capabilities
 - **Solution**: Removed unified tool, expose only 14 hidden primitives
@@ -496,23 +542,27 @@ claude
 - **Previous Version (v3.0.0)**: Had unified tool with 91 routing tests (100% pass), but intermittent hangs in production
 
 ### Why Three Execution Modes?
+
 - **Local CLI**: Legacy compatibility, simple one-shot tasks
 - **Local SDK**: Iterative development, thread persistence, token visibility
 - **Cloud**: Long-running tasks, sandboxed environments, device independence
 
 ### Why Persistent Task Tracking?
+
 - Cloud tasks continue after Claude Code restarts
 - Users need visibility into task history
 - Multi-instance isolation prevents task collisions
 - Enables unified `codex_cloud_status` tool (pending, specific, or list mode)
 
 ### Why Thread Persistence in Local SDK?
+
 - Enables iterative development (analyze → fix → test)
 - Reduces token costs via caching (45-93% cache rates)
 - Preserves conversation context across sessions
 - Supports follow-up questions without repeating context
 
 ### Why 4-Level Fallback in GitHub Templates?
+
 - Codex Cloud containers may have network restrictions
 - Different base images may lack certain package managers
 - Core workflows work even if auxiliary tools (gh CLI) fail
@@ -523,21 +573,25 @@ claude
 ## Common Gotchas
 
 ### MCP Server Discovery
+
 - MCP servers are discovered on Claude Code startup
 - Changes to `.mcp.json` require Claude Code restart
 - Test server manually first: `node dist/index.js`
 
 ### Git Repository Requirement (Local SDK)
+
 - `codex_local_resume` requires trusted git directory
 - NOT an issue for Claude Code projects (all are git repos)
 - Only affects testing in `/tmp/` or similar non-git contexts
 
 ### Secret Redaction
+
 - Secrets are redacted from ALL outputs (stdout, stderr, events)
 - 15+ patterns matched (API keys, tokens, passwords, etc.)
 - Test with real secrets to verify redaction works
 
 ### JSONL Parsing
+
 - Parser is tolerant of partial lines and non-JSON stderr
 - Events are streamed in real-time, not batched
 - Line buffering ensures clean event boundaries
@@ -547,12 +601,14 @@ claude
 ## Quick Troubleshooting
 
 ### "Codex CLI not found"
+
 ```bash
 npm install -g @openai/codex
 which codex  # Verify installation
 ```
 
 ### "Authentication failed"
+
 ```bash
 codex auth status  # Check auth
 codex auth        # Re-authenticate
@@ -560,6 +616,7 @@ codex auth        # Re-authenticate
 ```
 
 ### "MCP server not responding"
+
 ```bash
 # Test manually
 node dist/index.js
@@ -569,6 +626,7 @@ cat ~/.claude/config/.mcp.json
 ```
 
 ### "TypeScript build errors"
+
 ```bash
 rm -rf dist node_modules
 npm install

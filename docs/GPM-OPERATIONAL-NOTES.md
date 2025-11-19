@@ -18,6 +18,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Result**: Installed successfully as `gpm` command globally.
 
 **Verification**:
+
 - `which gpm` → `/opt/homebrew/bin/gpm`
 - `gpm --version` → `1.8.0`
 
@@ -30,6 +31,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Command**: `gpm init --interactive`
 
 **Result**:
+
 - Created `.gpm.yml` with sensible defaults
 - Solo developer configuration (requireReviews: 0)
 - Security scanning enabled by default
@@ -37,6 +39,7 @@ npm install -g @littlebearapps/git-pr-manager
 - Clear comments explaining each option
 
 **Output Quality**:
+
 - ✅ JSON configuration preview shown before creation
 - ✅ Next steps clearly explained
 - ✅ AI agent guidance included in comments
@@ -53,6 +56,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Method Used**: direnv + macOS Keychain integration
 
 **Steps**:
+
 1. Created `.envrc`:
    ```bash
    source ~/bin/kc.sh
@@ -62,6 +66,7 @@ npm install -g @littlebearapps/git-pr-manager
 3. Added `.envrc` to `.gitignore`
 
 **`gpm doctor` Recommendation**:
+
 - ✅ Correctly detected macOS
 - ✅ Recommended direnv + keychain as top option
 - ✅ Provided clear alternatives ranked by security
@@ -70,6 +75,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Rating**: ⭐⭐⭐⭐⭐ (Excellent)
 
 **Notes**:
+
 - The `gpm doctor` output was very helpful
 - Security-conscious defaults (recommends keychain over .env)
 - Perfect for this development environment
@@ -81,16 +87,19 @@ npm install -g @littlebearapps/git-pr-manager
 **Command**: `gpm docs`
 
 **Result**:
+
 - Clear index of available guides
 - Local file paths shown
 - Online documentation links provided
 - Quick start commands highlighted
 
 **Guides Reviewed**:
+
 - ✅ AI-AGENT-INTEGRATION - Comprehensive, well-organized
 - ⚠️ CONFIGURATION - Not found (404 error)
 
 **AI-AGENT-INTEGRATION Guide Quality**:
+
 - ✅ Excellent explanation of JSON output
 - ✅ Team size recommendations (solo/small/enterprise)
 - ✅ Clear workflow examples
@@ -102,15 +111,19 @@ npm install -g @littlebearapps/git-pr-manager
 **Rating**: ⭐⭐⭐⭐☆ (Very Good)
 
 **Issues Found**:
+
 1. ❌ `gpm docs --guide=CONFIGURATION` returns error:
+
    ```
    ❌ Guide not found: CONFIGURATION
    ```
+
    - Expected: Configuration guide to exist
    - Actual: 404 error
    - Impact: Minor - `.gpm.yml` has excellent inline comments that compensate
 
 **Suggestion**:
+
 - Either add CONFIGURATION guide or remove it from the docs index
 - The inline comments in `.gpm.yml` are so good that a separate guide might be redundant
 
@@ -123,6 +136,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Command**: `gpm security --json`
 
 **Result**:
+
 ```json
 {
   "passed": true,
@@ -141,18 +155,21 @@ npm install -g @littlebearapps/git-pr-manager
 ```
 
 **Secrets Scan** (✅ Perfect):
+
 - ✅ No secrets detected
 - ✅ Clean scan
 
 **Vulnerabilities Scan** (⚠️ Good but needs improvement):
 
 **What Worked**:
+
 - ✅ Detected 5 vulnerabilities (4 high, 1 medium)
 - ✅ Correctly identified npm dependencies
 - ✅ JSON output is parseable
 - ✅ Exit code indicates success despite warnings
 
 **What Could Be Better**:
+
 1. **Missing Vulnerability Details in gpm Output**
    - ❌ gpm security output doesn't show WHICH packages are vulnerable
    - ❌ No CVE IDs or package names in gpm output
@@ -174,6 +191,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Rating**: ⭐⭐⭐☆☆ (Good, but could be better)
 
 **Issues Found**:
+
 1. **Missing Vulnerability Details in Output**
    - Expected: Package names, CVE IDs, severity in gpm security output
    - Actual: Only counts and generic "run npm audit" suggestion
@@ -187,6 +205,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Suggestions for gpm Improvement**:
 
 1. **Enhanced Vulnerability Output**:
+
    ```
    ✅ Suggested Enhancement:
 
@@ -246,6 +265,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Root Cause**: All vulnerabilities are in **devDependencies** used for CI/CD (semantic-release).
 
 **Risk Assessment**:
+
 - ✅ **Low Runtime Risk**: These are dev-only dependencies
 - ✅ **Low Exploit Risk**:
   - glob vulnerability requires CLI usage with `-c/--cmd` flag
@@ -253,6 +273,7 @@ npm install -g @littlebearapps/git-pr-manager
 - ⚠️ **CI/CD Risk**: semantic-release runs in GitHub Actions
 
 **Affected Packages**:
+
 1. `semantic-release@25.0.2` → Fix: Downgrade to `24.2.9`
 2. `@semantic-release/npm@13.1.2` → Fix: Downgrade to `12.0.2`
 3. Transitive: `glob`, `tar`, `npm` (bundled in @semantic-release/npm)
@@ -260,22 +281,26 @@ npm install -g @littlebearapps/git-pr-manager
 ### Resolution Options
 
 **Option 1: Accept Risk** (❌ Not Recommended)
+
 - Justification: Dev dependencies only
 - Risk: CI/CD pipeline could be compromised
 - Decision: **Reject** - Security best practice is to fix
 
 **Option 2: Downgrade semantic-release** (⚠️ Breaking Change)
+
 - Change: v25.0.2 → v24.2.9
 - Impact: Major version downgrade
 - Risk: Potential feature loss or config changes
 - Decision: **Need to evaluate** - Check changelog first
 
 **Option 3: Wait for semantic-release v25.x fix** (⏳ Delayed)
+
 - Wait for upstream fix in semantic-release v25.x
 - Risk: Unknown timeline
 - Decision: **Not preferred** - Fix available now
 
 **Option 4: Use npm overrides** (✅ Recommended)
+
 - Override transitive dependencies to safe versions
 - Keep semantic-release v25.x
 - Decision: **Try this first**
@@ -292,6 +317,7 @@ npm install -g @littlebearapps/git-pr-manager
 ```
 
 **Issue**: Overrides aren't working because:
+
 - npm is bundled inside @semantic-release/npm
 - Bundled dependencies ignore overrides
 - Need to fix at source (downgrade @semantic-release/npm)
@@ -299,12 +325,14 @@ npm install -g @littlebearapps/git-pr-manager
 ### Recommended Action
 
 **Immediate**:
+
 1. ✅ Document vulnerabilities (this file)
 2. ⚠️ **Decision needed**: Downgrade or wait?
    - If downgrade: Check v24 vs v25 changelog
    - If wait: Monitor semantic-release repo for fix
 
 **Context for Decision**:
+
 - Project uses semantic-release for automated releases
 - Currently on v25.0.2 (latest)
 - Downgrade to v24.2.9 might lose features
@@ -317,6 +345,7 @@ npm install -g @littlebearapps/git-pr-manager
 **Command**: `npm audit fix`
 
 **Result**: ❌ Cannot fix automatically
+
 ```
 npm warn audit fix glob@10.4.5 is a bundled dependency of npm@11.6.2
 npm warn audit fix It cannot be fixed automatically.
@@ -324,15 +353,19 @@ npm warn audit fix Check for updates to the npm package.
 ```
 
 **Analysis**:
+
 - ✅ Confirmed: Vulnerabilities are in **bundled dependencies**
 - ❌ npm cannot override bundled dependencies
 - ⚠️ Only fix: Downgrade @semantic-release/npm (breaking change)
 
 **Available Fix**:
+
 ```bash
 npm audit fix --force
 ```
+
 **Impact**:
+
 - Downgrades: `semantic-release@25.0.2` → `24.2.9`
 - Downgrades: `@semantic-release/npm@13.1.2` → `12.0.2`
 - Risk: Breaking changes in semantic-release CI/CD pipeline
@@ -342,6 +375,7 @@ npm audit fix --force
 **For mcp-delegator project specifically**:
 
 ✅ **Recommended**: Accept risk for now
+
 - ✅ Dev dependencies only (not in published package)
 - ✅ CI/CD runs in trusted GitHub Actions environment
 - ✅ Low exploit probability (requires specific attack vectors)
@@ -349,11 +383,13 @@ npm audit fix --force
 - ⚠️ Downgrade risk: May break existing CI/CD workflow
 
 **Alternative**: Downgrade semantic-release
+
 - ⚠️ Requires testing CI/CD pipeline after downgrade
 - ⚠️ May lose v25 features (need to check changelog)
 - ✅ Fixes vulnerabilities completely
 
 **Best Practice**: Add to backlog
+
 - Monitor semantic-release repo for v25.x security fix
 - Upgrade when non-breaking fix available
 - Document risk acceptance in this file
@@ -363,6 +399,7 @@ npm audit fix --force
 **Action Taken**: User requested investigation and fix of all 5 vulnerabilities
 
 **Steps Performed**:
+
 1. ✅ Investigated semantic-release v24 vs v25 changelog
 2. ✅ Attempted `npm audit fix --force`
    - Result: Downgraded to semantic-release@24.2.9
@@ -418,6 +455,7 @@ npm audit
 ```
 
 **Results**:
+
 - ❌ glob@11.0.3 (high) - Command injection via -c/--cmd
 - ❌ glob@10.4.5 (high) - Command injection via -c/--cmd
 - ❌ tar@7.5.1 (moderate) - Race condition
@@ -465,6 +503,7 @@ npm audit
   - ❌ Not recommended for this project
 
 **Upstream Issues to Monitor**:
+
 - npm/npm: https://github.com/npm/npm (check for glob/tar updates)
 - semantic-release/npm: https://github.com/semantic-release/npm (check for npm bundle updates)
 
@@ -500,17 +539,20 @@ npm audit
 **⭐⭐⭐⭐☆ (4/5 stars)**
 
 **Strengths**:
+
 - Excellent AI agent integration
 - Great documentation
 - Smooth setup process
 - Security-conscious defaults
 
 **Areas for Improvement**:
+
 - Vulnerability output detail
 - Fix command accuracy
 - Missing CONFIGURATION guide
 
 **Recommendation**:
+
 - ✅ **Highly recommended** for AI-driven git workflows
 - ✅ Security scanning is valuable despite output limitations
 - ✅ JSON mode is perfect for programmatic use

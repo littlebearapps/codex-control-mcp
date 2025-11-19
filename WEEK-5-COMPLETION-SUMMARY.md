@@ -10,6 +10,7 @@
 ## 🎯 Mission Accomplished
 
 ### Week 5 Goal: Create Unified Natural Language Interface
+
 - **Starting**: 14 separate primitive tools, manual tool selection required
 - **Ending**: Single `codex` tool with natural language routing
 - **Time**: 3 days (~8 hours total)
@@ -24,6 +25,7 @@
 **Achievement**: Primitive execution integration
 
 **Work Completed**:
+
 1. **Dependency Injection Architecture**
    - Created `PrimitiveToolMap` interface
    - Injected all 14 primitives into `CodexTool` constructor
@@ -46,6 +48,7 @@
 **Test Results**: 5/6 manual tests passing (83%)
 
 **Files Modified**:
+
 - `src/tools/codex.ts` (+95, -28)
 - `src/router/router.ts` (+5, -3)
 - `src/index.ts` (+15, -2)
@@ -79,11 +82,13 @@
    - Parameter extraction validation
 
 **Test Results**:
+
 - Core E2E: 14/14 passing (100%)
 - Comprehensive: 50/51 passing (98%)
 - Total: 64/65 passing (98.5%)
 
 **Files Modified**:
+
 - `src/router/router.ts` (cloud + threading keywords)
 - `src/router/intent_parser.ts` (fetch pattern fix)
 - `test-codex-simple.ts` (+150, NEW)
@@ -119,10 +124,12 @@
    - Documented 98.5% test pass rate
 
 **Test Results**:
+
 - Error cases: 26/26 passing (100%)
 - **Total across all suites**: 91 tests, 90 passing (98.5%)
 
 **Files Modified**:
+
 - `test-codex-errors.ts` (+280, NEW)
 - `README.md` (v3.0.0 update)
 
@@ -130,21 +137,23 @@
 
 ## 📊 Final Test Summary
 
-| Test Suite | Tests | Pass Rate | Purpose |
-|------------|-------|-----------|---------|
-| **Core E2E** | 14 | 100% | All 14 primitive routing paths |
-| **Natural Language** | 51 | 98% | 50+ natural variations |
-| **Error Cases** | 26 | 100% | Edge cases, errors, validation |
-| **Total** | **91** | **98.5%** | **Production ready** |
+| Test Suite           | Tests  | Pass Rate | Purpose                        |
+| -------------------- | ------ | --------- | ------------------------------ |
+| **Core E2E**         | 14     | 100%      | All 14 primitive routing paths |
+| **Natural Language** | 51     | 98%       | 50+ natural variations         |
+| **Error Cases**      | 26     | 100%      | Edge cases, errors, validation |
+| **Total**            | **91** | **98.5%** | **Production ready**           |
 
 ### Test Coverage Breakdown
 
 **Routing Validation** (14 tests):
+
 - ✅ Local execution primitives (7)
 - ✅ Cloud execution primitives (5)
 - ✅ Configuration primitives (2)
 
 **Natural Language Variations** (51 tests):
+
 - ✅ Local execution: 8/8
 - ✅ Threading detection: 4/4
 - ✅ Cloud detection: 9/9
@@ -157,6 +166,7 @@
 - ✅ Mixed context: 3/3
 
 **Error Handling** (26 tests):
+
 - ✅ Invalid task IDs: 3/3
 - ✅ Missing parameters: 2/2
 - ✅ Ambiguous inputs: 4/4
@@ -173,12 +183,14 @@
 ### 1. Natural Language Understanding
 
 **Intent Parsing**:
+
 - 6 intent types (execute, status, wait, cancel, fetch, setup)
-- Automatic task ID extraction (T-local-*, T-cloud-*)
+- Automatic task ID extraction (T-local-_, T-cloud-_)
 - Cloud context detection (6+ patterns)
 - Threading intent detection (5+ patterns)
 
 **Keyword Pattern Design**:
+
 - Multi-word phrases for specificity
 - Flexible regex with optional words
 - Priority ordering (setup > task-specific > query > execution)
@@ -186,11 +198,13 @@
 ### 2. Smart Routing Logic
 
 **Mode Inference**:
+
 - Local vs cloud detection
 - Threading vs one-shot detection
 - Automatic primitive selection
 
 **Parameter Extraction**:
+
 - Task IDs from natural text
 - Working directory from context
 - Mode preferences from hints
@@ -198,11 +212,13 @@
 ### 3. Test Infrastructure
 
 **Mock Design**:
+
 - Call count tracking
 - Parameter inspection
 - Simple pass/fail validation
 
 **Test Runner**:
+
 - Standalone execution (no framework dependencies)
 - Fast feedback (~2 seconds)
 - Clear console output
@@ -245,20 +261,22 @@
 ## 📁 Files Created/Modified
 
 ### Created Files (4)
-| File | Lines | Purpose |
-|------|-------|---------|
-| `test-codex-simple.ts` | 150 | Core E2E test suite |
-| `test-codex-comprehensive.ts` | 300 | Natural language variations |
-| `test-codex-errors.ts` | 280 | Error case validation |
-| `WEEK-5-COMPLETION-SUMMARY.md` | 350 | This document |
+
+| File                           | Lines | Purpose                     |
+| ------------------------------ | ----- | --------------------------- |
+| `test-codex-simple.ts`         | 150   | Core E2E test suite         |
+| `test-codex-comprehensive.ts`  | 300   | Natural language variations |
+| `test-codex-errors.ts`         | 280   | Error case validation       |
+| `WEEK-5-COMPLETION-SUMMARY.md` | 350   | This document               |
 
 ### Modified Files (4)
-| File | Changes | Purpose |
-|------|---------|---------|
-| `src/tools/codex.ts` | +95, -28 | Primitive execution integration |
-| `src/router/router.ts` | +12, -5 | Cloud and threading keywords |
-| `src/router/intent_parser.ts` | +1, -1 | Fetch pattern fix |
-| `README.md` | ~100 lines | v3.0.0 documentation |
+
+| File                          | Changes    | Purpose                         |
+| ----------------------------- | ---------- | ------------------------------- |
+| `src/tools/codex.ts`          | +95, -28   | Primitive execution integration |
+| `src/router/router.ts`        | +12, -5    | Cloud and threading keywords    |
+| `src/router/intent_parser.ts` | +1, -1     | Fetch pattern fix               |
+| `README.md`                   | ~100 lines | v3.0.0 documentation            |
 
 **Total**: 8 files, ~1200 lines changed/added
 
@@ -267,6 +285,7 @@
 ## 🎉 Production Readiness Checklist
 
 ### Core Functionality ✅
+
 - [x] Unified `codex` tool implemented
 - [x] All 14 primitives integrated
 - [x] Natural language parsing working
@@ -274,6 +293,7 @@
 - [x] Parameter extraction reliable
 
 ### Testing ✅
+
 - [x] Core routing tests (100%)
 - [x] Natural language variations (98%)
 - [x] Error cases (100%)
@@ -281,6 +301,7 @@
 - [x] 98.5% overall pass rate
 
 ### Documentation ✅
+
 - [x] README.md updated to v3.0.0
 - [x] Natural language examples added
 - [x] Testing validation documented
@@ -288,12 +309,14 @@
 - [x] Quickrefs available
 
 ### Security ✅
+
 - [x] Input validation
 - [x] Secret redaction
 - [x] Mutation gating
 - [x] No shell injection
 
 ### Performance ✅
+
 - [x] Fast routing (<50ms)
 - [x] Concurrency control
 - [x] Graceful error handling
@@ -341,18 +364,21 @@
 ## 📈 Metrics
 
 ### Development Velocity
+
 - **Duration**: 3 days
 - **Time Investment**: ~8 hours
 - **Lines of Code**: ~1200
 - **Test Coverage**: 91 tests
 
 ### Quality Metrics
+
 - **Test Pass Rate**: 98.5%
 - **Routing Accuracy**: 100% (core)
 - **Natural Language Understanding**: 98%
 - **Error Handling**: 100%
 
 ### Architecture Metrics
+
 - **Tool Count**: 1 (user-facing) + 14 (hidden primitives)
 - **Intent Types**: 6
 - **Keyword Patterns**: 30+
@@ -363,6 +389,7 @@
 ## 🎯 What We Built
 
 ### Before Week 5
+
 ```
 User must choose from 14 tools:
 - codex_run
@@ -381,6 +408,7 @@ User must choose from 14 tools:
 ```
 
 ### After Week 5
+
 ```
 User describes what they want in natural language:
 → Single 'codex' tool
@@ -401,18 +429,21 @@ Examples:
 ### For Future Maintainers
 
 **Adding New Keywords**:
+
 1. Edit `src/router/router.ts` (cloud/threading patterns)
 2. Edit `src/router/intent_parser.ts` (intent patterns)
 3. Run test suite to validate
 4. Add test case for new pattern
 
 **Debugging Routing Issues**:
+
 1. Use `dry_run: true` to see routing decision
 2. Use `explain: true` to see decision trace
 3. Check keyword patterns in router/intent_parser
 4. Run test suite to identify conflicts
 
 **Adding New Primitives**:
+
 1. Create primitive tool in `src/tools/`
 2. Add to `PrimitiveToolMap` in `codex.ts`
 3. Inject in `src/index.ts` constructor
@@ -423,14 +454,14 @@ Examples:
 
 ## 🏆 Success Criteria Met
 
-| Criterion | Target | Achieved | Status |
-|-----------|--------|----------|--------|
-| **Unified Tool** | 1 tool | 1 tool | ✅ |
-| **Natural Language** | Working | 98.5% accurate | ✅ |
-| **All Primitives** | 14 integrated | 14 integrated | ✅ |
-| **Test Coverage** | >90% | 98.5% | ✅ |
-| **Documentation** | Complete | Complete | ✅ |
-| **Production Ready** | Yes | Yes | ✅ |
+| Criterion            | Target        | Achieved       | Status |
+| -------------------- | ------------- | -------------- | ------ |
+| **Unified Tool**     | 1 tool        | 1 tool         | ✅     |
+| **Natural Language** | Working       | 98.5% accurate | ✅     |
+| **All Primitives**   | 14 integrated | 14 integrated  | ✅     |
+| **Test Coverage**    | >90%          | 98.5%          | ✅     |
+| **Documentation**    | Complete      | Complete       | ✅     |
+| **Production Ready** | Yes           | Yes            | ✅     |
 
 ---
 
@@ -439,6 +470,7 @@ Examples:
 **Week 5 Goal**: Create unified natural language interface ✅ **COMPLETE**
 
 **Achievement**:
+
 - 🏆 Single `codex` tool replaces 14 separate tools
 - 🏆 98.5% test pass rate (91 tests)
 - 🏆 Natural language understanding working excellently
@@ -449,6 +481,7 @@ Examples:
 **Status**: 🚀 **READY FOR PRODUCTION**
 
 **Confidence Level**: 🟢 **Very High**
+
 - Extensive test validation
 - Natural language variations covered
 - Error cases handled

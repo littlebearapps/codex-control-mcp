@@ -15,6 +15,7 @@
 **Solution**: Changed to fire-and-forget pattern - return thread ID immediately, process events in background.
 
 **Files Modified**:
+
 - `src/tools/local_exec.ts` (lines 170-208)
 - `src/tools/local_resume.ts` (lines 93-131)
 
@@ -29,12 +30,14 @@
 **Solution**: Renamed CLI tools from `codex_*` to `codex_cli_*` to avoid conflict with existing `codex_local_*` SDK tools.
 
 **Renames**:
+
 - `codex_run` → `codex_cli_run`
 - `codex_plan` → `codex_cli_plan`
 - `codex_apply` → `codex_cli_apply`
 - `codex_status` → `codex_cli_status`
 
 **Files Modified**:
+
 - Renamed files:
   - `src/tools/run.ts` → `src/tools/cli_run.ts`
   - `src/tools/plan.ts` → `src/tools/cli_plan.ts`
@@ -51,18 +54,21 @@
 ## Final Tool Inventory (15 Tools)
 
 ### Local CLI Execution (4 tools)
+
 1. `codex_cli_run` - Read-only tasks via CLI subprocess
 2. `codex_cli_plan` - Preview changes via CLI subprocess
 3. `codex_cli_apply` - Apply mutations via CLI subprocess
 4. `codex_cli_status` - CLI execution status
 
 ### Local SDK Execution (4 tools) 🆕 Now Async
+
 5. `codex_local_exec` - Async streaming with thread persistence
 6. `codex_local_resume` - Resume threads asynchronously
 7. `codex_local_status` - Check local task status
 8. `codex_local_results` - Get local task results
 
 ### Cloud Execution (5 tools)
+
 9. `codex_cloud_submit` - Submit background tasks
 10. `codex_cloud_status` - Check cloud task status
 11. `codex_cloud_results` - Get cloud task results
@@ -70,6 +76,7 @@
 13. `codex_cloud_check_reminder` - Check pending tasks
 
 ### Configuration (2 tools)
+
 14. `codex_list_environments` - List Codex Cloud environments
 15. `codex_github_setup_guide` - GitHub integration guide
 
@@ -78,6 +85,7 @@
 ## Testing Results
 
 ### Test 1: Tool Listing
+
 ```bash
 node test-simple.mjs
 ```
@@ -106,10 +114,12 @@ node test-simple.mjs
 ### Test 2: Async Behavior
 
 **SDK Tools**:
+
 - `codex_local_exec` - Returns thread ID immediately ✅
 - `codex_local_resume` - Returns thread ID immediately ✅
 
 **CLI Tools** (with `async: true` parameter):
+
 - `codex_cli_run` - Returns task ID immediately ✅
 - `codex_cli_plan` - Returns task ID immediately ✅
 - `codex_cli_apply` - Returns task ID immediately ✅
@@ -123,12 +133,14 @@ node test-simple.mjs
 ### Tool Name Changes (Minor Impact)
 
 **Old Names** → **New Names**:
+
 - `codex_run` → `codex_cli_run`
 - `codex_plan` → `codex_cli_plan`
 - `codex_apply` → `codex_cli_apply`
 - `codex_status` → `codex_cli_status`
 
 **Impact**:
+
 - Claude Code will need to restart to discover renamed tools
 - Existing MCP configs will work (tools are discovered dynamically)
 - No user action required beyond restarting Claude Code
@@ -139,6 +151,7 @@ node test-simple.mjs
 **New Behavior**: `codex_local_exec` returns thread ID immediately
 
 **Impact**:
+
 - Positive: Claude Code never blocks waiting for Codex
 - User must use `codex_local_resume` to check results or continue task
 - Thread data persists in `~/.codex/sessions/` for resumption
@@ -161,12 +174,14 @@ node test-simple.mjs
 ## Next Steps
 
 ### For This Project
+
 1. ✅ Update README.md with new tool names (if not already done)
 2. ✅ Update all quickrefs with new tool names
 3. ⏳ Test in real Claude Code session (auditor-toolkit)
 4. ⏳ Monitor for issues after deployment
 
 ### For Other Projects
+
 1. ⏳ Restart Claude Code to discover renamed tools
 2. ⏳ Update any custom scripts that reference old tool names
 3. ⏳ Update project-specific documentation
@@ -176,6 +191,7 @@ node test-simple.mjs
 ## Documentation Updates Needed
 
 ### Files to Update
+
 - [x] `README.md` - Tool names and examples
 - [ ] `quickrefs/tools.md` - All 15 tool names
 - [ ] `quickrefs/workflows.md` - Tool usage examples
@@ -183,6 +199,7 @@ node test-simple.mjs
 - [ ] `quickrefs/architecture.md` - Tool routing diagram
 
 ### Examples to Update
+
 - Replace `codex_run` with `codex_cli_run` in all examples
 - Replace `codex_plan` with `codex_cli_plan` in all examples
 - Replace `codex_apply` with `codex_cli_apply` in all examples

@@ -4,7 +4,7 @@
  * Shows both real-time process state AND persistent task history.
  * Consolidates codex_cli_status and codex_local_status into one tool.
  */
-import { globalTaskRegistry } from '../state/task_registry.js';
+import { globalTaskRegistry } from "../state/task_registry.js";
 export class LocalStatusTool {
     processManager;
     constructor(processManager) {
@@ -13,28 +13,30 @@ export class LocalStatusTool {
     async execute(input) {
         const workingDir = input.workingDir || process.cwd();
         const showAll = input.showAll ?? true; // Default to true (Issue 3.2 fix)
-        const preferredFormat = input.format || 'markdown';
-        const limit = typeof input.limit === 'number' && input.limit > 0 ? input.limit : 5;
+        const preferredFormat = input.format || "markdown";
+        const limit = typeof input.limit === "number" && input.limit > 0 ? input.limit : 5;
         // JSON mode (status_snapshot)
-        if (preferredFormat === 'json') {
+        if (preferredFormat === "json") {
             const allTasks = globalTaskRegistry.queryTasks({
-                origin: 'local',
+                origin: "local",
                 workingDir: showAll ? undefined : workingDir,
             });
-            const runningTasks = allTasks.filter((t) => t.status === 'working');
-            const queuedTasks = allTasks.filter((t) => t.status === 'pending');
-            const completedTasksAll = allTasks.filter((t) => t.status === 'completed' || t.status === 'completed_with_warnings' || t.status === 'completed_with_errors');
+            const runningTasks = allTasks.filter((t) => t.status === "working");
+            const queuedTasks = allTasks.filter((t) => t.status === "pending");
+            const completedTasksAll = allTasks.filter((t) => t.status === "completed" ||
+                t.status === "completed_with_warnings" ||
+                t.status === "completed_with_errors");
             const recentlyCompleted = completedTasksAll
                 .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))
                 .slice(0, limit);
             const json = {
-                version: '3.6',
-                schema_id: 'codex/v3.6/status_snapshot/v1',
-                tool: '_codex_local_status',
-                tool_category: 'status_snapshot',
-                request_id: (await import('crypto')).randomUUID(),
+                version: "3.6",
+                schema_id: "codex/v3.6/status_snapshot/v1",
+                tool: "_codex_local_status",
+                tool_category: "status_snapshot",
+                request_id: (await import("crypto")).randomUUID(),
                 ts: new Date().toISOString(),
-                status: 'ok',
+                status: "ok",
                 meta: {
                     snapshot_ts: new Date().toISOString(),
                     total: allTasks.length,
@@ -81,9 +83,13 @@ export class LocalStatusTool {
             if (recentlyCompleted.length > 0) {
                 json.data.recently_completed = recentlyCompleted.map((t) => ({
                     task_id: t.id,
-                    state: 'completed',
-                    duration_seconds: t.completedAt && t.createdAt ? Math.max(0, Math.floor((t.completedAt - t.createdAt) / 1000)) : undefined,
-                    completed_ts: t.completedAt ? new Date(t.completedAt).toISOString() : undefined,
+                    state: "completed",
+                    duration_seconds: t.completedAt && t.createdAt
+                        ? Math.max(0, Math.floor((t.completedAt - t.createdAt) / 1000))
+                        : undefined,
+                    completed_ts: t.completedAt
+                        ? new Date(t.completedAt).toISOString()
+                        : undefined,
                 }));
                 json.data.recently_completed.forEach((x) => {
                     if (x.duration_seconds === undefined)
@@ -92,7 +98,7 @@ export class LocalStatusTool {
                         delete x.completed_ts;
                 });
             }
-            return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+            return { content: [{ type: "text", text: JSON.stringify(json) }] };
         }
         let message = `## 📊 Codex Execution Status\n\n`;
         // ========================================
@@ -120,8 +126,8 @@ export class LocalStatusTool {
         // ========================================
         message += `### Task Registry (Persistent)\n\n`;
         const tasks = globalTaskRegistry.queryTasks({
-            origin: 'local',
-            workingDir: showAll ? undefined : workingDir
+            origin: "local",
+            workingDir: showAll ? undefined : workingDir,
         });
         if (tasks.length === 0) {
             message += showAll
@@ -130,20 +136,24 @@ export class LocalStatusTool {
         }
         else {
             message += `**Working Dir**: ${workingDir}\n\n`;
-            const runningTasks = tasks.filter((t) => t.status === 'working');
-            const completedTasks = tasks.filter((t) => t.status === 'completed').slice(-10); // Last 10
-            const failedTasks = tasks.filter((t) => t.status === 'failed').slice(-5); // Last 5
+            const runningTasks = tasks.filter((t) => t.status === "working");
+            const completedTasks = tasks
+                .filter((t) => t.status === "completed")
+                .slice(-10); // Last 10
+            const failedTasks = tasks
+                .filter((t) => t.status === "failed")
+                .slice(-5); // Last 5
             message += `**Running**: ${runningTasks.length}\n`;
-            message += `**Completed**: ${tasks.filter((t) => t.status === 'completed').length} (showing last ${Math.min(completedTasks.length, 10)})\n`;
-            message += `**Failed**: ${tasks.filter((t) => t.status === 'failed').length} (showing last ${Math.min(failedTasks.length, 5)})\n\n`;
+            message += `**Completed**: ${tasks.filter((t) => t.status === "completed").length} (showing last ${Math.min(completedTasks.length, 10)})\n`;
+            message += `**Failed**: ${tasks.filter((t) => t.status === "failed").length} (showing last ${Math.min(failedTasks.length, 5)})\n\n`;
             // Running tasks
             if (runningTasks.length > 0) {
                 message += `#### 🔄 Running Tasks\n\n`;
                 for (const task of runningTasks) {
                     const elapsed = Math.floor((Date.now() - task.createdAt) / 1000);
                     message += `**${task.id}**:\n`;
-                    message += `- Task: ${task.instruction.substring(0, 80)}${task.instruction.length > 80 ? '...' : ''}\n`;
-                    message += `- Mode: ${task.mode || 'N/A'}\n`;
+                    message += `- Task: ${task.instruction.substring(0, 80)}${task.instruction.length > 80 ? "..." : ""}\n`;
+                    message += `- Mode: ${task.mode || "N/A"}\n`;
                     message += `- Elapsed: ${elapsed}s\n`;
                     // Show progress if available
                     if (task.progressSteps) {
@@ -159,7 +169,7 @@ export class LocalStatusTool {
                             // Ignore parse errors for progress display
                         }
                     }
-                    message += '\n';
+                    message += "\n";
                 }
             }
             // Recently completed tasks
@@ -167,21 +177,21 @@ export class LocalStatusTool {
                 message += `#### ✅ Recently Completed\n\n`;
                 for (const task of completedTasks) {
                     const ago = this.formatTimeAgo(new Date(task.createdAt));
-                    message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? '...' : ''} (${ago})\n`;
+                    message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? "..." : ""} (${ago})\n`;
                 }
-                message += '\n';
+                message += "\n";
             }
             // Failed tasks
             if (failedTasks.length > 0) {
                 message += `#### ❌ Recent Failures\n\n`;
                 for (const task of failedTasks) {
                     const ago = this.formatTimeAgo(new Date(task.createdAt));
-                    message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? '...' : ''} (${ago})\n`;
+                    message += `- **${task.id}**: ${task.instruction.substring(0, 60)}${task.instruction.length > 60 ? "..." : ""} (${ago})\n`;
                     if (task.error) {
                         message += `  Error: ${task.error.substring(0, 100)}\n`;
                     }
                 }
-                message += '\n';
+                message += "\n";
             }
         }
         // ========================================
@@ -195,7 +205,7 @@ export class LocalStatusTool {
         return {
             content: [
                 {
-                    type: 'text',
+                    type: "text",
                     text: message,
                 },
             ],
@@ -213,30 +223,30 @@ export class LocalStatusTool {
     }
     static getSchema() {
         return {
-            name: '_codex_local_status',
-            description: 'Check what\'s running locally - like opening Task Manager. Shows you everything: active Codex processes (with PIDs and queue position), completed tasks, failed attempts, and current concurrency limits. Use this when: you want to see if tasks are stuck, check queue depth, debug concurrency issues, or find task IDs for recent work. Think of it as your local execution dashboard. Returns: process states, task registry entries, and timing information. Perfect for: troubleshooting slow execution, finding that task you ran 5 minutes ago, or checking if the queue is backed up.',
+            name: "_codex_local_status",
+            description: "Check what's running locally - like opening Task Manager. Shows you everything: active Codex processes (with PIDs and queue position), completed tasks, failed attempts, and current concurrency limits. Use this when: you want to see if tasks are stuck, check queue depth, debug concurrency issues, or find task IDs for recent work. Think of it as your local execution dashboard. Returns: process states, task registry entries, and timing information. Perfect for: troubleshooting slow execution, finding that task you ran 5 minutes ago, or checking if the queue is backed up.",
             inputSchema: {
-                type: 'object',
+                type: "object",
                 properties: {
                     workingDir: {
-                        type: 'string',
-                        description: 'Working directory to filter tasks by. Defaults to current directory. Only affects task registry section.',
+                        type: "string",
+                        description: "Working directory to filter tasks by. Defaults to current directory. Only affects task registry section.",
                     },
                     showAll: {
-                        type: 'boolean',
+                        type: "boolean",
                         default: true,
-                        description: 'Show all tasks from all directories (default: true). Set to false with workingDir to filter by specific directory. Note: MCP server cannot auto-detect user\'s current directory.',
+                        description: "Show all tasks from all directories (default: true). Set to false with workingDir to filter by specific directory. Note: MCP server cannot auto-detect user's current directory.",
                     },
                     limit: {
-                        type: 'number',
+                        type: "number",
                         default: 5,
-                        description: 'Limit for recently_completed array (default 5).',
+                        description: "Limit for recently_completed array (default 5).",
                     },
                     format: {
-                        type: 'string',
-                        enum: ['json', 'markdown'],
-                        default: 'markdown',
-                        description: 'Response format. Default markdown for backward compatibility.',
+                        type: "string",
+                        enum: ["json", "markdown"],
+                        default: "markdown",
+                        description: "Response format. Default markdown for backward compatibility.",
                     },
                 },
             },

@@ -19,29 +19,30 @@ Implemented strict parameter validation to prevent silent failures when users pr
 **Location**: `src/index.ts` lines 147-191
 
 **Code**:
+
 ```typescript
 // Strict parameter validation - reject snake_case variants with helpful errors
 const invalidParams: Record<string, string> = {
-  working_dir: 'workingDir',
-  skip_git_repo_check: 'skipGitRepoCheck',
-  env_policy: 'envPolicy',
-  env_allow_list: 'envAllowList',
-  output_schema: 'outputSchema',
+  working_dir: "workingDir",
+  skip_git_repo_check: "skipGitRepoCheck",
+  env_policy: "envPolicy",
+  env_allow_list: "envAllowList",
+  output_schema: "outputSchema",
 };
 
 // Exception: task_id is VALID for wait/results/cancel tools
 const taskIdTools = [
-  '_codex_local_results',
-  '_codex_local_wait',
-  '_codex_local_cancel',
-  '_codex_cloud_results',
-  '_codex_cloud_wait',
-  '_codex_cloud_cancel',
+  "_codex_local_results",
+  "_codex_local_wait",
+  "_codex_local_cancel",
+  "_codex_cloud_results",
+  "_codex_cloud_wait",
+  "_codex_cloud_cancel",
 ];
 
 // For non-task-id tools, reject task_id (should use taskId instead)
 if (!taskIdTools.includes(name) && (args as any).task_id !== undefined) {
-  invalidParams.task_id = 'taskId';
+  invalidParams.task_id = "taskId";
 }
 
 // Check for invalid parameters
@@ -49,18 +50,24 @@ for (const [wrong, correct] of Object.entries(invalidParams)) {
   if ((args as any)[wrong] !== undefined) {
     const errorMessage = `❌ Parameter Error\n\nUnknown parameter '${wrong}'.\n\n💡 Did you mean '${correct}'?\n\nCheck .codex-errors.log for details.`;
 
-    globalLogger.error('Invalid parameter used', {
-      tool: name,
-      wrongParam: wrong,
-      correctParam: correct,
-      allParams: args ? Object.keys(args) : [],
-    }, workingDir);
+    globalLogger.error(
+      "Invalid parameter used",
+      {
+        tool: name,
+        wrongParam: wrong,
+        correctParam: correct,
+        allParams: args ? Object.keys(args) : [],
+      },
+      workingDir,
+    );
 
     return {
-      content: [{
-        type: 'text' as const,
-        text: errorMessage,
-      }],
+      content: [
+        {
+          type: "text" as const,
+          text: errorMessage,
+        },
+      ],
       isError: true,
     };
   }
@@ -70,11 +77,14 @@ for (const [wrong, correct] of Object.entries(invalidParams)) {
 ### 2. Removed Fallback (src/index.ts:141-143)
 
 **Before**:
+
 ```typescript
-const workingDir = (args as any)?.workingDir || (args as any)?.working_dir || process.cwd();
+const workingDir =
+  (args as any)?.workingDir || (args as any)?.working_dir || process.cwd();
 ```
 
 **After**:
+
 ```typescript
 // Extract working directory for logging context
 // Note: working_dir is rejected by validation below, only workingDir is accepted
@@ -86,13 +96,14 @@ const workingDir = (args as any)?.workingDir || process.cwd();
 ### 3. Comprehensive Test Suite (test-parameter-validation.ts)
 
 **Test Cases**:
+
 1. ✅ Reject `working_dir` (should be `workingDir`)
 2. ✅ Reject `skip_git_repo_check` (should be `skipGitRepoCheck`)
 3. ✅ Reject `env_policy` (should be `envPolicy`)
 4. ✅ Reject `task_id` on non-task-id tool (should be `taskId`)
 5. ✅ Accept `workingDir` (camelCase)
 6. ✅ Accept `skipGitRepoCheck` (camelCase)
-7. ⚠️  Accept `task_id` on task-id tool (task doesn't exist, expected)
+7. ⚠️ Accept `task_id` on task-id tool (task doesn't exist, expected)
 
 **Results**: 6/7 perfect validation, 1/7 task not found (expected - different error)
 
@@ -101,6 +112,7 @@ const workingDir = (args as any)?.workingDir || process.cwd();
 ## User Experience Improvements
 
 ### Before (Silent Failure)
+
 ```typescript
 // User provides wrong parameter
 {
@@ -114,6 +126,7 @@ const workingDir = (args as any)?.workingDir || process.cwd();
 ```
 
 ### After (Clear Error)
+
 ```typescript
 // User provides wrong parameter
 {
@@ -137,18 +150,19 @@ Check .codex-errors.log for details.
 
 ### Official Parameter Names (camelCase)
 
-| Parameter | Type | Used By |
-|-----------|------|---------|
-| `workingDir` | string | All local execution tools |
-| `skipGitRepoCheck` | boolean | `_codex_local_exec` only |
-| `envPolicy` | string | `_codex_local_run`, `_codex_cloud_submit` |
-| `envAllowList` | string[] | `_codex_local_run`, `_codex_cloud_submit` |
-| `outputSchema` | object | `_codex_local_run`, `_codex_local_exec` |
-| `taskId` | string | Internal code (NOT user-facing) |
+| Parameter          | Type     | Used By                                   |
+| ------------------ | -------- | ----------------------------------------- |
+| `workingDir`       | string   | All local execution tools                 |
+| `skipGitRepoCheck` | boolean  | `_codex_local_exec` only                  |
+| `envPolicy`        | string   | `_codex_local_run`, `_codex_cloud_submit` |
+| `envAllowList`     | string[] | `_codex_local_run`, `_codex_cloud_submit` |
+| `outputSchema`     | object   | `_codex_local_run`, `_codex_local_exec`   |
+| `taskId`           | string   | Internal code (NOT user-facing)           |
 
 ### Exception: `task_id` (snake_case)
 
 **Official for these 6 tools**:
+
 - `_codex_local_results`
 - `_codex_local_wait`
 - `_codex_local_cancel`
@@ -188,20 +202,27 @@ All parameter validation errors are logged to `.codex-errors.log`:
 ### v3.2.2 vs v3.2.1
 
 **Removed**:
+
 - ❌ Fallback for `working_dir` → `workingDir`
 - ❌ Fallback for other snake_case parameters
 
 **Impact**:
+
 - Users MUST use camelCase parameters
 - Wrong parameters = immediate error (not silent failure)
 
 **Migration**:
+
 ```typescript
 // ❌ Old (v3.2.1 and earlier) - still worked via fallback
-{ working_dir: "/tmp" }
+{
+  working_dir: "/tmp";
+}
 
 // ✅ New (v3.2.2+) - required
-{ workingDir: "/tmp" }
+{
+  workingDir: "/tmp";
+}
 ```
 
 ---
@@ -218,11 +239,13 @@ All parameter validation errors are logged to `.codex-errors.log`:
 ## Testing
 
 ### Test Command
+
 ```bash
 npx ts-node test-parameter-validation.ts
 ```
 
 ### Test Results
+
 ```
 Parameter Validation Test Suite
 ================================
@@ -262,6 +285,7 @@ Total: 7 tests
 ## Documentation Updates
 
 ### Updated Files
+
 - ✅ `quickrefs/tools.md` - Update all examples to use camelCase
 - ✅ `quickrefs/workflows.md` - Update workflow examples
 - ✅ `quickrefs/troubleshooting.md` - Add parameter validation errors section
@@ -269,6 +293,7 @@ Total: 7 tests
 - ⏳ `CHANGELOG.md` - Add v3.2.2 entry (pending release)
 
 ### Migration Guide Needed
+
 ```markdown
 ## Migrating from v3.2.1 to v3.2.2
 
@@ -276,16 +301,16 @@ Total: 7 tests
 
 **Before**:
 {
-  working_dir: "/tmp",
-  skip_git_repo_check: true,
-  env_policy: "allow-list"
+working_dir: "/tmp",
+skip_git_repo_check: true,
+env_policy: "allow-list"
 }
 
 **After**:
 {
-  workingDir: "/tmp",
-  skipGitRepoCheck: true,
-  envPolicy: "allow-list"
+workingDir: "/tmp",
+skipGitRepoCheck: true,
+envPolicy: "allow-list"
 }
 
 **Exception**: `task_id` remains valid for wait/results/cancel tools.
@@ -324,6 +349,7 @@ Total: 7 tests
 **Solution**: Strict validation with helpful error messages
 
 **Result**:
+
 - ✅ Clear errors immediately
 - ✅ Consistent parameter naming (camelCase)
 - ✅ Exception for task_id (established convention)

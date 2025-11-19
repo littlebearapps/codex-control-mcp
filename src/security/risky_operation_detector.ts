@@ -8,9 +8,9 @@
  */
 
 export enum GitOperationTier {
-  ALWAYS_BLOCKED = 'always_blocked',
-  REQUIRES_CONFIRMATION = 'requires_confirmation',
-  SAFE = 'safe'
+  ALWAYS_BLOCKED = "always_blocked",
+  REQUIRES_CONFIRMATION = "requires_confirmation",
+  SAFE = "safe",
 }
 
 export interface RiskyOperation {
@@ -27,70 +27,89 @@ export interface RiskyOperation {
 const ALWAYS_BLOCKED_PATTERNS = [
   {
     pattern: /git\s+gc\s+--prune=now/i,
-    operation: 'git gc --prune=now',
-    risk_description: 'Irreversibly prunes unreachable objects, destroying reflog recovery ability',
-    safer_alternative: 'Use default gc settings or gc without --prune=now'
+    operation: "git gc --prune=now",
+    risk_description:
+      "Irreversibly prunes unreachable objects, destroying reflog recovery ability",
+    safer_alternative: "Use default gc settings or gc without --prune=now",
   },
   {
     pattern: /git\s+reflog\s+expire\s+--expire-unreachable=now/i,
-    operation: 'git reflog expire --expire-unreachable=now',
-    risk_description: 'Destroys reflog entries, making recovery from mistakes impossible',
-    safer_alternative: 'Keep default reflog expiration (90 days)'
+    operation: "git reflog expire --expire-unreachable=now",
+    risk_description:
+      "Destroys reflog entries, making recovery from mistakes impossible",
+    safer_alternative: "Keep default reflog expiration (90 days)",
   },
   {
-    pattern: /((push\s+(-f|--force)|push.*--force).*\b(main|master|trunk|release)|\b(main|master|trunk|release).*(push\s+(-f|--force)|push.*--force))/i,
-    operation: 'git push --force to protected branch',
-    risk_description: 'Overwrites history on protected branch, breaks all collaborators\' clones',
-    safer_alternative: 'Create a pull request instead, or push to feature branch'
+    pattern:
+      /((push\s+(-f|--force)|push.*--force).*\b(main|master|trunk|release)|\b(main|master|trunk|release).*(push\s+(-f|--force)|push.*--force))/i,
+    operation: "git push --force to protected branch",
+    risk_description:
+      "Overwrites history on protected branch, breaks all collaborators' clones",
+    safer_alternative:
+      "Create a pull request instead, or push to feature branch",
   },
   {
-    pattern: /(filter-repo.*\b(main|master|trunk|release)|\b(main|master|trunk|release).*filter-repo)/i,
-    operation: 'git filter-repo on protected branch',
-    risk_description: 'Rewrites entire repository history on protected branch',
-    safer_alternative: 'Work on a separate branch or create backup first'
+    pattern:
+      /(filter-repo.*\b(main|master|trunk|release)|\b(main|master|trunk|release).*filter-repo)/i,
+    operation: "git filter-repo on protected branch",
+    risk_description: "Rewrites entire repository history on protected branch",
+    safer_alternative: "Work on a separate branch or create backup first",
   },
   {
     pattern: /git\s+reset\s+HEAD~\d+/i,
-    operation: 'git reset HEAD~N',
-    risk_description: 'Removes commits from branch history - high risk of losing unpushed work permanently',
-    safer_alternative: 'Use git revert to create new commits that undo changes, or git reset --soft to keep changes staged'
+    operation: "git reset HEAD~N",
+    risk_description:
+      "Removes commits from branch history - high risk of losing unpushed work permanently",
+    safer_alternative:
+      "Use git revert to create new commits that undo changes, or git reset --soft to keep changes staged",
   },
   {
     pattern: /(delete|remove|rm)\s+(the\s+)?(this\s+)?(git\s+)?repo(sitory)?/i,
-    operation: 'delete git repository',
-    risk_description: 'Permanently destroys entire repository including all history - irreversible without remote backup',
-    safer_alternative: 'Archive repository to backup location, or rename instead of deleting'
+    operation: "delete git repository",
+    risk_description:
+      "Permanently destroys entire repository including all history - irreversible without remote backup",
+    safer_alternative:
+      "Archive repository to backup location, or rename instead of deleting",
   },
   {
     pattern: /git\s+reset\s+--hard/i,
-    operation: 'git reset --hard',
-    risk_description: 'Permanently discards uncommitted changes in working directory - no recovery possible',
-    safer_alternative: 'Use git reset --mixed to keep changes, or git stash to save them first'
+    operation: "git reset --hard",
+    risk_description:
+      "Permanently discards uncommitted changes in working directory - no recovery possible",
+    safer_alternative:
+      "Use git reset --mixed to keep changes, or git stash to save them first",
   },
   {
     pattern: /git\s+clean\s+-[fdxFDX]*[fdx]/i,
-    operation: 'git clean -fdx',
-    risk_description: 'Permanently deletes untracked files and directories - no recovery possible for untracked files',
-    safer_alternative: 'Use git clean -n first to preview what will be deleted, or move files to backup'
+    operation: "git clean -fdx",
+    risk_description:
+      "Permanently deletes untracked files and directories - no recovery possible for untracked files",
+    safer_alternative:
+      "Use git clean -n first to preview what will be deleted, or move files to backup",
   },
   {
     pattern: /git\s+checkout\s+(--force|-f)\b/i,
-    operation: 'git checkout --force',
-    risk_description: 'Discards uncommitted changes when switching branches - no recovery possible',
-    safer_alternative: 'Use git stash before checkout, or commit changes first'
+    operation: "git checkout --force",
+    risk_description:
+      "Discards uncommitted changes when switching branches - no recovery possible",
+    safer_alternative: "Use git stash before checkout, or commit changes first",
   },
   {
     pattern: /git\s+stash\s+(drop|clear)/i,
-    operation: 'git stash drop/clear',
-    risk_description: 'Permanently removes stashed changes - stash reflog expires quickly',
-    safer_alternative: 'Apply stash first to verify, or use git stash branch to save as a branch'
+    operation: "git stash drop/clear",
+    risk_description:
+      "Permanently removes stashed changes - stash reflog expires quickly",
+    safer_alternative:
+      "Apply stash first to verify, or use git stash branch to save as a branch",
   },
   {
     pattern: /git\s+worktree\s+remove\s+(--force|-f)/i,
-    operation: 'git worktree remove --force',
-    risk_description: 'Removes worktree with uncommitted changes - no recovery possible',
-    safer_alternative: 'Commit or stash changes in worktree before removing, or remove --force flag'
-  }
+    operation: "git worktree remove --force",
+    risk_description:
+      "Removes worktree with uncommitted changes - no recovery possible",
+    safer_alternative:
+      "Commit or stash changes in worktree before removing, or remove --force flag",
+  },
 ];
 
 /**
@@ -100,28 +119,35 @@ const ALWAYS_BLOCKED_PATTERNS = [
 const REQUIRES_CONFIRMATION_PATTERNS = [
   {
     pattern: /(git\s+)?rebase/i,
-    operation: 'git rebase',
-    risk_description: 'Rewrites commit history, changes all commit hashes',
-    safer_alternative: 'Use git merge to preserve history and avoid hash changes'
+    operation: "git rebase",
+    risk_description: "Rewrites commit history, changes all commit hashes",
+    safer_alternative:
+      "Use git merge to preserve history and avoid hash changes",
   },
   {
-    pattern: /git\s+(push\s+(-f|--force)|push.*--force)(?!.*\b(main|master|trunk|release)\b)/i,
-    operation: 'git push --force',
-    risk_description: 'Overwrites remote branch history, can affect collaborators',
-    safer_alternative: 'Coordinate with team or use --force-with-lease for safer force push'
+    pattern:
+      /git\s+(push\s+(-f|--force)|push.*--force)(?!.*\b(main|master|trunk|release)\b)/i,
+    operation: "git push --force",
+    risk_description:
+      "Overwrites remote branch history, can affect collaborators",
+    safer_alternative:
+      "Coordinate with team or use --force-with-lease for safer force push",
   },
   {
     pattern: /git\s+(commit\s+)?--amend/i,
-    operation: 'git commit --amend',
-    risk_description: 'Changes commit hash, problematic if commit already pushed',
-    safer_alternative: 'Create a new commit instead of amending'
+    operation: "git commit --amend",
+    risk_description:
+      "Changes commit hash, problematic if commit already pushed",
+    safer_alternative: "Create a new commit instead of amending",
   },
   {
     pattern: /git\s+branch\s+-D\b/i,
-    operation: 'git branch -D',
-    risk_description: 'Force deletes branch even if unmerged - can lose commits if not pushed to remote',
-    safer_alternative: 'Use git branch -d (lowercase) to safely delete only merged branches, or push branch first'
-  }
+    operation: "git branch -D",
+    risk_description:
+      "Force deletes branch even if unmerged - can lose commits if not pushed to remote",
+    safer_alternative:
+      "Use git branch -d (lowercase) to safely delete only merged branches, or push branch first",
+  },
 ];
 
 /**
@@ -154,7 +180,7 @@ export class RiskyOperationDetector {
           operation: pattern.operation,
           tier: GitOperationTier.ALWAYS_BLOCKED,
           risk_description: pattern.risk_description,
-          safer_alternative: pattern.safer_alternative
+          safer_alternative: pattern.safer_alternative,
         });
       }
     }
@@ -166,7 +192,7 @@ export class RiskyOperationDetector {
           operation: pattern.operation,
           tier: GitOperationTier.REQUIRES_CONFIRMATION,
           risk_description: pattern.risk_description,
-          safer_alternative: pattern.safer_alternative
+          safer_alternative: pattern.safer_alternative,
         });
       }
     }
@@ -179,10 +205,10 @@ export class RiskyOperationDetector {
    */
   private normalizeTask(task: string): string {
     // Normalize whitespace
-    let normalized = task.replace(/\s+/g, ' ').trim();
+    let normalized = task.replace(/\s+/g, " ").trim();
 
     // Resolve common git command aliases
-    normalized = normalized.replace(/git\s+amend\b/gi, 'git commit --amend');
+    normalized = normalized.replace(/git\s+amend\b/gi, "git commit --amend");
 
     return normalized;
   }
@@ -205,12 +231,14 @@ export class RiskyOperationDetector {
     }
 
     // ALWAYS_BLOCKED is highest priority
-    if (detected.some(op => op.tier === GitOperationTier.ALWAYS_BLOCKED)) {
+    if (detected.some((op) => op.tier === GitOperationTier.ALWAYS_BLOCKED)) {
       return GitOperationTier.ALWAYS_BLOCKED;
     }
 
     // REQUIRES_CONFIRMATION is next
-    if (detected.some(op => op.tier === GitOperationTier.REQUIRES_CONFIRMATION)) {
+    if (
+      detected.some((op) => op.tier === GitOperationTier.REQUIRES_CONFIRMATION)
+    ) {
       return GitOperationTier.REQUIRES_CONFIRMATION;
     }
 
@@ -221,9 +249,13 @@ export class RiskyOperationDetector {
    * Format blocked message for ALWAYS_BLOCKED operations
    */
   formatBlockedMessage(operations: RiskyOperation[]): string {
-    const opList = operations.map(op => op.operation).join(', ');
-    const risks = operations.map(op => `  • ${op.risk_description}`).join('\n');
-    const alternatives = operations.map(op => `  • ${op.safer_alternative}`).join('\n');
+    const opList = operations.map((op) => op.operation).join(", ");
+    const risks = operations
+      .map((op) => `  • ${op.risk_description}`)
+      .join("\n");
+    const alternatives = operations
+      .map((op) => `  • ${op.safer_alternative}`)
+      .join("\n");
 
     return `❌ BLOCKED: ${opList}
 
@@ -242,9 +274,13 @@ These operations require manual execution outside of AI agent workflows.`;
    * Format confirmation message for REQUIRES_CONFIRMATION operations
    */
   formatConfirmationMessage(operations: RiskyOperation[]): string {
-    const opList = operations.map(op => op.operation).join(', ');
-    const risks = operations.map(op => `  • ${op.risk_description}`).join('\n');
-    const alternatives = operations.map(op => `  • ${op.safer_alternative}`).join('\n');
+    const opList = operations.map((op) => op.operation).join(", ");
+    const risks = operations
+      .map((op) => `  • ${op.risk_description}`)
+      .join("\n");
+    const alternatives = operations
+      .map((op) => `  • ${op.safer_alternative}`)
+      .join("\n");
 
     return `⚠️  RISKY GIT OPERATION: ${opList}
 
@@ -263,32 +299,32 @@ A safety checkpoint will be created automatically before execution.`;
    * Returns structured data for AI agents to use with AskUserQuestion
    */
   formatConfirmationMetadata(operations: RiskyOperation[]): any {
-    const opList = operations.map(op => op.operation).join(', ');
+    const opList = operations.map((op) => op.operation).join(", ");
 
     return {
       requires_user_confirmation: true,
       tier: GitOperationTier.REQUIRES_CONFIRMATION,
-      operations: operations.map(op => ({
+      operations: operations.map((op) => ({
         operation: op.operation,
         risk: op.risk_description,
-        alternative: op.safer_alternative
+        alternative: op.safer_alternative,
       })),
       confirmation_prompt: {
         question: `Do you want to proceed with this risky git operation: ${opList}?`,
-        header: 'Risky Git Op',
+        header: "Risky Git Op",
         options: [
           {
-            value: 'approve',
-            label: 'Yes, proceed with safety checkpoint',
-            description: `Execute ${opList} after creating automatic safety checkpoint (git-safety-* branch)`
+            value: "approve",
+            label: "Yes, proceed with safety checkpoint",
+            description: `Execute ${opList} after creating automatic safety checkpoint (git-safety-* branch)`,
           },
           {
-            value: 'deny',
-            label: 'No, cancel operation',
-            description: 'Do not execute this destructive operation'
-          }
-        ]
-      }
+            value: "deny",
+            label: "No, cancel operation",
+            description: "Do not execute this destructive operation",
+          },
+        ],
+      },
     };
   }
 }

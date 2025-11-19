@@ -7,7 +7,7 @@
  * v3.0 Feature: Bridge between unified tool and hidden primitives
  */
 
-import { IntentParseResult } from './intent-parser.js';
+import { IntentParseResult } from "./intent-parser.js";
 
 // Import all primitive tools (will be dynamically loaded in actual implementation)
 // For now, we define the interface
@@ -46,8 +46,8 @@ export class Router {
     if (!intentResult.intent) {
       return {
         success: false,
-        primitive: '',
-        error: intentResult.error || 'Could not determine intent',
+        primitive: "",
+        error: intentResult.error || "Could not determine intent",
         suggestion: this.suggestAlternatives(intentResult),
       };
     }
@@ -57,7 +57,7 @@ export class Router {
       return {
         success: false,
         primitive: intentResult.intent.primitive,
-        error: 'Input is ambiguous',
+        error: "Input is ambiguous",
         suggestion: this.formatDisambiguationOptions(intentResult),
       };
     }
@@ -71,7 +71,9 @@ export class Router {
         success: false,
         primitive,
         error: `Primitive "${primitive}" not found`,
-        suggestion: 'Available primitives: ' + Array.from(this.primitives.keys()).join(', '),
+        suggestion:
+          "Available primitives: " +
+          Array.from(this.primitives.keys()).join(", "),
       };
     }
 
@@ -114,7 +116,7 @@ export class Router {
         success: false,
         primitive,
         error: error instanceof Error ? error.message : String(error),
-        suggestion: 'Check if Codex CLI is installed and authenticated',
+        suggestion: "Check if Codex CLI is installed and authenticated",
       };
     }
   }
@@ -122,7 +124,10 @@ export class Router {
   /**
    * Validate parameters against tool schema
    */
-  private validateParameters(params: Record<string, any>, schema: any): string | null {
+  private validateParameters(
+    params: Record<string, any>,
+    schema: any,
+  ): string | null {
     const required = schema.inputSchema?.required || [];
 
     for (const requiredParam of required) {
@@ -142,13 +147,16 @@ export class Router {
    */
   private suggestAlternatives(intentResult: IntentParseResult): string {
     if (intentResult.alternatives.length === 0) {
-      return 'Try being more specific about what you want to do.';
+      return "Try being more specific about what you want to do.";
     }
 
     const suggestions = intentResult.alternatives
       .slice(0, 3)
-      .map(alt => `- "${alt.primitive}" (${alt.confidence}% confidence): ${alt.reasoning}`)
-      .join('\n');
+      .map(
+        (alt) =>
+          `- "${alt.primitive}" (${alt.confidence}% confidence): ${alt.reasoning}`,
+      )
+      .join("\n");
 
     return `Did you mean one of these?\n${suggestions}`;
   }
@@ -158,37 +166,42 @@ export class Router {
    */
   private formatDisambiguationOptions(intentResult: IntentParseResult): string {
     if (!intentResult.intent || !intentResult.alternatives[0]) {
-      return '';
+      return "";
     }
 
     const option1 = intentResult.intent;
     const option2 = intentResult.alternatives[0];
 
-    return `Please clarify:\n` +
+    return (
+      `Please clarify:\n` +
       `1. ${option1.primitive} (${option1.confidence}% confidence)\n` +
       `2. ${option2.primitive} (${option2.confidence}% confidence)\n\n` +
-      `Respond with "option 1" or "option 2", or rephrase your request.`;
+      `Respond with "option 1" or "option 2", or rephrase your request.`
+    );
   }
 
   /**
    * Suggest how to fix parameter issues
    */
-  private suggestParameterFixes(params: Record<string, any>, schema: any): string {
+  private suggestParameterFixes(
+    params: Record<string, any>,
+    schema: any,
+  ): string {
     const required = schema.inputSchema?.required || [];
     const properties = schema.inputSchema?.properties || {};
 
     const missing = required.filter((r: string) => !(r in params));
 
     if (missing.length === 0) {
-      return '';
+      return "";
     }
 
     const suggestions = missing.map((param: string) => {
       const prop = properties[param];
-      return `- ${param}: ${prop?.description || 'required'}`;
+      return `- ${param}: ${prop?.description || "required"}`;
     });
 
-    return `Please provide:\n${suggestions.join('\n')}`;
+    return `Please provide:\n${suggestions.join("\n")}`;
   }
 
   /**

@@ -9,12 +9,14 @@
 ## Issue Summary
 
 **Reported Symptom**:
+
 - Tasks remain in "working" state for 25+ hours
 - Never marked as completed/failed/canceled
 - Accumulate in registry over time
 - Example: 9 tasks stuck from `/tmp/git-safety-test`
 
 **Evidence**:
+
 ```sql
 SELECT id, instruction,
   ROUND((julianday('now') - julianday(created_at/1000, 'unixepoch')) * 24, 1) as elapsed_hours
@@ -49,6 +51,7 @@ const watchdog = new TimeoutWatchdog(proc, processId, {
 ```
 
 **Features**:
+
 - ✅ Uses `TimeoutWatchdog` class (robust implementation)
 - ✅ 5 min idle / 20 min hard timeout (configurable)
 - ✅ Kills processes with SIGTERM → SIGKILL cascade
@@ -71,9 +74,11 @@ let timedOut = false;
 const hardTimeoutTimer = setTimeout(() => {
   if (!timedOut) {
     timedOut = true;
-    console.error(`[LocalExec:${taskId}] ⏱️ HARD TIMEOUT after ${hardTimeoutMs / 1000}s`);
+    console.error(
+      `[LocalExec:${taskId}] ⏱️ HARD TIMEOUT after ${hardTimeoutMs / 1000}s`,
+    );
     globalTaskRegistry.updateTask(taskId, {
-      status: 'failed',
+      status: "failed",
       error: `Execution exceeded hard timeout (${hardTimeoutMs / 1000}s)`,
     });
   }
@@ -84,9 +89,11 @@ const idleCheckInterval = setInterval(() => {
   const idleTime = Date.now() - lastEventTime;
   if (idleTime > idleTimeoutMs && !timedOut) {
     timedOut = true;
-    console.error(`[LocalExec:${taskId}] ⏱️ IDLE TIMEOUT after ${idleTimeoutMs / 1000}s`);
+    console.error(
+      `[LocalExec:${taskId}] ⏱️ IDLE TIMEOUT after ${idleTimeoutMs / 1000}s`,
+    );
     globalTaskRegistry.updateTask(taskId, {
-      status: 'failed',
+      status: "failed",
       error: `No events received for ${idleTimeoutMs / 1000}s (idle timeout)`,
     });
   }
@@ -94,6 +101,7 @@ const idleCheckInterval = setInterval(() => {
 ```
 
 **Features**:
+
 - ✅ Detects idle timeout (5 minutes no events)
 - ✅ Detects hard timeout (20 minutes total)
 - ⚠️ **ONLY updates registry** - marks task as "failed"
@@ -202,6 +210,7 @@ cleanupStuckTasks(maxAgeSeconds: number = 3600): number {
 ```
 
 **Characteristics**:
+
 - ✅ Marks tasks stuck > 1 hour (default) as "failed"
 - ✅ Works correctly when called
 - ❌ **Requires manual invocation** - not automatic
@@ -209,6 +218,7 @@ cleanupStuckTasks(maxAgeSeconds: number = 3600): number {
 - ❌ User must explicitly call `_codex_cleanup_registry` tool
 
 **This Explains**:
+
 - Why 9 tasks stuck for 25+ hours
 - Cleanup tool EXISTS but was never called
 - No automatic cleanup mechanism
@@ -280,17 +290,22 @@ class MCPDelegatorServer {
     // ... existing startup code
 
     // Run cleanup on startup
-    console.error('[MCPDelegator] Running stuck task cleanup on startup...');
+    console.error("[MCPDelegator] Running stuck task cleanup on startup...");
     const cleaned = globalTaskRegistry.cleanupStuckTasks(3600);
     console.error(`[MCPDelegator] Cleaned up ${cleaned} stuck tasks`);
 
     // Schedule periodic cleanup (every 15 minutes)
-    this.cleanupInterval = setInterval(() => {
-      const cleaned = globalTaskRegistry.cleanupStuckTasks(3600);
-      if (cleaned > 0) {
-        console.error(`[MCPDelegator] Periodic cleanup: marked ${cleaned} stuck tasks as failed`);
-      }
-    }, 15 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        const cleaned = globalTaskRegistry.cleanupStuckTasks(3600);
+        if (cleaned > 0) {
+          console.error(
+            `[MCPDelegator] Periodic cleanup: marked ${cleaned} stuck tasks as failed`,
+          );
+        }
+      },
+      15 * 60 * 1000,
+    );
   }
 
   async stop() {
@@ -302,12 +317,14 @@ class MCPDelegatorServer {
 ```
 
 **Benefits**:
+
 - ✅ Simple to implement (< 20 lines)
 - ✅ Catches ALL stuck tasks (regardless of cause)
 - ✅ Runs automatically
 - ✅ No changes to existing timeout logic
 
 **Limitations**:
+
 - ⚠️ Tasks remain stuck for up to 1 hour + cleanup interval (max 75 minutes)
 - ⚠️ Doesn't kill underlying processes
 - ⚠️ No MCP notifications
@@ -326,12 +343,14 @@ Modify `src/tools/local_exec.ts` to use TimeoutWatchdog instead of custom logic.
 **Solution**: Create a wrapper process or adapt TimeoutWatchdog to monitor async iterators.
 
 **Benefits**:
+
 - ✅ Consistent timeout behavior across all tools
 - ✅ Kills hanging processes
 - ✅ Captures partial results
 - ✅ Sends MCP notifications
 
 **Limitations**:
+
 - ⚠️ More complex implementation
 - ⚠️ Requires architectural changes
 - ⚠️ May need to spawn Codex SDK as subprocess
@@ -378,11 +397,13 @@ updateTask(taskId: string, updates: Partial<Task>): Task | null {
 ```
 
 **Benefits**:
+
 - ✅ Prevents silent failures
 - ✅ Logs all SQLite exceptions
 - ✅ Retry mechanism for transient errors
 
 **Limitations**:
+
 - ⚠️ Doesn't solve root cause (tasks still hang)
 - ⚠️ Only reduces frequency of stuck tasks
 
@@ -406,6 +427,7 @@ updateTask(taskId: string, updates: Partial<Task>): Task | null {
    - Better visibility into SQLite issues
 
 **Benefits**:
+
 - ✅ Defense in depth
 - ✅ Handles multiple failure modes
 - ✅ Proper timeout semantics
@@ -418,12 +440,14 @@ updateTask(taskId: string, updates: Partial<Task>): Task | null {
 ### Test 1: Reproduce Stuck Task
 
 **Setup**:
+
 ```bash
 cd /tmp/test-stuck-tasks
 git init
 ```
 
 **Test Case**:
+
 ```typescript
 // Create task that will hang
 {
@@ -436,6 +460,7 @@ git init
 ```
 
 **Success Criteria**:
+
 - ✅ Task times out (5 min or 20 min)
 - ✅ Task status = "failed" (not "working")
 - ✅ Error message indicates timeout
@@ -447,6 +472,7 @@ git init
 **Setup**: Implement Option A (automatic cleanup scheduler)
 
 **Test Case**:
+
 ```bash
 # Manually create stuck task in database
 sqlite3 ~/.config/mcp-delegator/tasks.db "
@@ -464,6 +490,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 ```
 
 **Expected**:
+
 - Task marked as "failed" within 15 minutes
 - Error message: "Task timeout - no activity for over 3600 seconds..."
 
@@ -474,6 +501,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 **Setup**: Implement Option B (use TimeoutWatchdog for SDK)
 
 **Test Case**:
+
 ```typescript
 // Create SDK task that hangs
 {
@@ -483,6 +511,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 ```
 
 **Expected**:
+
 - Timeout after 5 min idle / 20 min hard
 - MCP notification sent (warning at 4:30, error at 5:00)
 - Partial results captured
@@ -494,6 +523,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 ## Implementation Checklist
 
 **Phase 1: Quick Fix** ✅ PRIORITY
+
 - [ ] Implement automatic cleanup scheduler (Option A)
 - [ ] Run cleanup on MCP server startup
 - [ ] Schedule periodic cleanup (every 15 minutes)
@@ -502,6 +532,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 - [ ] Deploy and monitor
 
 **Phase 2: Proper Fix** (Future)
+
 - [ ] Design TimeoutWatchdog integration for SDK tasks
 - [ ] Adapt TimeoutWatchdog to monitor async iterators
 - [ ] Implement wrapper for thread.runStreamed()
@@ -510,6 +541,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 - [ ] Verify process termination
 
 **Phase 3: Defense** (Future)
+
 - [ ] Add try-catch to all updateTask() calls
 - [ ] Log SQLite exceptions with context
 - [ ] Implement retry logic for transient errors

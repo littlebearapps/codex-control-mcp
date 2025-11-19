@@ -4,7 +4,7 @@
  * These templates provide pre-configured setup scripts for different
  * technology stacks with 4-level fallback error handling.
  */
-import { EnvironmentTemplate } from '../types/template_types.js';
+import { EnvironmentTemplate } from "../types/template_types.js";
 /**
  * All environment templates
  */

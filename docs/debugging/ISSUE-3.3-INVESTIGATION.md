@@ -9,6 +9,7 @@
 ## Issue Summary
 
 **Reported Symptom**:
+
 - Task execution fails silently
 - No error messages visible to user
 - No stderr output captured
@@ -16,11 +17,13 @@
 - Unable to diagnose what went wrong
 
 **Expected Behavior**:
+
 ```
 Task fails → Clear error message → User can debug
 ```
 
 **Actual Behavior**:
+
 ```
 Task fails silently → "Success" reported → User confused
 ```
@@ -32,18 +35,21 @@ Task fails silently → "Success" reported → User confused
 ## Relationship to Other Issues
 
 **This Issue is Related To**:
+
 - **Issue 1.2**: Tasks report success without creating files (root cause found)
   - Issue 1.2 focuses on: **False success determination**
   - Issue 3.3 focuses on: **Missing error reporting and diagnostics**
   - Both share the same underlying causes
 
 **Shared Root Causes**:
+
 1. Success determined by git verification only (not actual task completion)
 2. Limited event type capture (missing error indicators)
 3. No validation of expected outcomes
 4. Codex SDK suppresses error output (Issue #1367 from Codex SDK)
 
 **Key Difference**:
+
 - Issue 1.2: "Why does it say success when files weren't created?"
 - Issue 3.3: "Why can't I see what went wrong?"
 
@@ -61,7 +67,7 @@ Task fails silently → "Success" reported → User confused
   try {
     const { events } = await thread.runStreamed(validated.task, runOptions);
 
-    let finalOutput = '';
+    let finalOutput = "";
     let eventCount = 0;
     const eventLog: any[] = [];
 
@@ -70,14 +76,13 @@ Task fails silently → "Success" reported → User confused
       eventCount++;
 
       // ✅ Capture output events
-      if (event.type === 'item.completed') {
+      if (event.type === "item.completed") {
         const item = (event as any).item;
 
-        if (item?.type === 'command_execution' && item.aggregated_output) {
-          finalOutput += item.aggregated_output + '\n';  // ✅ Captured
-        }
-        else if (item?.type === 'agent_message' && item.text) {
-          finalOutput += item.text + '\n';  // ✅ Captured
+        if (item?.type === "command_execution" && item.aggregated_output) {
+          finalOutput += item.aggregated_output + "\n"; // ✅ Captured
+        } else if (item?.type === "agent_message" && item.text) {
+          finalOutput += item.text + "\n"; // ✅ Captured
         }
 
         // ❌ MISSING: No explicit error event handling
@@ -87,34 +92,39 @@ Task fails silently → "Success" reported → User confused
     }
 
     // ✅ Success determined by git verification (Issue 1.2)
-    const finalStatus = gitVerification.errors.length === 0 ? 'completed' : 'completed_with_errors';
+    const finalStatus =
+      gitVerification.errors.length === 0
+        ? "completed"
+        : "completed_with_errors";
 
     globalTaskRegistry.updateTask(taskId, {
       status: finalStatus,
       result: JSON.stringify({
-        success: gitVerification.errors.length === 0,  // ⚠️ Only checks git errors
-        finalOutput: finalOutput || `SDK execution complete (${eventCount} events)`,
+        success: gitVerification.errors.length === 0, // ⚠️ Only checks git errors
+        finalOutput:
+          finalOutput || `SDK execution complete (${eventCount} events)`,
       }),
     });
-
   } catch (error) {
     // ✅ Exception errors ARE captured
     console.error(`[LocalExec:${taskId}] ❌ Error:`, error);
 
     globalTaskRegistry.updateTask(taskId, {
-      status: 'failed',
-      error: error instanceof Error ? error.message : String(error),  // ✅ Stored
+      status: "failed",
+      error: error instanceof Error ? error.message : String(error), // ✅ Stored
     });
   }
 })();
 ```
 
 **What Gets Captured**:
+
 - ✅ Exception errors (try-catch) → Stored in `task.error` field
 - ✅ `command_execution` output → Added to `finalOutput`
 - ✅ `agent_message` text → Added to `finalOutput`
 
 **What DOESN'T Get Captured**:
+
 - ❌ Codex SDK internal errors that don't throw exceptions
 - ❌ stderr output from Codex CLI
 - ❌ Error-related event types (if they exist)
@@ -130,12 +140,12 @@ Task fails silently → "Success" reported → User confused
 
 ```typescript
 // Check if failed
-if (task.status === 'failed') {
+if (task.status === "failed") {
   return {
     content: [
       {
-        type: 'text',
-        text: `❌ Task Failed\n\n**Task ID**: \`${input.task_id}\`\n\n**Error**: ${task.error || 'Unknown error'}\n\n**Task**: ${task.instruction}`,
+        type: "text",
+        text: `❌ Task Failed\n\n**Task ID**: \`${input.task_id}\`\n\n**Error**: ${task.error || "Unknown error"}\n\n**Task**: ${task.instruction}`,
       },
     ],
     isError: true,
@@ -144,11 +154,13 @@ if (task.status === 'failed') {
 ```
 
 **Error Display**:
+
 - ✅ Shows error message IF `task.status === 'failed'`
 - ✅ Shows `task.error` field content
 - ❌ But if task marked as "completed" with no evidence, error not shown!
 
 **The Problem**:
+
 ```typescript
 // Scenario: Silent failure
 Task marked as: status = 'completed'
@@ -174,13 +186,14 @@ if (failedTasks.length > 0) {
     const ago = this.formatTimeAgo(new Date(task.createdAt));
     message += `- **${task.id}**: ${task.instruction.substring(0, 60)}...\n`;
     if (task.error) {
-      message += `  Error: ${task.error.substring(0, 100)}\n`;  // ✅ Shows error
+      message += `  Error: ${task.error.substring(0, 100)}\n`; // ✅ Shows error
     }
   }
 }
 ```
 
 **Status Display**:
+
 - ✅ Shows failed tasks separately
 - ✅ Shows first 100 chars of error message
 - ❌ Only works if `task.status === 'failed'`
@@ -197,6 +210,7 @@ if (failedTasks.length > 0) {
 **What Can Go Wrong (Without Throwing Exceptions)**:
 
 1. **Codex SDK Internal Failure**:
+
    ```
    Codex CLI: "I'll create the files"
    Reality: Permission denied writing to directory
@@ -206,6 +220,7 @@ if (failedTasks.length > 0) {
    ```
 
 2. **Mode Mismatch**:
+
    ```
    User expects: Files created (workspace-write mode)
    Codex runs in: Read-only mode (due to bug/misconfiguration)
@@ -214,6 +229,7 @@ if (failedTasks.length > 0) {
    ```
 
 3. **Git Safety Refusal**:
+
    ```
    Codex: "Working tree is dirty, refusing to modify files"
    Events: Agent messages explaining refusal
@@ -234,6 +250,7 @@ if (failedTasks.length > 0) {
 ### Why Current Error Detection Fails
 
 **Current Detection Logic**:
+
 ```typescript
 try {
   // Execute task
@@ -246,7 +263,6 @@ try {
 
   // Determine success ONLY from git verification
   const success = gitVerification.errors.length === 0;
-
 } catch (error) {
   // Only catches JavaScript exceptions
   // Misses: Silent failures, stderr, SDK internal errors
@@ -254,6 +270,7 @@ try {
 ```
 
 **The Gaps**:
+
 1. **No Event-Level Error Detection**:
    - Doesn't check event types for error indicators
    - Doesn't parse event content for failure messages
@@ -278,6 +295,7 @@ try {
 ### Evidence from Codex SDK (Issue #1367)
 
 **From git_verifier.ts:3-6** (original purpose):
+
 ```
 Purpose: Verify git operations actually succeeded after Codex execution
 Root Cause: Codex SDK suppresses stdout/stderr for non-zero exit codes (Issue #1367)
@@ -287,6 +305,7 @@ Solution: Run independent git commands to check branch, commits, staging
 **Key Insight**: Git verifier was created BECAUSE Codex SDK hides errors!
 
 **The Problem**:
+
 - Git verifier checks git operations (branch, commit, staging)
 - But doesn't check non-git operations (file creation, test results, etc.)
 - And doesn't detect when Codex SDK silently fails
@@ -298,37 +317,40 @@ Solution: Run independent git commands to check branch, commits, staging
 ### Option A: Capture stderr from SDK
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_exec.ts
-import { spawn } from 'child_process';
+import { spawn } from "child_process";
 
 // Instead of using SDK's runStreamed(), spawn codex CLI directly
-const codexProcess = spawn('codex', ['exec', task], {
+const codexProcess = spawn("codex", ["exec", task], {
   cwd: workingDir,
   env: process.env,
-  stdio: ['ignore', 'pipe', 'pipe'],  // ✅ Capture stderr
+  stdio: ["ignore", "pipe", "pipe"], // ✅ Capture stderr
 });
 
-let stderr = '';
-codexProcess.stderr.on('data', (chunk) => {
-  stderr += chunk.toString();  // ✅ Accumulate stderr
+let stderr = "";
+codexProcess.stderr.on("data", (chunk) => {
+  stderr += chunk.toString(); // ✅ Accumulate stderr
 });
 
 // After completion, include stderr in result
 globalTaskRegistry.updateTask(taskId, {
   result: JSON.stringify({
     finalOutput,
-    stderr,  // ✅ Include stderr for debugging
+    stderr, // ✅ Include stderr for debugging
     success: determineSuccess(finalOutput, stderr, gitVerification),
   }),
 });
 ```
 
 **Benefits**:
+
 - ✅ Captures permission errors, command failures
 - ✅ Users can see what went wrong
 
 **Limitations**:
+
 - ⚠️ Requires re-implementing SDK logic (event parsing, threading)
 - ⚠️ More complex than using SDK
 
@@ -337,6 +359,7 @@ globalTaskRegistry.updateTask(taskId, {
 ### Option B: Parse Event Content for Error Indicators
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_exec.ts
 let hasErrorIndicators = false;
@@ -350,25 +373,27 @@ const errorPatterns = [
 ];
 
 for await (const event of events) {
-  if (event.type === 'item.completed') {
+  if (event.type === "item.completed") {
     const item = (event as any).item;
 
     // Check command execution for errors
-    if (item?.type === 'command_execution' && item.aggregated_output) {
-      finalOutput += item.aggregated_output + '\n';
+    if (item?.type === "command_execution" && item.aggregated_output) {
+      finalOutput += item.aggregated_output + "\n";
 
       // ✅ Scan for error patterns
       for (const pattern of errorPatterns) {
         if (pattern.test(item.aggregated_output)) {
           hasErrorIndicators = true;
-          console.error(`[LocalExec:${taskId}] ⚠️ Error indicator detected: ${pattern}`);
+          console.error(
+            `[LocalExec:${taskId}] ⚠️ Error indicator detected: ${pattern}`,
+          );
         }
       }
     }
 
     // Check agent messages for refusals
-    if (item?.type === 'agent_message' && item.text) {
-      finalOutput += item.text + '\n';
+    if (item?.type === "agent_message" && item.text) {
+      finalOutput += item.text + "\n";
 
       // ✅ Detect refusal patterns
       if (/I cannot|I will not|refusing to/i.test(item.text)) {
@@ -384,11 +409,13 @@ const success = gitVerification.errors.length === 0 && !hasErrorIndicators;
 ```
 
 **Benefits**:
+
 - ✅ Detects errors even when SDK doesn't throw exceptions
 - ✅ Uses existing SDK event stream
 - ✅ Low implementation cost
 
 **Limitations**:
+
 - ⚠️ Pattern matching is heuristic (false positives/negatives)
 - ⚠️ Misses errors not mentioned in event text
 
@@ -397,6 +424,7 @@ const success = gitVerification.errors.length === 0 && !hasErrorIndicators;
 ### Option C: Add Outcome Validation (Combined with Issue 1.2 Fix)
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_exec.ts (after execution completes)
 
@@ -404,11 +432,13 @@ const success = gitVerification.errors.length === 0 && !hasErrorIndicators;
 const gitVerification = await verifyGitOperations(workingDir, task);
 
 // 2. ✅ File creation validation (NEW - from Issue 1.2 Option A)
-const statusCheck = await runGit('git status --porcelain', workingDir);
+const statusCheck = await runGit("git status --porcelain", workingDir);
 const hasChanges = statusCheck.success && statusCheck.stdout.trim().length > 0;
 
 // 3. ✅ Parse output for completion signals (NEW)
-const hasCompletionSignals = /created|modified|written|completed/i.test(finalOutput);
+const hasCompletionSignals = /created|modified|written|completed/i.test(
+  finalOutput,
+);
 
 // 4. ✅ Check if output is suspiciously empty (NEW)
 const outputTooShort = finalOutput.length < 50 && eventCount > 5;
@@ -416,23 +446,27 @@ const outputTooShort = finalOutput.length < 50 && eventCount > 5;
 // Determine success with multiple signals
 const errors: string[] = [...gitVerification.errors];
 
-if (mode === 'workspace-write' && !hasChanges && !hasCompletionSignals) {
-  errors.push('No files created or modified despite workspace-write mode');
+if (mode === "workspace-write" && !hasChanges && !hasCompletionSignals) {
+  errors.push("No files created or modified despite workspace-write mode");
 }
 
 if (outputTooShort) {
-  errors.push('Execution output suspiciously short - may indicate silent failure');
+  errors.push(
+    "Execution output suspiciously short - may indicate silent failure",
+  );
 }
 
 const success = errors.length === 0;
 ```
 
 **Benefits**:
+
 - ✅ Validates actual task completion
 - ✅ Detects silent failures
 - ✅ Combines multiple signals for robust detection
 
 **Limitations**:
+
 - ⚠️ Requires careful tuning of heuristics
 
 ---
@@ -440,30 +474,35 @@ const success = errors.length === 0;
 ### Option D: Enhanced Error Reporting in Results (Recommended)
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_results.ts
 
 // Enhanced error section for "successful" tasks with no evidence
-if (task.status === 'completed' && resultData.success) {
+if (task.status === "completed" && resultData.success) {
   // ✅ Check for suspicious indicators
   const suspiciousIndicators = [];
 
-  if (task.mode === 'workspace-write' && !hasChanges) {
-    suspiciousIndicators.push('No files created/modified in workspace-write mode');
+  if (task.mode === "workspace-write" && !hasChanges) {
+    suspiciousIndicators.push(
+      "No files created/modified in workspace-write mode",
+    );
   }
 
   if (resultData.finalOutput.length < 100 && resultData.eventCount > 5) {
-    suspiciousIndicators.push('Output suspiciously short for number of events');
+    suspiciousIndicators.push("Output suspiciously short for number of events");
   }
 
   if (/SDK execution complete.*events/i.test(resultData.finalOutput)) {
-    suspiciousIndicators.push('Generic fallback message (no actual output captured)');
+    suspiciousIndicators.push(
+      "Generic fallback message (no actual output captured)",
+    );
   }
 
   if (suspiciousIndicators.length > 0) {
     message += `\n⚠️ **Possible Silent Failure Detected**\n\n`;
     message += `The task completed without errors, but shows these suspicious indicators:\n`;
-    suspiciousIndicators.forEach(indicator => {
+    suspiciousIndicators.forEach((indicator) => {
       message += `- ${indicator}\n`;
     });
     message += `\n💡 **Recommendations**:\n`;
@@ -476,11 +515,13 @@ if (task.status === 'completed' && resultData.success) {
 ```
 
 **Benefits**:
+
 - ✅ Helps users identify false positives
 - ✅ Provides actionable debugging steps
 - ✅ Doesn't change success/failure logic (non-breaking)
 
 **Limitations**:
+
 - ⚠️ Still reports success, just with warnings
 
 ---
@@ -512,6 +553,7 @@ if (task.status === 'completed' && resultData.success) {
 ### Test 1: Reproduce Silent Failure
 
 **Setup**:
+
 ```bash
 cd /tmp/test-silent-failure
 git init
@@ -519,6 +561,7 @@ chmod 444 .  # Make directory read-only
 ```
 
 **Test Case**:
+
 ```typescript
 {
   task: "Create a file named test.txt with content 'Hello World'",
@@ -529,6 +572,7 @@ chmod 444 .  # Make directory read-only
 ```
 
 **Success Criteria**:
+
 - ✅ Reproduces silent failure (success claimed, no work done)
 - ✅ Identifies lack of error reporting
 
@@ -541,6 +585,7 @@ chmod 444 .  # Make directory read-only
 **Test Case**: Same as Test 1
 
 **Expected Result**:
+
 ```
 Status: ✅ Success
 
@@ -556,6 +601,7 @@ The task completed without errors, but shows these suspicious indicators:
 ```
 
 **Success Criteria**:
+
 - ✅ Warns user about suspicious success
 - ✅ Provides debugging guidance
 
@@ -568,6 +614,7 @@ The task completed without errors, but shows these suspicious indicators:
 **Test Case**: Same as Test 1
 
 **Expected Result**:
+
 ```
 Status: ❌ Failed
 
@@ -576,6 +623,7 @@ Error indicators detected in execution output:
 ```
 
 **Success Criteria**:
+
 - ✅ Detects error pattern in events
 - ✅ Marks task as failed appropriately
 
@@ -584,6 +632,7 @@ Error indicators detected in execution output:
 ## Implementation Checklist
 
 **Phase 1: Investigation** ✅ COMPLETE
+
 - [x] Read local_exec.ts error handling
 - [x] Read local_results.ts error display
 - [x] Read local_status.ts failure reporting
@@ -591,23 +640,27 @@ Error indicators detected in execution output:
 - [x] Document findings
 
 **Phase 2: Design Fix**
+
 - [ ] Choose fix approach (A, B, C, D, or E)
 - [ ] Design implementation details
 - [ ] Write test cases
 - [ ] Review compatibility with Issue 1.2 fix
 
 **Phase 3: Implementation**
+
 - [ ] Implement enhanced error detection
 - [ ] Add suspicious indicator warnings
 - [ ] Improve error messages
 - [ ] Update documentation
 
 **Phase 4: Testing**
+
 - [ ] Test 1: Reproduce silent failure
 - [ ] Test 2: Verify enhanced reporting
 - [ ] Test 3: Verify error pattern detection
 
 **Phase 5: Documentation**
+
 - [ ] Update quickrefs/troubleshooting.md
 - [ ] Update CHANGELOG.md
 - [ ] Add error debugging guide
@@ -665,6 +718,7 @@ Error indicators detected in execution output:
 **Status**: 🔍 Investigation Complete - ✅ ROOT CAUSE IDENTIFIED
 
 **Root Cause**: Multiple gaps in error detection and reporting:
+
 1. Codex SDK internal failures don't throw exceptions (silent failures)
 2. stderr output not captured (permission errors, command failures invisible)
 3. Event content not parsed for error indicators (refusals, failures go unnoticed)

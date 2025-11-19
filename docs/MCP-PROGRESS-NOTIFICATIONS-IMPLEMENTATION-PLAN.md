@@ -12,6 +12,7 @@
 ### What We're Building
 
 Add real-time progress notifications to all 4 execution tools so that:
+
 - Users see running Codex tasks in Claude Code's status bar (blue notification area)
 - Claude Code can work on other tasks while Codex runs (non-blocking)
 - Tasks disappear from status bar when complete (clear completion signal)
@@ -19,16 +20,17 @@ Add real-time progress notifications to all 4 execution tools so that:
 
 ### Affected Tools (4 of 13)
 
-| Tool | Current State | After Implementation |
-|------|--------------|---------------------|
-| `_codex_local_run` | Silent execution, blocks until complete | Progress notifications every 30s |
-| `_codex_local_exec` | Database updates every 10 events, silent | Progress notifications every 10 events |
+| Tool                  | Current State                            | After Implementation                   |
+| --------------------- | ---------------------------------------- | -------------------------------------- |
+| `_codex_local_run`    | Silent execution, blocks until complete  | Progress notifications every 30s       |
+| `_codex_local_exec`   | Database updates every 10 events, silent | Progress notifications every 10 events |
 | `_codex_local_resume` | Database updates every 10 events, silent | Progress notifications every 10 events |
-| `_codex_cloud_submit` | Silent submission, returns immediately | Initial notification on submission |
+| `_codex_cloud_submit` | Silent submission, returns immediately   | Initial notification on submission     |
 
 ### Tools NOT Changed (9 of 13)
 
 These are query/retrieval tools that complete instantly:
+
 - `_codex_local_status` (query)
 - `_codex_local_results` (retrieval)
 - `_codex_local_cancel` (instant)
@@ -82,11 +84,11 @@ async execute(
 
 ### Notification Frequency Strategy
 
-| Tool | Frequency | Rationale |
-|------|-----------|-----------|
-| `_codex_local_run` | Every 30 seconds | CLI execution, no JSONL events |
-| `_codex_local_exec` | Every 10 events | SDK execution with real-time events |
-| `_codex_local_resume` | Every 10 events | SDK execution with real-time events |
+| Tool                  | Frequency          | Rationale                                |
+| --------------------- | ------------------ | ---------------------------------------- |
+| `_codex_local_run`    | Every 30 seconds   | CLI execution, no JSONL events           |
+| `_codex_local_exec`   | Every 10 events    | SDK execution with real-time events      |
+| `_codex_local_resume` | Every 10 events    | SDK execution with real-time events      |
 | `_codex_cloud_submit` | Once on submission | Background execution, no further updates |
 
 ### Error Handling Strategy
@@ -112,11 +114,13 @@ try {
 **Challenge**: Current tools don't receive `RequestHandlerExtra` parameter
 
 **Current signature**:
+
 ```typescript
 async execute(input: ToolInput): Promise<ToolResult>
 ```
 
 **New signature**:
+
 ```typescript
 async execute(
   input: ToolInput,
@@ -148,29 +152,29 @@ async execute(
 
 ```typescript
 // Line ~75 (after spawning process)
-const result = await this.processManager.runCodexTask(
-  taskId,
-  args,
-  {
-    onProgress: async (progress) => {  // NEW callback
-      if (extra?.sendNotification) {
-        try {
-          await extra.sendNotification({
-            method: 'notifications/progress' as const,
-            params: {
-              progressToken: taskId,
-              progress: progress.elapsed,  // Elapsed seconds
-              total: undefined,  // Unknown total time
-              message: `Codex executing (${progress.elapsed}s elapsed)`
-            }
-          });
-        } catch (error) {
-          console.error(`[LocalRun:${taskId}] Progress notification failed:`, error);
-        }
+const result = await this.processManager.runCodexTask(taskId, args, {
+  onProgress: async (progress) => {
+    // NEW callback
+    if (extra?.sendNotification) {
+      try {
+        await extra.sendNotification({
+          method: "notifications/progress" as const,
+          params: {
+            progressToken: taskId,
+            progress: progress.elapsed, // Elapsed seconds
+            total: undefined, // Unknown total time
+            message: `Codex executing (${progress.elapsed}s elapsed)`,
+          },
+        });
+      } catch (error) {
+        console.error(
+          `[LocalRun:${taskId}] Progress notification failed:`,
+          error,
+        );
       }
     }
-  }
-);
+  },
+});
 ```
 
 #### C. Send final completion notification
@@ -180,13 +184,13 @@ const result = await this.processManager.runCodexTask(
 if (extra?.sendNotification) {
   try {
     await extra.sendNotification({
-      method: 'notifications/progress' as const,
+      method: "notifications/progress" as const,
       params: {
         progressToken: taskId,
         progress: 100,
         total: 100,
-        message: "Codex execution complete"
-      }
+        message: "Codex execution complete",
+      },
     });
   } catch (error) {
     console.error(`[LocalRun:${taskId}] Final notification failed:`, error);
@@ -237,7 +241,7 @@ if (options?.onProgress) {
     try {
       await options.onProgress!({ elapsed });
     } catch (error) {
-      console.error('[ProcessManager] Progress callback error:', error);
+      console.error("[ProcessManager] Progress callback error:", error);
     }
   }, 30000); // Every 30 seconds
 }
@@ -282,16 +286,21 @@ if (eventCount % 10 === 0) {
   if (extra?.sendNotification) {
     try {
       await extra.sendNotification({
-        method: 'notifications/progress' as const,
+        method: "notifications/progress" as const,
         params: {
           progressToken: taskId,
           progress: progress.completedSteps,
           total: progress.totalSteps,
-          message: progress.currentAction || `${progress.progressPercentage}% complete`
-        }
+          message:
+            progress.currentAction ||
+            `${progress.progressPercentage}% complete`,
+        },
       });
     } catch (error) {
-      console.error(`[LocalExec:${taskId}] Progress notification failed:`, error);
+      console.error(
+        `[LocalExec:${taskId}] Progress notification failed:`,
+        error,
+      );
     }
   }
 }
@@ -308,13 +317,13 @@ globalTaskRegistry.updateProgress(taskId, finalProgress);
 if (extra?.sendNotification) {
   try {
     await extra.sendNotification({
-      method: 'notifications/progress' as const,
+      method: "notifications/progress" as const,
       params: {
         progressToken: taskId,
         progress: finalProgress.totalSteps,
         total: finalProgress.totalSteps,
-        message: "Codex SDK execution complete"
-      }
+        message: "Codex SDK execution complete",
+      },
     });
   } catch (error) {
     console.error(`[LocalExec:${taskId}] Final notification failed:`, error);
@@ -465,8 +474,8 @@ this.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
  * Shared type definitions for MCP progress notifications
  */
 
-import type { Request, Notification } from '@modelcontextprotocol/sdk/types.js';
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type { Request, Notification } from "@modelcontextprotocol/sdk/types.js";
+import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 
 /**
  * Extended tool execute signature with MCP notification support
@@ -484,7 +493,7 @@ export async function sendProgressNotification(
     total?: number;
     message?: string;
   },
-  context: string  // For logging (e.g., "LocalExec:T-local-abc123")
+  context: string, // For logging (e.g., "LocalExec:T-local-abc123")
 ): Promise<void> {
   if (!extra?.sendNotification) {
     return; // No notification capability
@@ -492,8 +501,8 @@ export async function sendProgressNotification(
 
   try {
     await extra.sendNotification({
-      method: 'notifications/progress' as const,
-      params
+      method: "notifications/progress" as const,
+      params,
     });
   } catch (error) {
     console.error(`[${context}] Progress notification failed:`, error);
@@ -511,7 +520,7 @@ export async function sendProgressNotification(
 **Instead of duplicating try/catch blocks**, import and use helper:
 
 ```typescript
-import { sendProgressNotification } from '../types.js';
+import { sendProgressNotification } from "../types.js";
 
 // In local_exec.ts (line ~320)
 if (eventCount % 10 === 0) {
@@ -525,9 +534,10 @@ if (eventCount % 10 === 0) {
       progressToken: taskId,
       progress: progress.completedSteps,
       total: progress.totalSteps,
-      message: progress.currentAction || `${progress.progressPercentage}% complete`
+      message:
+        progress.currentAction || `${progress.progressPercentage}% complete`,
     },
-    `LocalExec:${taskId}`
+    `LocalExec:${taskId}`,
   );
 }
 ```
@@ -541,66 +551,66 @@ if (eventCount % 10 === 0) {
 ### Unit Tests (New File: `test-progress-notifications.ts`)
 
 ```typescript
-import { sendProgressNotification } from './src/types.js';
+import { sendProgressNotification } from "./src/types.js";
 
-describe('Progress Notifications', () => {
-  it('should send notification with all params', async () => {
+describe("Progress Notifications", () => {
+  it("should send notification with all params", async () => {
     let captured: any = null;
 
     const mockExtra = {
       sendNotification: async (notification: any) => {
         captured = notification;
-      }
+      },
     };
 
     await sendProgressNotification(
       mockExtra as any,
       {
-        progressToken: 'T-local-test123',
+        progressToken: "T-local-test123",
         progress: 50,
         total: 100,
-        message: 'Test progress'
+        message: "Test progress",
       },
-      'TestContext'
+      "TestContext",
     );
 
     expect(captured).toEqual({
-      method: 'notifications/progress',
+      method: "notifications/progress",
       params: {
-        progressToken: 'T-local-test123',
+        progressToken: "T-local-test123",
         progress: 50,
         total: 100,
-        message: 'Test progress'
-      }
+        message: "Test progress",
+      },
     });
   });
 
-  it('should handle missing extra gracefully', async () => {
+  it("should handle missing extra gracefully", async () => {
     await sendProgressNotification(
       undefined,
       {
-        progressToken: 'T-local-test123',
-        progress: 50
+        progressToken: "T-local-test123",
+        progress: 50,
       },
-      'TestContext'
+      "TestContext",
     );
     // Should not throw
   });
 
-  it('should handle notification errors gracefully', async () => {
+  it("should handle notification errors gracefully", async () => {
     const mockExtra = {
       sendNotification: async () => {
-        throw new Error('Network failure');
-      }
+        throw new Error("Network failure");
+      },
     };
 
     await sendProgressNotification(
       mockExtra as any,
       {
-        progressToken: 'T-local-test123',
-        progress: 50
+        progressToken: "T-local-test123",
+        progress: 50,
       },
-      'TestContext'
+      "TestContext",
     );
     // Should not throw - just log error
   });
@@ -677,6 +687,7 @@ All execution tools send real-time progress notifications to Claude Code:
 **Where you'll see it**: Blue status notification area at bottom of Claude Code window
 
 **What you'll see**:
+
 - `_codex_local_run`: "Codex executing (45s elapsed)" (updates every 30s)
 - `_codex_local_exec`: "67% complete - Analyzing security module" (updates every 10 events)
 - `_codex_local_resume`: "3/5 steps complete - Refactoring API" (updates every 10 events)
@@ -685,6 +696,7 @@ All execution tools send real-time progress notifications to Claude Code:
 **When it disappears**: Task is complete! Use `_codex_local_results` to get output.
 
 **Benefits**:
+
 - ✅ Know what's running without asking
 - ✅ See progress without polling
 - ✅ Know when tasks complete (notification disappears)
@@ -718,24 +730,28 @@ See exactly what Codex is doing via Claude Code's status bar:
 #### Real-Time Progress Notifications 📊
 
 **What's New**:
+
 - All 4 execution tools now send MCP `notifications/progress` to Claude Code
 - Running Codex tasks appear in Claude Code's status bar (blue notification area)
 - Progress updates sent automatically (every 10-30 seconds depending on tool)
 - Notifications disappear when tasks complete (clear completion signal)
 
 **Affected Tools**:
+
 - `_codex_local_run`: Progress notifications every 30 seconds
 - `_codex_local_exec`: Progress notifications every 10 events
 - `_codex_local_resume`: Progress notifications every 10 events
 - `_codex_cloud_submit`: Initial notification on submission
 
 **User Benefits**:
+
 - ✅ **Visibility**: See running tasks without asking
 - ✅ **Non-blocking**: Claude Code can work on other things while Codex runs
 - ✅ **Clear completion**: Task disappears from status bar when done
 - ✅ **No polling**: Server pushes updates automatically
 
 **Technical Details**:
+
 - Implements MCP `notifications/progress` protocol
 - Error handling: Notification failures never break tool execution
 - Backward compatible: Tools work with or without notification support
@@ -743,15 +759,17 @@ See exactly what Codex is doing via Claude Code's status bar:
 
 **Example UX**:
 ```
+
 User: "use mcp delegator to run tests"
-  ↓
+↓
 Status bar shows: "🔄 Codex: Running tests (67% - 4/6 steps)"
-  ↓
+↓
 Claude Code continues working on other tasks
-  ↓
+↓
 Status bar notification disappears (tests complete)
-  ↓
+↓
 Claude Code: "Tests completed! 45 passed, 2 failed. Here are the failures..."
+
 ```
 
 **Files Modified**:
@@ -768,7 +786,7 @@ Claude Code: "Tests completed! 45 passed, 2 failed. Here are the failures..."
 
 **Add new section** "Progress Notifications":
 
-```markdown
+````markdown
 ## Progress Notifications
 
 ### MCP Protocol Integration
@@ -776,6 +794,7 @@ Claude Code: "Tests completed! 45 passed, 2 failed. Here are the failures..."
 All execution tools send `notifications/progress` to Claude Code during long-running operations:
 
 **Notification Format**:
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -788,8 +807,10 @@ All execution tools send `notifications/progress` to Claude Code during long-run
   }
 }
 ```
+````
 
 **Notification Flow**:
+
 ```
 1. User requests Codex task
    ↓
@@ -809,9 +830,11 @@ All execution tools send `notifications/progress` to Claude Code during long-run
 ```
 
 **Error Handling**:
+
 - Notification failures are caught and logged
 - Tool execution continues normally (non-fatal)
 - Uses helper function `sendProgressNotification()` for consistency
+
 ```
 
 ---
@@ -1007,3 +1030,4 @@ All execution tools send `notifications/progress` to Claude Code during long-run
 ---
 
 **Status**: ✅ Plan Complete - Ready for Implementation
+```

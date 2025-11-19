@@ -5,7 +5,7 @@
  * Generates custom setup scripts, token creation instructions, and test tasks.
  */
 
-import { getTemplate } from '../resources/environment_templates.js';
+import { getTemplate } from "../resources/environment_templates.js";
 
 /**
  * Input interface for GitHub setup guide
@@ -15,7 +15,7 @@ export interface GitHubSetupInput {
   repoUrl: string;
 
   /** Technology stack (node, python, go, rust) */
-  stack: 'node' | 'python' | 'go' | 'rust';
+  stack: "node" | "python" | "go" | "rust";
 
   /** Git user name (optional, defaults to "Codex Agent") */
   gitUserName?: string;
@@ -24,7 +24,7 @@ export interface GitHubSetupInput {
   gitUserEmail?: string;
 
   /** Optional response format */
-  format?: 'json' | 'markdown';
+  format?: "json" | "markdown";
 }
 
 /**
@@ -32,7 +32,7 @@ export interface GitHubSetupInput {
  */
 export interface GitHubSetupResult {
   content: Array<{
-    type: 'text';
+    type: "text";
     text: string;
   }>;
   isError?: boolean;
@@ -59,36 +59,40 @@ export class GitHubSetupTool {
    */
   static getSchema() {
     return {
-      name: '_codex_cloud_github_setup',
-      description: 'Generate a custom GitHub setup guide - like a personalized installation wizard. Provide your repo URL and tech stack (node/python/go/rust), and get back a complete guide: how to create a fine-grained GitHub token, Codex Cloud environment config, pre-filled setup scripts, and a test task to verify everything works. Think of it as "setup in a box" for autonomous PR workflows. Use this when: you\'re integrating a new repo with Codex Cloud and want GitHub capabilities (branch creation, commits, PRs). Returns: step-by-step guide with copy-paste commands, troubleshooting tips, and a verification task. Perfect for: first-time setup, adding new repos, or when you forgot the token permissions. The generated guide is repo-specific with your URLs and settings filled in. Avoid for: repos already configured (just use _codex_cloud_submit), or if you don\'t need GitHub integration.',
+      name: "_codex_cloud_github_setup",
+      description:
+        "Generate a custom GitHub setup guide - like a personalized installation wizard. Provide your repo URL and tech stack (node/python/go/rust), and get back a complete guide: how to create a fine-grained GitHub token, Codex Cloud environment config, pre-filled setup scripts, and a test task to verify everything works. Think of it as \"setup in a box\" for autonomous PR workflows. Use this when: you're integrating a new repo with Codex Cloud and want GitHub capabilities (branch creation, commits, PRs). Returns: step-by-step guide with copy-paste commands, troubleshooting tips, and a verification task. Perfect for: first-time setup, adding new repos, or when you forgot the token permissions. The generated guide is repo-specific with your URLs and settings filled in. Avoid for: repos already configured (just use _codex_cloud_submit), or if you don't need GitHub integration.",
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           repoUrl: {
-            type: 'string',
-            description: 'GitHub repository URL (e.g., https://github.com/user/repo)',
+            type: "string",
+            description:
+              "GitHub repository URL (e.g., https://github.com/user/repo)",
           },
           stack: {
-            type: 'string',
-            enum: ['node', 'python', 'go', 'rust'],
-            description: 'Technology stack for your project',
+            type: "string",
+            enum: ["node", "python", "go", "rust"],
+            description: "Technology stack for your project",
           },
           gitUserName: {
-            type: 'string',
+            type: "string",
             description: 'Git user name (optional, defaults to "Codex Agent")',
           },
           gitUserEmail: {
-            type: 'string',
-            description: 'Git user email (optional, defaults to "codex@example.com")',
+            type: "string",
+            description:
+              'Git user email (optional, defaults to "codex@example.com")',
           },
           format: {
-            type: 'string',
-            enum: ['json', 'markdown'],
-            default: 'markdown',
-            description: 'Response format. Default markdown for backward compatibility.',
+            type: "string",
+            enum: ["json", "markdown"],
+            default: "markdown",
+            description:
+              "Response format. Default markdown for backward compatibility.",
           },
         },
-        required: ['repoUrl', 'stack'],
+        required: ["repoUrl", "stack"],
       },
     };
   }
@@ -98,30 +102,34 @@ export class GitHubSetupTool {
    */
   async execute(input: GitHubSetupInput): Promise<GitHubSetupResult> {
     // Validate repository URL
-    if (!input.repoUrl.startsWith('https://github.com/')) {
-      if (input.format === 'json') {
+    if (!input.repoUrl.startsWith("https://github.com/")) {
+      if (input.format === "json") {
         const json = {
-          version: '3.6',
-          schema_id: 'codex/v3.6/registry_info/v1',
-          tool: '_codex_cloud_github_setup',
-          tool_category: 'registry_info',
-          request_id: (await import('crypto')).randomUUID(),
+          version: "3.6",
+          schema_id: "codex/v3.6/registry_info/v1",
+          tool: "_codex_cloud_github_setup",
+          tool_category: "registry_info",
+          request_id: (await import("crypto")).randomUUID(),
           ts: new Date().toISOString(),
-          status: 'error' as const,
+          status: "error" as const,
           meta: {},
           error: {
-            code: 'VALIDATION' as const,
-            message: 'Invalid repository URL (must start with https://github.com/)',
+            code: "VALIDATION" as const,
+            message:
+              "Invalid repository URL (must start with https://github.com/)",
             details: { repoUrl: input.repoUrl },
             retryable: false,
           },
         };
-        return { content: [{ type: 'text', text: JSON.stringify(json) }], isError: true };
+        return {
+          content: [{ type: "text", text: JSON.stringify(json) }],
+          isError: true,
+        };
       }
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ Invalid Repository URL
 
 The repository URL must be a GitHub URL starting with https://github.com/
@@ -137,10 +145,10 @@ The repository URL must be a GitHub URL starting with https://github.com/
 
     // Load appropriate template (map stack to full template name)
     const stackToTemplate: Record<string, string> = {
-      node: 'github-node-typescript',
-      python: 'github-python',
-      go: 'github-go',
-      rust: 'github-rust',
+      node: "github-node-typescript",
+      python: "github-python",
+      go: "github-go",
+      rust: "github-rust",
     };
     const templateName = stackToTemplate[input.stack];
     const template = getTemplate(templateName);
@@ -149,7 +157,7 @@ The repository URL must be a GitHub URL starting with https://github.com/
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ No template found for stack: ${input.stack}
 
 **Supported stacks**: node, python, go, rust
@@ -162,28 +170,28 @@ The repository URL must be a GitHub URL starting with https://github.com/
     }
 
     // Extract repository details
-    const repoPath = input.repoUrl.replace('https://github.com/', '');
-    const repoName = repoPath.split('/').pop() || 'repository';
+    const repoPath = input.repoUrl.replace("https://github.com/", "");
+    const repoName = repoPath.split("/").pop() || "repository";
     const repoOwnerAndName = repoPath;
 
     // Customize environment variables
-    const gitUserName = input.gitUserName || 'Codex Agent';
-    const gitUserEmail = input.gitUserEmail || 'codex@example.com';
+    const gitUserName = input.gitUserName || "Codex Agent";
+    const gitUserEmail = input.gitUserEmail || "codex@example.com";
 
     // Determine environment variable for stack
-    let stackEnvVar = '';
+    let stackEnvVar = "";
     switch (input.stack) {
-      case 'node':
-        stackEnvVar = '- `NODE_ENV`: development';
+      case "node":
+        stackEnvVar = "- `NODE_ENV`: development";
         break;
-      case 'python':
-        stackEnvVar = '- `PYTHONUNBUFFERED`: 1';
+      case "python":
+        stackEnvVar = "- `PYTHONUNBUFFERED`: 1";
         break;
-      case 'go':
-        stackEnvVar = '- `GO111MODULE`: on';
+      case "go":
+        stackEnvVar = "- `GO111MODULE`: on";
         break;
-      case 'rust':
-        stackEnvVar = '- `RUST_BACKTRACE`: 1';
+      case "rust":
+        stackEnvVar = "- `RUST_BACKTRACE`: 1";
         break;
     }
 
@@ -417,32 +425,47 @@ Once setup is complete, you can use Codex Cloud for:
 
 🎉 **You're all set! Happy coding with Codex Cloud!**`;
 
-    if (input.format === 'json') {
+    if (input.format === "json") {
       const json = {
-        version: '3.6',
-        schema_id: 'codex/v3.6/registry_info/v1',
-        tool: '_codex_cloud_github_setup',
-        tool_category: 'registry_info',
-        request_id: (await import('crypto')).randomUUID(),
+        version: "3.6",
+        schema_id: "codex/v3.6/registry_info/v1",
+        tool: "_codex_cloud_github_setup",
+        tool_category: "registry_info",
+        request_id: (await import("crypto")).randomUUID(),
         ts: new Date().toISOString(),
-        status: 'ok' as const,
+        status: "ok" as const,
         meta: { repository: input.repoUrl, tech_stack: input.stack },
         data: {
           guide: message,
           steps: [
-            { step: 1, title: 'Create Fine-Grained Token', instructions: 'Visit https://github.com/settings/tokens?type=beta and create a token with required permissions.' },
-            { step: 2, title: 'Configure Environment', instructions: 'Add token as GITHUB_TOKEN secret and environment variables, paste setup scripts, save.' },
-            { step: 3, title: 'Verify Setup', instructions: 'Submit a verification task to create a PR and validate integration.' },
+            {
+              step: 1,
+              title: "Create Fine-Grained Token",
+              instructions:
+                "Visit https://github.com/settings/tokens?type=beta and create a token with required permissions.",
+            },
+            {
+              step: 2,
+              title: "Configure Environment",
+              instructions:
+                "Add token as GITHUB_TOKEN secret and environment variables, paste setup scripts, save.",
+            },
+            {
+              step: 3,
+              title: "Verify Setup",
+              instructions:
+                "Submit a verification task to create a PR and validate integration.",
+            },
           ],
           verification_task: "Create a test branch and PR to verify setup",
         },
       };
-      return { content: [{ type: 'text', text: JSON.stringify(json) }] };
+      return { content: [{ type: "text", text: JSON.stringify(json) }] };
     }
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: message,
         },
       ],

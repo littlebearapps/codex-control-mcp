@@ -6,8 +6,8 @@
  * Solution: Run independent git commands to check branch, commits, staging
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
@@ -52,8 +52,17 @@ function parseGitExpectations(taskDescription: string): {
   const lower = taskDescription.toLowerCase();
 
   // Check if task involves git operations
-  const gitKeywords = ['branch', 'commit', 'stage', 'git add', 'git checkout', 'git commit'];
-  const expectGitOperations = gitKeywords.some(keyword => lower.includes(keyword));
+  const gitKeywords = [
+    "branch",
+    "commit",
+    "stage",
+    "git add",
+    "git checkout",
+    "git commit",
+  ];
+  const expectGitOperations = gitKeywords.some((keyword) =>
+    lower.includes(keyword),
+  );
 
   const result: any = {
     expectGitOperations,
@@ -76,7 +85,7 @@ function parseGitExpectations(taskDescription: string): {
   }
 
   // Check if commit expected
-  result.expectCommit = lower.includes('commit');
+  result.expectCommit = lower.includes("commit");
 
   // Extract expected commit message
   // Patterns: 'commit message: "..."', 'commit -m "..."'
@@ -121,7 +130,7 @@ function parseGitExpectations(taskDescription: string): {
  */
 async function runGit(
   command: string,
-  workingDir: string
+  workingDir: string,
 ): Promise<{ stdout: string; stderr: string; success: boolean }> {
   try {
     const { stdout, stderr } = await execAsync(command, {
@@ -131,8 +140,8 @@ async function runGit(
     return { stdout: stdout.trim(), stderr: stderr.trim(), success: true };
   } catch (error: any) {
     return {
-      stdout: error.stdout?.trim() || '',
-      stderr: error.stderr?.trim() || '',
+      stdout: error.stdout?.trim() || "",
+      stderr: error.stderr?.trim() || "",
       success: false,
     };
   }
@@ -143,7 +152,7 @@ async function runGit(
  */
 export async function verifyGitOperations(
   workingDir: string,
-  taskDescription: string
+  taskDescription: string,
 ): Promise<GitVerificationResult> {
   const result: GitVerificationResult = {
     branchExists: false,
@@ -164,18 +173,23 @@ export async function verifyGitOperations(
 
   // Skip verification if no git operations expected
   if (!expectations.expectGitOperations) {
-    console.error('[GitVerifier] No git operations expected, skipping verification');
+    console.error(
+      "[GitVerifier] No git operations expected, skipping verification",
+    );
     return result;
   }
 
-  console.error('[GitVerifier] Starting verification in:', workingDir);
-  console.error('[GitVerifier] Expectations:', expectations);
+  console.error("[GitVerifier] Starting verification in:", workingDir);
+  console.error("[GitVerifier] Expectations:", expectations);
 
   // 1. Check current branch
-  const branchCheck = await runGit('git rev-parse --abbrev-ref HEAD', workingDir);
+  const branchCheck = await runGit(
+    "git rev-parse --abbrev-ref HEAD",
+    workingDir,
+  );
   if (branchCheck.success) {
     result.actualBranch = branchCheck.stdout;
-    console.error('[GitVerifier] Current branch:', result.actualBranch);
+    console.error("[GitVerifier] Current branch:", result.actualBranch);
 
     // Verify expected branch
     if (expectations.expectBranch) {
@@ -184,64 +198,69 @@ export async function verifyGitOperations(
 
       if (!result.branchExists) {
         result.errors.push(
-          `Branch not created: Expected \`${expectations.expectBranch}\`, still on \`${result.actualBranch}\``
+          `Branch not created: Expected \`${expectations.expectBranch}\`, still on \`${result.actualBranch}\``,
         );
         result.recommendations.push(
-          `Create branch manually: \`git checkout -b ${expectations.expectBranch}\``
+          `Create branch manually: \`git checkout -b ${expectations.expectBranch}\``,
         );
       }
     }
   } else {
-    result.warnings.push('Could not determine current git branch');
+    result.warnings.push("Could not determine current git branch");
   }
 
   // 2. Check latest commit
-  const commitCheck = await runGit('git log -1 --pretty=format:"%H|%s"', workingDir);
+  const commitCheck = await runGit(
+    'git log -1 --pretty=format:"%H|%s"',
+    workingDir,
+  );
   if (commitCheck.success && commitCheck.stdout) {
-    const [hash, message] = commitCheck.stdout.split('|');
+    const [hash, message] = commitCheck.stdout.split("|");
     result.commitHash = hash;
     result.actualCommitMessage = message;
-    console.error('[GitVerifier] Latest commit:', message);
+    console.error("[GitVerifier] Latest commit:", message);
 
     // Verify expected commit
     if (expectations.expectCommit && expectations.expectCommitMessage) {
       result.expectedCommitMessage = expectations.expectCommitMessage;
-      const messageMatches = message.includes(expectations.expectCommitMessage.substring(0, 20));
+      const messageMatches = message.includes(
+        expectations.expectCommitMessage.substring(0, 20),
+      );
       result.commitExists = messageMatches;
 
       if (!messageMatches) {
         result.errors.push(
-          `Commit not found: Expected message containing "${expectations.expectCommitMessage.substring(0, 40)}...", got "${message}"`
+          `Commit not found: Expected message containing "${expectations.expectCommitMessage.substring(0, 40)}...", got "${message}"`,
         );
         result.recommendations.push(
-          `Create commit manually: \`git commit -m "${expectations.expectCommitMessage}"\``
+          `Create commit manually: \`git commit -m "${expectations.expectCommitMessage}"\``,
         );
       }
     }
   }
 
   // 3. Check staging status (git status --porcelain)
-  const statusCheck = await runGit('git status --porcelain', workingDir);
+  const statusCheck = await runGit("git status --porcelain", workingDir);
   if (statusCheck.success) {
-    const lines = statusCheck.stdout.split('\n').filter(l => l.trim());
+    const lines = statusCheck.stdout.split("\n").filter((l) => l.trim());
 
     for (const line of lines) {
       const status = line.substring(0, 2);
       const file = line.substring(3).trim();
 
       // Staged files (M , A , D , R , etc. in first column)
-      if (status[0] !== ' ' && status[0] !== '?') {
+      if (status[0] !== " " && status[0] !== "?") {
         result.stagedFiles.push(file);
       }
 
       // Unstaged changes (second column not space)
-      if (status[1] !== ' ' && status[1] !== '?') {
+      if (status[1] !== " " && status[1] !== "?") {
         result.unstagedFiles.push(file);
         result.modifiedFiles.push(file);
       }
 
       // Untracked files (??)
-      if (status === '??') {
+      if (status === "??") {
         result.untrackedFiles.push(file);
         result.unstagedFiles.push(file);
       }
@@ -250,22 +269,28 @@ export async function verifyGitOperations(
     result.filesStaged = result.stagedFiles.length > 0;
     result.workingTreeClean = lines.length === 0;
 
-    console.error('[GitVerifier] Staged files:', result.stagedFiles.length);
-    console.error('[GitVerifier] Unstaged files:', result.unstagedFiles.length);
-    console.error('[GitVerifier] Untracked files:', result.untrackedFiles.length);
+    console.error("[GitVerifier] Staged files:", result.stagedFiles.length);
+    console.error("[GitVerifier] Unstaged files:", result.unstagedFiles.length);
+    console.error(
+      "[GitVerifier] Untracked files:",
+      result.untrackedFiles.length,
+    );
 
     // Verify expected files staged
-    if (expectations.expectFilesStaged && expectations.expectFilesStaged.length > 0) {
+    if (
+      expectations.expectFilesStaged &&
+      expectations.expectFilesStaged.length > 0
+    ) {
       const missingFiles = expectations.expectFilesStaged.filter(
-        f => !result.stagedFiles.includes(f) && !result.stagedFiles.some(sf => sf.includes(f))
+        (f) =>
+          !result.stagedFiles.includes(f) &&
+          !result.stagedFiles.some((sf) => sf.includes(f)),
       );
 
       if (missingFiles.length > 0) {
-        result.errors.push(
-          `Files not staged: ${missingFiles.join(', ')}`
-        );
+        result.errors.push(`Files not staged: ${missingFiles.join(", ")}`);
         result.recommendations.push(
-          `Stage files manually: \`git add ${missingFiles.join(' ')}\``
+          `Stage files manually: \`git add ${missingFiles.join(" ")}\``,
         );
       }
     }
@@ -273,16 +298,19 @@ export async function verifyGitOperations(
     // Warn about unstaged changes
     if (result.unstagedFiles.length > 0) {
       result.warnings.push(
-        `${result.unstagedFiles.length} file(s) remain unstaged: ${result.unstagedFiles.slice(0, 3).join(', ')}${result.unstagedFiles.length > 3 ? '...' : ''}`
+        `${result.unstagedFiles.length} file(s) remain unstaged: ${result.unstagedFiles.slice(0, 3).join(", ")}${result.unstagedFiles.length > 3 ? "..." : ""}`,
       );
     }
   }
 
   // Summary
-  console.error('[GitVerifier] Verification complete:');
-  console.error('[GitVerifier]   Errors:', result.errors.length);
-  console.error('[GitVerifier]   Warnings:', result.warnings.length);
-  console.error('[GitVerifier]   Recommendations:', result.recommendations.length);
+  console.error("[GitVerifier] Verification complete:");
+  console.error("[GitVerifier]   Errors:", result.errors.length);
+  console.error("[GitVerifier]   Warnings:", result.warnings.length);
+  console.error(
+    "[GitVerifier]   Recommendations:",
+    result.recommendations.length,
+  );
 
   return result;
 }
@@ -290,14 +318,16 @@ export async function verifyGitOperations(
 /**
  * Format git verification results for user display
  */
-export function formatGitVerification(verification: GitVerificationResult): string {
+export function formatGitVerification(
+  verification: GitVerificationResult,
+): string {
   const lines: string[] = [];
 
-  lines.push('**Git Verification Results**:');
+  lines.push("**Git Verification Results**:");
 
   // Branch status
   if (verification.expectedBranch) {
-    const icon = verification.branchExists ? '✅' : '❌';
+    const icon = verification.branchExists ? "✅" : "❌";
     const msg = verification.branchExists
       ? `Branch created: \`${verification.actualBranch}\``
       : `Branch not created: Expected \`${verification.expectedBranch}\`, still on \`${verification.actualBranch}\``;
@@ -308,13 +338,15 @@ export function formatGitVerification(verification: GitVerificationResult): stri
 
   // Commit status
   if (verification.expectedCommitMessage) {
-    const icon = verification.commitExists ? '✅' : '❌';
+    const icon = verification.commitExists ? "✅" : "❌";
     const msg = verification.commitExists
       ? `Commit created: "${verification.actualCommitMessage?.substring(0, 60)}"`
       : `Commit not found: Expected message containing "${verification.expectedCommitMessage.substring(0, 40)}..."`;
     lines.push(`${icon} ${msg}`);
   } else if (verification.actualCommitMessage) {
-    lines.push(`ℹ️ Latest commit: "${verification.actualCommitMessage.substring(0, 60)}"`);
+    lines.push(
+      `ℹ️ Latest commit: "${verification.actualCommitMessage.substring(0, 60)}"`,
+    );
   }
 
   // Staging status
@@ -323,29 +355,33 @@ export function formatGitVerification(verification: GitVerificationResult): stri
   }
 
   if (verification.unstagedFiles.length > 0) {
-    lines.push(`⚠️ Files unstaged: ${verification.unstagedFiles.length} file(s)`);
+    lines.push(
+      `⚠️ Files unstaged: ${verification.unstagedFiles.length} file(s)`,
+    );
   }
 
   // Errors
   if (verification.errors.length > 0) {
-    lines.push('');
-    lines.push('**Errors**:');
-    verification.errors.forEach(err => lines.push(`- ❌ ${err}`));
+    lines.push("");
+    lines.push("**Errors**:");
+    verification.errors.forEach((err) => lines.push(`- ❌ ${err}`));
   }
 
   // Warnings
   if (verification.warnings.length > 0) {
-    lines.push('');
-    lines.push('**Warnings**:');
-    verification.warnings.forEach(warn => lines.push(`- ⚠️ ${warn}`));
+    lines.push("");
+    lines.push("**Warnings**:");
+    verification.warnings.forEach((warn) => lines.push(`- ⚠️ ${warn}`));
   }
 
   // Recommendations
   if (verification.recommendations.length > 0) {
-    lines.push('');
-    lines.push('**Recommended Actions**:');
-    verification.recommendations.forEach((rec, i) => lines.push(`${i + 1}. ${rec}`));
+    lines.push("");
+    lines.push("**Recommended Actions**:");
+    verification.recommendations.forEach((rec, i) =>
+      lines.push(`${i + 1}. ${rec}`),
+    );
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

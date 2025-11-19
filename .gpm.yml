@@ -18,9 +18,8 @@
 # Enterprise? Set requireReviews: 2+
 branchProtection:
   enabled: false
-  requireReviews: 0  # 0 = no reviews (solo dev), 1+ = team
-  requireStatusChecks:
-    []
+  requireReviews: 0 # 0 = no reviews (solo dev), 1+ = team
+  requireStatusChecks: []
   enforceAdmins: false
 
 # CI Configuration
@@ -31,7 +30,7 @@ ci:
   waitForChecks: true
   failFast: true
   retryFlaky: false
-  timeout: 30  # minutes
+  timeout: 30 # minutes
 
 # Security Scanning
 # scanSecrets: true     = check for hardcoded secrets/tokens
@@ -82,7 +81,6 @@ hooks:
 verification:
   detectionEnabled: true
   preferMakefile: true
-
 # 📚 Documentation:
 #   gpm docs                                  - View all guides
 #   gpm docs --guide=AI-AGENT-INTEGRATION     - AI agent setup

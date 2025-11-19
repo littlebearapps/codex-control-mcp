@@ -25,8 +25,8 @@ export class Router {
         if (!intentResult.intent) {
             return {
                 success: false,
-                primitive: '',
-                error: intentResult.error || 'Could not determine intent',
+                primitive: "",
+                error: intentResult.error || "Could not determine intent",
                 suggestion: this.suggestAlternatives(intentResult),
             };
         }
@@ -35,7 +35,7 @@ export class Router {
             return {
                 success: false,
                 primitive: intentResult.intent.primitive,
-                error: 'Input is ambiguous',
+                error: "Input is ambiguous",
                 suggestion: this.formatDisambiguationOptions(intentResult),
             };
         }
@@ -47,7 +47,8 @@ export class Router {
                 success: false,
                 primitive,
                 error: `Primitive "${primitive}" not found`,
-                suggestion: 'Available primitives: ' + Array.from(this.primitives.keys()).join(', '),
+                suggestion: "Available primitives: " +
+                    Array.from(this.primitives.keys()).join(", "),
             };
         }
         // Validate confidence threshold
@@ -86,7 +87,7 @@ export class Router {
                 success: false,
                 primitive,
                 error: error instanceof Error ? error.message : String(error),
-                suggestion: 'Check if Codex CLI is installed and authenticated',
+                suggestion: "Check if Codex CLI is installed and authenticated",
             };
         }
     }
@@ -109,12 +110,12 @@ export class Router {
      */
     suggestAlternatives(intentResult) {
         if (intentResult.alternatives.length === 0) {
-            return 'Try being more specific about what you want to do.';
+            return "Try being more specific about what you want to do.";
         }
         const suggestions = intentResult.alternatives
             .slice(0, 3)
-            .map(alt => `- "${alt.primitive}" (${alt.confidence}% confidence): ${alt.reasoning}`)
-            .join('\n');
+            .map((alt) => `- "${alt.primitive}" (${alt.confidence}% confidence): ${alt.reasoning}`)
+            .join("\n");
         return `Did you mean one of these?\n${suggestions}`;
     }
     /**
@@ -122,14 +123,14 @@ export class Router {
      */
     formatDisambiguationOptions(intentResult) {
         if (!intentResult.intent || !intentResult.alternatives[0]) {
-            return '';
+            return "";
         }
         const option1 = intentResult.intent;
         const option2 = intentResult.alternatives[0];
-        return `Please clarify:\n` +
+        return (`Please clarify:\n` +
             `1. ${option1.primitive} (${option1.confidence}% confidence)\n` +
             `2. ${option2.primitive} (${option2.confidence}% confidence)\n\n` +
-            `Respond with "option 1" or "option 2", or rephrase your request.`;
+            `Respond with "option 1" or "option 2", or rephrase your request.`);
     }
     /**
      * Suggest how to fix parameter issues
@@ -139,13 +140,13 @@ export class Router {
         const properties = schema.inputSchema?.properties || {};
         const missing = required.filter((r) => !(r in params));
         if (missing.length === 0) {
-            return '';
+            return "";
         }
         const suggestions = missing.map((param) => {
             const prop = properties[param];
-            return `- ${param}: ${prop?.description || 'required'}`;
+            return `- ${param}: ${prop?.description || "required"}`;
         });
-        return `Please provide:\n${suggestions.join('\n')}`;
+        return `Please provide:\n${suggestions.join("\n")}`;
     }
     /**
      * Get list of registered primitives

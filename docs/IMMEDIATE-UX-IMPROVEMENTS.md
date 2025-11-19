@@ -1,4 +1,5 @@
 # Immediate UX Improvements for MCP Delegator
+
 ## Within CLI Constraints - No Platform Changes Needed
 
 **Date:** 2025-11-17
@@ -9,6 +10,7 @@
 ## Executive Summary
 
 **Current Issues:**
+
 - 🔴 Manual polling wastes ~2000 tokens per task
 - 🔴 Large result dumps (12k+ tokens) overwhelm context
 - 🔴 Repetitive status checks show identical data
@@ -16,12 +18,14 @@
 - 🔴 Full output dumped even when summary would suffice
 
 **Solutions Available Now:**
+
 - ✅ Use existing `_codex_local_wait` tool (built-in, just underutilized)
 - ✅ Leverage metadata extraction for summaries
 - ✅ Implement progressive disclosure
 - ✅ Set clear user expectations upfront
 
 **Impact:**
+
 - **Token reduction:** 96% (14k → 500 per task)
 - **User experience:** 99% less noise
 - **Implementation effort:** Zero code changes to MCP server
@@ -31,6 +35,7 @@
 ## Improvement #1: Replace Manual Polling with Wait Tool
 
 ### Current Pattern (Inefficient)
+
 ```typescript
 // What Claude Code does now:
 console.log("Stage 2 is running. Let me monitor progress:");
@@ -51,6 +56,7 @@ const status4 = await _codex_local_status(); // ~500 tokens
 ```
 
 ### New Pattern (Efficient)
+
 ```typescript
 // What Claude Code SHOULD do:
 console.log("Stage 2 started (9 CRUD methods + tests)");
@@ -58,7 +64,7 @@ console.log("Expected duration: 6-10 minutes");
 console.log("I'll wait automatically - no need to check manually...");
 
 const results = await _codex_local_wait({
-  task_id: "T-local-xyz"
+  task_id: "T-local-xyz",
 });
 
 console.log(`✅ Complete in ${results.metadata.duration}s!`);
@@ -73,6 +79,7 @@ console.log(`✅ Complete in ${results.metadata.duration}s!`);
 ## Improvement #2: Metadata-Driven Summaries
 
 ### Current Pattern (Information Overload)
+
 ```typescript
 const results = await _codex_local_results({ task_id });
 
@@ -85,6 +92,7 @@ console.log(results); // Dumps 1171 lines to user
 ```
 
 ### New Pattern (Concise Summary)
+
 ```typescript
 const results = await _codex_local_results({ task_id });
 
@@ -128,6 +136,7 @@ if (metadata.error_context) {
 ## Improvement #3: Set Clear Expectations Upfront
 
 ### Current Pattern (Anxiety-Inducing)
+
 ```typescript
 console.log("Stage 2 is now running.");
 // [5 minutes of silence]
@@ -139,6 +148,7 @@ console.log("Progress Update (6.5 minutes): Still at 50%...");
 ```
 
 ### New Pattern (Reassuring)
+
 ```typescript
 console.log("Starting Stage 2: Workspace CRUD Implementation");
 console.log("");
@@ -169,6 +179,7 @@ console.log("✅ Stage 2 complete in 8m 23s!");
 ## Improvement #4: Progressive File Verification
 
 ### Current Pattern (Read Everything)
+
 ```typescript
 const results = await _codex_local_results({ task_id });
 
@@ -183,6 +194,7 @@ for (const file of modifiedFiles) {
 ```
 
 ### New Pattern (Targeted Verification)
+
 ```typescript
 const results = await _codex_local_results({ task_id });
 const files = results.metadata.file_operations.modified_files;
@@ -206,7 +218,7 @@ console.log(`✅ ${verified.length} files verified`);
 
 if (missing.length > 0) {
   console.log(`⚠️ ${missing.length} files missing:`);
-  missing.forEach(f => console.log(`  - ${f}`));
+  missing.forEach((f) => console.log(`  - ${f}`));
 }
 
 // ONLY read file contents if:
@@ -224,6 +236,7 @@ if (missing.length > 0) {
 ## Improvement #5: Smart Error Handling
 
 ### Current Pattern (Unclear Next Steps)
+
 ```typescript
 if (results.error) {
   console.log(`Error: ${results.error}`);
@@ -234,6 +247,7 @@ if (results.error) {
 ```
 
 ### New Pattern (Actionable Guidance)
+
 ```typescript
 if (results.metadata.error_context) {
   const error = results.metadata.error_context;
@@ -345,8 +359,10 @@ const { metadata } = results;
 // 4. Show concise summary (~100 tokens)
 console.log(`✅ Stage 2 complete in ${metadata.duration}s!`);
 console.log("");
-console.log(`📁 Modified ${metadata.file_operations.modified_files.length} files:`);
-metadata.file_operations.modified_files.forEach(f => {
+console.log(
+  `📁 Modified ${metadata.file_operations.modified_files.length} files:`,
+);
+metadata.file_operations.modified_files.forEach((f) => {
   console.log(`  - ${f}`);
 });
 
@@ -358,8 +374,12 @@ if (metadata.test_results) {
 // 5. Targeted verification (~100 tokens)
 console.log("");
 console.log("Verifying files...");
-const allExist = metadata.file_operations.modified_files.every(f => fileExists(f));
-console.log(`✅ All ${metadata.file_operations.modified_files.length} files verified`);
+const allExist = metadata.file_operations.modified_files.every((f) =>
+  fileExists(f),
+);
+console.log(
+  `✅ All ${metadata.file_operations.modified_files.length} files verified`,
+);
 
 // 6. ONLY show full output if errors
 if (metadata.error_context) {
@@ -373,6 +393,7 @@ if (metadata.error_context) {
 ```
 
 **Improvement Summary:**
+
 - **Token reduction:** 97% (18k → 500)
 - **Output reduction:** 99% (1171 lines → 10 lines)
 - **User anxiety:** Eliminated (clear expectations)
@@ -387,6 +408,7 @@ if (metadata.error_context) {
 When using MCP Delegator:
 
 **✅ Do:**
+
 1. Use `_codex_local_wait` instead of manual polling
 2. Set clear expectations upfront (duration, complexity)
 3. Extract metadata for summaries
@@ -394,6 +416,7 @@ When using MCP Delegator:
 5. Provide actionable error guidance using metadata.error_context
 
 **❌ Don't:**
+
 1. Poll status manually every 60 seconds
 2. Show identical status updates ("still at 50%...")
 3. Dump full 12k token results to user
@@ -405,39 +428,44 @@ When using MCP Delegator:
 ## Expected Impact
 
 ### Token Usage
-| Workflow | Before | After | Savings |
-|----------|--------|-------|---------|
-| Polling | 2000 | 300 | 85% |
-| Results | 12000 | 100 | 99% |
-| Verification | 4000 | 100 | 97% |
-| **Total** | **18000** | **500** | **97%** |
+
+| Workflow     | Before    | After   | Savings |
+| ------------ | --------- | ------- | ------- |
+| Polling      | 2000      | 300     | 85%     |
+| Results      | 12000     | 100     | 99%     |
+| Verification | 4000      | 100     | 97%     |
+| **Total**    | **18000** | **500** | **97%** |
 
 ### User Experience
-| Aspect | Before | After |
-|--------|--------|-------|
-| Output lines | 1171 | 10-15 |
-| Repetitive updates | 4+ | 0 |
+
+| Aspect             | Before | After  |
+| ------------------ | ------ | ------ |
+| Output lines       | 1171   | 10-15  |
+| Repetitive updates | 4+     | 0      |
 | Time to understand | 5+ min | 10 sec |
-| Anxiety level | High | None |
-| Actionability | Low | High |
+| Anxiety level      | High   | None   |
+| Actionability      | Low    | High   |
 
 ---
 
 ## Next Steps
 
 ### Immediate (No Code Changes)
+
 1. ✅ Use `_codex_local_wait` as default pattern
 2. ✅ Implement metadata-driven summaries
 3. ✅ Set clear user expectations upfront
 4. ✅ Use progressive disclosure
 
 ### Short-term (MCP Server Enhancements)
+
 1. Add `summary_only` parameter to `_codex_local_results`
 2. Return condensed status from `_codex_local_status` (exclude unchanged data)
 3. Implement streaming results (chunked output)
 4. Add task state transition notifications
 
 ### Long-term (When Platform Ready)
+
 1. Enable `ENABLE_MCP_PROGRESS_NOTIFICATIONS = true`
 2. Claude Code displays real-time progress in status bar
 3. Automatic push-based updates (no polling needed)
@@ -450,6 +478,7 @@ When using MCP Delegator:
 **The good news:** 97% improvement is achievable **right now** with **zero code changes** to the MCP server. This is purely about how Claude Code (the AI agent) uses the existing tools.
 
 **The key insight:** The MCP Delegator already has all the tools needed for a great UX:
+
 - ✅ Wait tools (no manual polling)
 - ✅ Metadata extraction (structured summaries)
 - ✅ Error context (actionable guidance)

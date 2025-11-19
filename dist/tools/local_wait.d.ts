@@ -6,7 +6,7 @@ export interface LocalWaitInput {
     timeout_sec?: number;
     include_output?: boolean;
     max_output_bytes?: number;
-    format?: 'json' | 'markdown';
+    format?: "json" | "markdown";
 }
 export declare class LocalWaitTool {
     static getSchema(): {

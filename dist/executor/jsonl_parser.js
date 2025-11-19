@@ -8,7 +8,7 @@
  * - Malformed events (graceful degradation)
  */
 export class JSONLParser {
-    buffer = '';
+    buffer = "";
     lineCount = 0;
     parseErrors = 0;
     /**
@@ -17,9 +17,9 @@ export class JSONLParser {
      */
     feed(chunk) {
         this.buffer += chunk;
-        const lines = this.buffer.split('\n');
+        const lines = this.buffer.split("\n");
         // Keep incomplete last line in buffer
-        this.buffer = lines.pop() || '';
+        this.buffer = lines.pop() || "";
         const events = [];
         for (const line of lines) {
             this.lineCount++;
@@ -49,12 +49,12 @@ export class JSONLParser {
         }
         try {
             const event = JSON.parse(this.buffer);
-            this.buffer = '';
+            this.buffer = "";
             return event;
         }
         catch (parseError) {
-            console.warn('[JSONLParser] Incomplete buffer at end of stream:', this.buffer.substring(0, 100));
-            this.buffer = '';
+            console.warn("[JSONLParser] Incomplete buffer at end of stream:", this.buffer.substring(0, 100));
+            this.buffer = "";
             return null;
         }
     }
@@ -72,7 +72,7 @@ export class JSONLParser {
      * Reset parser state (for reuse)
      */
     reset() {
-        this.buffer = '';
+        this.buffer = "";
         this.lineCount = 0;
         this.parseErrors = 0;
     }
@@ -80,18 +80,18 @@ export class JSONLParser {
 /**
  * Event type guards for type safety
  */
-export const isThreadStarted = (event) => event.type === 'thread.started';
-export const isTurnStarted = (event) => event.type === 'turn.started';
-export const isTurnCompleted = (event) => event.type === 'turn.completed';
-export const isTurnFailed = (event) => event.type === 'turn.failed';
-export const isItemStarted = (event) => event.type === 'item.started';
-export const isItemUpdated = (event) => event.type === 'item.updated';
-export const isItemCompleted = (event) => event.type === 'item.completed';
+export const isThreadStarted = (event) => event.type === "thread.started";
+export const isTurnStarted = (event) => event.type === "turn.started";
+export const isTurnCompleted = (event) => event.type === "turn.completed";
+export const isTurnFailed = (event) => event.type === "turn.failed";
+export const isItemStarted = (event) => event.type === "item.started";
+export const isItemUpdated = (event) => event.type === "item.updated";
+export const isItemCompleted = (event) => event.type === "item.completed";
 /**
  * Extract item type from event (for item.* events)
  */
 export const getItemType = (event) => {
-    if (!event.type.startsWith('item.')) {
+    if (!event.type.startsWith("item.")) {
         return null;
     }
     return event.data?.type || null;
@@ -100,12 +100,12 @@ export const getItemType = (event) => {
  * Check if event represents a file modification
  */
 export const isFileChange = (event) => {
-    return getItemType(event) === 'file_change';
+    return getItemType(event) === "file_change";
 };
 /**
  * Check if event represents a command execution
  */
 export const isCommandExecution = (event) => {
-    return getItemType(event) === 'command_execution';
+    return getItemType(event) === "command_execution";
 };
 //# sourceMappingURL=jsonl_parser.js.map

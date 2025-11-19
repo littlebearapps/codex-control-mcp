@@ -24,6 +24,7 @@
 ### Always Use JSON When:
 
 1. **Multi-step workflows** - Passing results between multiple tool calls
+
    ```typescript
    // Step 1: Start task with JSON format
    { task: "Run tests", format: "json" }
@@ -34,6 +35,7 @@
    ```
 
 2. **Automated decision-making** - Need to parse results programmatically
+
    ```typescript
    // Get test results in structured format
    { task: "Run tests", format: "json" }
@@ -42,6 +44,7 @@
    ```
 
 3. **Token-constrained contexts** - Working with limited token budgets
+
    ```typescript
    // 97% token reduction (18,000 → 300 tokens)
    { task: "Complex analysis", format: "json" }
@@ -69,17 +72,20 @@
 ### Strategy 1: Use JSON Format (97% Reduction)
 
 **Before** (Markdown):
+
 ```
 Total tokens: 18,000 (task output + metadata + formatting)
 ```
 
 **After** (JSON):
+
 ```
 Total tokens: 300 (structured envelope + extracted metadata)
 Savings: 17,700 tokens (97%)
 ```
 
 **Implementation**:
+
 ```typescript
 // Add format: "json" to EVERY tool call in automated workflows
 {
@@ -95,6 +101,7 @@ Savings: 17,700 tokens (97%)
 **Pattern**: Use `_codex_local_exec` + `_codex_local_resume` for iterative work
 
 **First Execution**:
+
 ```typescript
 {
   task: "Analyze authentication system",
@@ -105,6 +112,7 @@ Savings: 17,700 tokens (97%)
 ```
 
 **Resumed Execution** (79% cache hit):
+
 ```typescript
 {
   thread_id: "thread_abc123",
@@ -116,6 +124,7 @@ Savings: 17,700 tokens (97%)
 ```
 
 **Token Calculation**:
+
 - **Without threading**: 10,000 + 10,000 = 20,000 tokens
 - **With threading**: 10,000 + 2,500 = 12,500 tokens
 - **Savings**: 7,500 tokens (37.5%)
@@ -125,6 +134,7 @@ Savings: 17,700 tokens (97%)
 ### Strategy 3: Metadata Extraction (Zero-Cost Parsing)
 
 **Automatic Extraction** (no prompt engineering needed):
+
 ```typescript
 // Request with JSON format
 { task: "Run tests", format: "json" }
@@ -153,6 +163,7 @@ Savings: 17,700 tokens (97%)
 ```
 
 **Manual Extraction** (costs tokens):
+
 ```typescript
 // Without JSON format (markdown response)
 // Need additional prompt: "Extract test results, file changes, and errors"
@@ -168,6 +179,7 @@ Savings: 17,700 tokens (97%)
 **Workflow**: Test suite automation with fixes
 
 **Traditional Approach** (Markdown + No Threading):
+
 ```
 Step 1: Run tests (18,000 tokens)
 Step 2: Analyze failures (18,000 tokens)
@@ -177,6 +189,7 @@ Total: 72,000 tokens
 ```
 
 **Optimized Approach** (JSON + Threading):
+
 ```
 Step 1: Run tests (300 tokens JSON)
 Step 2: Parse failures (0 tokens - metadata extraction)
@@ -194,6 +207,7 @@ Total: 680 tokens
 ### Pattern 1: Test Result Processing
 
 **Automatic Extraction** (when `format: "json"`):
+
 ```typescript
 // Response includes:
 metadata: {
@@ -207,6 +221,7 @@ metadata: {
 ```
 
 **AI Agent Decision Logic**:
+
 ```typescript
 const response = JSON.parse(result);
 const { passed, failed, failed_tests } = response.data.metadata.test_results;
@@ -230,6 +245,7 @@ if (failed === 0) {
 ### Pattern 2: File Change Tracking
 
 **Automatic Extraction**:
+
 ```typescript
 metadata: {
   file_operations: {
@@ -242,15 +258,17 @@ metadata: {
 ```
 
 **AI Agent Decision Logic**:
+
 ```typescript
-const { modified, added, lines_changed } = response.data.metadata.file_operations;
+const { modified, added, lines_changed } =
+  response.data.metadata.file_operations;
 
 if (lines_changed > 500) {
   // Large change - recommend review
   await requestHumanReview(modified);
 } else if (added.length > 0) {
   // New files - check if tests added
-  const hasTests = added.some(f => f.includes('test'));
+  const hasTests = added.some((f) => f.includes("test"));
   if (!hasTests) await suggestAddingTests();
 }
 ```
@@ -260,6 +278,7 @@ if (lines_changed > 500) {
 ### Pattern 3: Error Context Analysis
 
 **Automatic Extraction**:
+
 ```typescript
 metadata: {
   error_context: {
@@ -277,6 +296,7 @@ metadata: {
 ```
 
 **AI Agent Decision Logic**:
+
 ```typescript
 const { error_locations, suggestions } = response.data.metadata.error_context;
 
@@ -299,6 +319,7 @@ if (primaryAction.includes("Check")) {
 ### Pattern 1: Check Status Before Parsing
 
 **Always check `status` field first**:
+
 ```typescript
 const response = JSON.parse(result);
 
@@ -317,6 +338,7 @@ const taskId = response.data.task_id;
 ### Pattern 2: Implement Retry Logic Based on Error Code
 
 **Use `error.retryable` flag**:
+
 ```typescript
 const { error } = response;
 
@@ -334,20 +356,21 @@ if (error.retryable) {
 
 **Error Code Decision Matrix**:
 
-| Error Code | Retryable | Action |
-|------------|-----------|--------|
-| `VALIDATION` | Yes | Fix parameters and retry |
-| `NOT_FOUND` | Yes | Wait (task may be creating) or verify ID |
-| `TIMEOUT` | No | Use Cloud for long tasks or break into steps |
-| `TOOL_ERROR` | No | Investigate Codex output in error.details |
-| `UNSUPPORTED` | No | Change approach (e.g., different model) |
-| `INTERNAL` | Maybe | Retry once, then escalate |
+| Error Code    | Retryable | Action                                       |
+| ------------- | --------- | -------------------------------------------- |
+| `VALIDATION`  | Yes       | Fix parameters and retry                     |
+| `NOT_FOUND`   | Yes       | Wait (task may be creating) or verify ID     |
+| `TIMEOUT`     | No        | Use Cloud for long tasks or break into steps |
+| `TOOL_ERROR`  | No        | Investigate Codex output in error.details    |
+| `UNSUPPORTED` | No        | Change approach (e.g., different model)      |
+| `INTERNAL`    | Maybe     | Retry once, then escalate                    |
 
 ---
 
 ### Pattern 3: Extract Partial Results on Timeout
 
 **Timeout errors include partial results**:
+
 ```typescript
 if (error.code === "TIMEOUT") {
   // Check for partial results
@@ -371,6 +394,7 @@ if (error.code === "TIMEOUT") {
 ### Pattern 4: Error Context for Debugging
 
 **Use error.details for debugging**:
+
 ```typescript
 if (error.code === "TOOL_ERROR") {
   // Error details contain actionable information
@@ -395,13 +419,14 @@ if (error.code === "TOOL_ERROR") {
 ### Pattern 1: Test-Fix-Verify Loop
 
 **Automated workflow with JSON format**:
+
 ```typescript
 async function testFixVerifyLoop() {
   // Step 1: Run tests
   const testResult = await runTool({
     tool: "_codex_local_run",
     task: "Run full test suite",
-    format: "json"
+    format: "json",
   });
 
   const { test_results } = JSON.parse(testResult).data.metadata;
@@ -413,8 +438,8 @@ async function testFixVerifyLoop() {
   // Step 2: Start thread to fix failures
   const fixResult = await runTool({
     tool: "_codex_local_exec",
-    task: `Fix these failing tests: ${test_results.failed_tests.join(', ')}`,
-    format: "json"
+    task: `Fix these failing tests: ${test_results.failed_tests.join(", ")}`,
+    format: "json",
   });
 
   const { thread_id } = JSON.parse(fixResult).data;
@@ -424,7 +449,7 @@ async function testFixVerifyLoop() {
     tool: "_codex_local_resume",
     thread_id,
     task: "Run only the previously failing tests to verify fixes",
-    format: "json"
+    format: "json",
   });
 
   const { test_results: retest } = JSON.parse(verifyResult).data.metadata;
@@ -443,13 +468,14 @@ async function testFixVerifyLoop() {
 ### Pattern 2: Progressive Analysis Workflow
 
 **Deep dive with context preservation**:
+
 ```typescript
 async function progressiveAnalysis(codebase: string) {
   // Step 1: Initial scan
   const scanResult = await runTool({
     tool: "_codex_local_exec",
     task: "Scan codebase for security vulnerabilities",
-    format: "json"
+    format: "json",
   });
 
   const { thread_id, output } = JSON.parse(scanResult).data;
@@ -459,7 +485,7 @@ async function progressiveAnalysis(codebase: string) {
     tool: "_codex_local_resume",
     thread_id,
     task: "For each vulnerability found, explain the attack vector and provide fix",
-    format: "json"
+    format: "json",
   });
 
   const vulnerabilities = parseVulnerabilities(analysisResult);
@@ -469,7 +495,7 @@ async function progressiveAnalysis(codebase: string) {
     tool: "_codex_local_resume",
     thread_id,
     task: "Rank vulnerabilities by severity and effort to fix",
-    format: "json"
+    format: "json",
   });
 
   return JSON.parse(priorityResult).data;
@@ -481,6 +507,7 @@ async function progressiveAnalysis(codebase: string) {
 ### Pattern 3: Cloud Submission for Long Tasks
 
 **Submit and continue working**:
+
 ```typescript
 async function longRunningWorkflow() {
   // Submit comprehensive task to Cloud
@@ -488,7 +515,7 @@ async function longRunningWorkflow() {
     tool: "_codex_cloud_submit",
     task: "Run full security audit, fix critical issues, create PR",
     env_id: "env_production",
-    format: "json"
+    format: "json",
   });
 
   const { task_id } = JSON.parse(submitResult).data;
@@ -500,7 +527,7 @@ async function longRunningWorkflow() {
   const statusResult = await runTool({
     tool: "_codex_cloud_status",
     task_id,
-    format: "json"
+    format: "json",
   });
 
   const { final_status } = JSON.parse(statusResult).data;
@@ -510,7 +537,7 @@ async function longRunningWorkflow() {
     const results = await runTool({
       tool: "_codex_cloud_results",
       task_id,
-      format: "json"
+      format: "json",
     });
 
     return JSON.parse(results).data;
@@ -525,6 +552,7 @@ async function longRunningWorkflow() {
 ### Pattern 1: Task Delegation Between Agents
 
 **Agent A delegates to MCP Delegator, continues working**:
+
 ```typescript
 // Agent A (Claude Code)
 async function coordinatedWork() {
@@ -532,7 +560,7 @@ async function coordinatedWork() {
   const testTask = await mcpDelegator.runTool({
     tool: "_codex_local_exec",
     task: "Run comprehensive test suite",
-    format: "json"
+    format: "json",
   });
 
   const { task_id } = JSON.parse(testTask).data;
@@ -556,12 +584,13 @@ async function coordinatedWork() {
 ### Pattern 2: Shared Context via Thread IDs
 
 **Pass thread IDs between agents**:
+
 ```typescript
 // Agent A starts investigation
 const agent_a_result = await mcpDelegator.runTool({
   tool: "_codex_local_exec",
   task: "Analyze authentication flow",
-  format: "json"
+  format: "json",
 });
 
 const { thread_id } = JSON.parse(agent_a_result).data;
@@ -572,9 +601,9 @@ await shareContext(agentB, { thread_id });
 // Agent B continues in same thread (full context preserved)
 const agent_b_result = await mcpDelegator.runTool({
   tool: "_codex_local_resume",
-  thread_id,  // ← Shared context
+  thread_id, // ← Shared context
   task: "Identify security vulnerabilities in the authentication flow",
-  format: "json"
+  format: "json",
 });
 ```
 
@@ -585,6 +614,7 @@ const agent_b_result = await mcpDelegator.runTool({
 ### Optimization 1: Batch Similar Tasks
 
 **Instead of sequential execution**:
+
 ```typescript
 // ❌ Slow: Sequential (5 × 2 min = 10 min)
 await analyze("file1.ts");
@@ -595,12 +625,13 @@ await analyze("file5.ts");
 ```
 
 **Use Cloud for parallel execution**:
+
 ```typescript
 // ✅ Fast: Parallel via Cloud (2 min total)
 const task = await runTool({
   tool: "_codex_cloud_submit",
   task: "Analyze all TypeScript files: file1.ts, file2.ts, file3.ts, file4.ts, file5.ts",
-  format: "json"
+  format: "json",
 });
 ```
 
@@ -609,6 +640,7 @@ const task = await runTool({
 ### Optimization 2: Minimize Context Passing
 
 **Use metadata extraction instead of re-parsing**:
+
 ```typescript
 // ❌ Token-heavy: Re-parse markdown output
 const result = await runTool({ task: "Run tests" }); // Markdown
@@ -625,6 +657,7 @@ const failures = JSON.parse(result).data.metadata.test_results.failed_tests;
 ### Optimization 3: Cache-Friendly Prompts
 
 **Structure prompts for high cache rates**:
+
 ```typescript
 // ❌ Low cache: Different context each time
 await resume(thread, "What about the login function?");
@@ -645,6 +678,7 @@ await resume(thread, "Analysis request: password reset");
 ### Pitfall 1: Forgetting format: "json" Parameter
 
 **Problem**: Agent expects JSON but gets markdown
+
 ```typescript
 // ❌ Returns markdown
 const result = await runTool({ task: "Run tests" });
@@ -652,6 +686,7 @@ const parsed = JSON.parse(result); // ← FAILS
 ```
 
 **Solution**: Always add format: "json"
+
 ```typescript
 // ✅ Returns JSON
 const result = await runTool({ task: "Run tests", format: "json" });
@@ -663,6 +698,7 @@ const parsed = JSON.parse(result); // ← SUCCESS
 ### Pitfall 2: Not Checking response.status
 
 **Problem**: Trying to access data when error occurred
+
 ```typescript
 // ❌ Crashes on error
 const result = JSON.parse(response);
@@ -670,6 +706,7 @@ const taskId = result.data.task_id; // ← FAILS if status: "error"
 ```
 
 **Solution**: Check status first
+
 ```typescript
 // ✅ Handles errors gracefully
 const result = JSON.parse(response);
@@ -685,6 +722,7 @@ const taskId = result.data.task_id; // ← Safe
 ### Pitfall 3: Ignoring error.retryable Flag
 
 **Problem**: Retrying non-retryable errors wastes tokens
+
 ```typescript
 // ❌ Infinite retry loop on TIMEOUT
 while (true) {
@@ -696,6 +734,7 @@ while (true) {
 ```
 
 **Solution**: Check retryable flag
+
 ```typescript
 // ✅ Only retry retryable errors
 const result = await runTool({ task: "Long task", format: "json" });
@@ -716,6 +755,7 @@ if (parsed.status === "error") {
 ### Pitfall 4: Not Using Thread Resumption
 
 **Problem**: Repeating context in each request
+
 ```typescript
 // ❌ No caching (20,000 tokens total)
 await runTool({ task: "Analyze auth system" }); // 10,000 tokens
@@ -723,16 +763,21 @@ await runTool({ task: "Find vulnerabilities in auth system" }); // 10,000 tokens
 ```
 
 **Solution**: Use thread resumption
+
 ```typescript
 // ✅ High cache rate (12,500 tokens total)
-const r1 = await runTool({ tool: "_codex_local_exec", task: "Analyze auth system", format: "json" });
+const r1 = await runTool({
+  tool: "_codex_local_exec",
+  task: "Analyze auth system",
+  format: "json",
+});
 const { thread_id } = JSON.parse(r1).data;
 
 const r2 = await runTool({
   tool: "_codex_local_resume",
   thread_id,
   task: "Find vulnerabilities",
-  format: "json"
+  format: "json",
 }); // 2,500 tokens (79% cached)
 ```
 
@@ -741,6 +786,7 @@ const r2 = await runTool({
 ### Pitfall 5: Parsing Partial JSON on Timeout
 
 **Problem**: Timeout errors look like they contain parseable output
+
 ```typescript
 // ❌ Tries to parse error message as task output
 const result = await runTool({ task: "Long task", format: "json" });
@@ -754,6 +800,7 @@ if (parsed.error?.code === "TIMEOUT") {
 ```
 
 **Solution**: Use partial results for debugging only
+
 ```typescript
 // ✅ Treat partial results as debugging info
 if (parsed.error?.code === "TIMEOUT") {
@@ -788,6 +835,7 @@ if (parsed.error?.code === "TIMEOUT") {
 **Cost Impact**: $100 → $5 per 1M tokens for automated workflows using JSON format + thread resumption.
 
 **See Also**:
+
 - `quickrefs/tools.md` - Complete tool reference with JSON examples
 - `quickrefs/workflows.md` - Workflow patterns and examples
 - `quickrefs/architecture.md` - JSON schema documentation

@@ -23,25 +23,31 @@ While there are two other projects in the ecosystem that touch Codex, our implem
 ## 1. Zen MCP Server (BeehiveInnovations)
 
 ### What It Is
+
 A multi-model orchestration MCP server that enables different AI CLIs (Claude Code, Codex, Gemini) to collaborate within a single conversation thread.
 
 **Repository**: https://github.com/BeehiveInnovations/zen-mcp-server
 **Stars**: 9.6k | **Language**: Python | **Active Development**: Yes
 
 ### Core Purpose
+
 **NOT a Codex execution controller.** It's a thinking/collaboration framework that:
+
 - Enables model-to-model handoffs (Claude → Gemini → Codex)
 - Provides specialized thinking tools (thinkdeep, planner, consensus, debug)
 - Supports "clink" to spawn sub-CLIs in fresh contexts
 
 ### Tools Provided (17 total)
+
 **Collaboration**: chat, clink, thinkdeep, planner, consensus, challenge
 **Code Quality**: debug, precommit, codereview
 **Development** (disabled by default): analyze, refactor, testgen, secaudit, docgen, tracer
 **Utilities**: apilookup, listmodels, version
 
 ### Codex Integration
+
 **Limited and Indirect**:
+
 - `clink` tool can spawn Codex CLI as a sub-agent
 - Codex is one of many supported CLIs (not the focus)
 - No direct Codex subprocess control
@@ -49,29 +55,31 @@ A multi-model orchestration MCP server that enables different AI CLIs (Claude Co
 
 ### Feature Comparison
 
-| Feature | Zen MCP | Our Codex Control MCP |
-|---------|---------|----------------------|
-| **Codex-Specific** | ❌ No | ✅ Yes (dedicated) |
-| **Async Task Tracking** | ❌ No | ✅ Yes (LocalTaskRegistry) |
-| **Background Execution** | ❌ No | ✅ Yes (all 15 tools) |
-| **Status Monitoring** | ❌ No | ✅ Yes (local_status, cloud_status) |
-| **Thread Persistence** | ⚠️ Conversation IDs only | ✅ Yes (SDK threads in ~/.codex/sessions) |
-| **Cloud Execution** | ❌ No | ✅ Yes (codex_cloud_submit) |
-| **Local SDK Support** | ❌ No | ✅ Yes (codex_local_exec/resume) |
-| **GitHub Integration** | ❌ No | ✅ Yes (setup guides, templates) |
-| **Task Registry** | ❌ No | ✅ Yes (persistent JSON tracking) |
-| **Git Diff Application** | ❌ No | ✅ Via CLI tools |
-| **Error Capture** | ⚠️ Basic | ✅ Comprehensive (ASYNC-EXECUTION-ERRORS.md) |
-| **Secret Redaction** | ❌ No | ✅ Yes (15+ patterns) |
-| **Environment Management** | ❌ No | ✅ Yes (environments.json) |
+| Feature                    | Zen MCP                  | Our Codex Control MCP                        |
+| -------------------------- | ------------------------ | -------------------------------------------- |
+| **Codex-Specific**         | ❌ No                    | ✅ Yes (dedicated)                           |
+| **Async Task Tracking**    | ❌ No                    | ✅ Yes (LocalTaskRegistry)                   |
+| **Background Execution**   | ❌ No                    | ✅ Yes (all 15 tools)                        |
+| **Status Monitoring**      | ❌ No                    | ✅ Yes (local_status, cloud_status)          |
+| **Thread Persistence**     | ⚠️ Conversation IDs only | ✅ Yes (SDK threads in ~/.codex/sessions)    |
+| **Cloud Execution**        | ❌ No                    | ✅ Yes (codex_cloud_submit)                  |
+| **Local SDK Support**      | ❌ No                    | ✅ Yes (codex_local_exec/resume)             |
+| **GitHub Integration**     | ❌ No                    | ✅ Yes (setup guides, templates)             |
+| **Task Registry**          | ❌ No                    | ✅ Yes (persistent JSON tracking)            |
+| **Git Diff Application**   | ❌ No                    | ✅ Via CLI tools                             |
+| **Error Capture**          | ⚠️ Basic                 | ✅ Comprehensive (ASYNC-EXECUTION-ERRORS.md) |
+| **Secret Redaction**       | ❌ No                    | ✅ Yes (15+ patterns)                        |
+| **Environment Management** | ❌ No                    | ✅ Yes (environments.json)                   |
 
 ### What Zen Does Better
+
 ✅ **Multi-model orchestration** - We don't do this at all
 ✅ **Thinking tools** - thinkdeep, consensus, challenge (philosophical/planning)
 ✅ **Python ecosystem** - Mature Python implementation with pre-commit hooks
 ✅ **Community size** - 9.6k stars vs. our early-stage project
 
 ### What We Do Better
+
 ✅ **Codex-specific** - Dedicated Codex controller vs. general orchestration
 ✅ **Async execution** - True background tasks with monitoring
 ✅ **Task tracking** - Persistent registry vs. conversation-based only
@@ -80,6 +88,7 @@ A multi-model orchestration MCP server that enables different AI CLIs (Claude Co
 ✅ **Dual execution modes** - CLI + SDK (Zen only has CLI bridging)
 
 ### Overlap Assessment
+
 **10-15% overlap** (clink tool can spawn Codex, but it's not the focus)
 
 **Conclusion**: Zen MCP is a **complementary product**, not a competitor. Users could run BOTH - Zen for multi-model thinking/orchestration, Codex Control for dedicated Codex execution management.
@@ -89,17 +98,21 @@ A multi-model orchestration MCP server that enables different AI CLIs (Claude Co
 ## 2. Codex CLI MCP Tool (mr-tomahawk)
 
 ### What It Is
+
 A simple MCP wrapper around Codex CLI providing basic execution and diff application.
 
 **Repository**: https://github.com/mr-tomahawk/codex-cli-mcp-tool
 **Stars**: Unknown (newer project) | **Language**: TypeScript | **Status**: Less active
 
 ### Tools Provided (3 core + 3 utility)
+
 **Core**: ask-codex, exec-codex, apply-diff
 **Utility**: ping, help, version
 
 ### Feature Set
+
 Very basic Codex CLI wrapper with:
+
 - Interactive execution (ask-codex)
 - Non-interactive execution (exec-codex)
 - Git diff application (apply-diff)
@@ -109,26 +122,28 @@ Very basic Codex CLI wrapper with:
 
 ### Feature Comparison
 
-| Feature | codex-cli-mcp-tool | Our Codex Control MCP |
-|---------|-------------------|----------------------|
-| **Tool Count** | 6 tools | 15 tools |
-| **Async Execution** | ⚠️ Mentioned, no details | ✅ Fully implemented |
-| **Task Tracking** | ⚠️ Mentioned, no details | ✅ LocalTaskRegistry |
-| **Status Monitoring** | ❌ No | ✅ Yes (local_status, cloud_status) |
-| **Thread Persistence** | ❌ No | ✅ Yes (SDK threads) |
-| **Cloud Execution** | ❌ No | ✅ Yes (cloud_submit) |
-| **Local SDK Support** | ❌ No | ✅ Yes (local_exec/resume) |
-| **Git Integration** | ✅ apply-diff | ✅ Plus CLI mutations |
-| **Environment Management** | ❌ No | ✅ Yes (environments.json) |
-| **Error Handling** | ⚠️ Unknown | ✅ Comprehensive |
-| **Secret Redaction** | ⚠️ Unknown | ✅ Yes (15+ patterns) |
-| **Task Results** | ❌ No retrieval | ✅ Yes (local_results, cloud_results) |
-| **Documentation** | ⚠️ Basic README | ✅ Comprehensive (quickrefs, guides) |
+| Feature                    | codex-cli-mcp-tool       | Our Codex Control MCP                 |
+| -------------------------- | ------------------------ | ------------------------------------- |
+| **Tool Count**             | 6 tools                  | 15 tools                              |
+| **Async Execution**        | ⚠️ Mentioned, no details | ✅ Fully implemented                  |
+| **Task Tracking**          | ⚠️ Mentioned, no details | ✅ LocalTaskRegistry                  |
+| **Status Monitoring**      | ❌ No                    | ✅ Yes (local_status, cloud_status)   |
+| **Thread Persistence**     | ❌ No                    | ✅ Yes (SDK threads)                  |
+| **Cloud Execution**        | ❌ No                    | ✅ Yes (cloud_submit)                 |
+| **Local SDK Support**      | ❌ No                    | ✅ Yes (local_exec/resume)            |
+| **Git Integration**        | ✅ apply-diff            | ✅ Plus CLI mutations                 |
+| **Environment Management** | ❌ No                    | ✅ Yes (environments.json)            |
+| **Error Handling**         | ⚠️ Unknown               | ✅ Comprehensive                      |
+| **Secret Redaction**       | ⚠️ Unknown               | ✅ Yes (15+ patterns)                 |
+| **Task Results**           | ❌ No retrieval          | ✅ Yes (local_results, cloud_results) |
+| **Documentation**          | ⚠️ Basic README          | ✅ Comprehensive (quickrefs, guides)  |
 
 ### What They Do Better
+
 Nothing obvious - their implementation appears simpler/earlier stage.
 
 ### What We Do Better
+
 ✅ **Feature completeness** - 15 tools vs. 3
 ✅ **Async architecture** - Fully implemented vs. mentioned
 ✅ **Task management** - Complete tracking and monitoring
@@ -139,6 +154,7 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 ✅ **Error handling** - Detailed diagnostics and redaction
 
 ### Overlap Assessment
+
 **30-40% overlap** (basic Codex CLI execution)
 
 **Conclusion**: This is a **direct competitor**, but we're significantly more feature-rich. They have the basic wrapper concept, but we've built a comprehensive execution controller with async, cloud, and monitoring capabilities.
@@ -150,7 +166,9 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 ### Features NO ONE Else Has
 
 #### 1. Dual Execution Modes (CLI + SDK + Cloud)
+
 **Unique to us**:
+
 - `codex_cli_*` tools - CLI subprocess execution
 - `codex_local_*` tools - SDK streaming execution
 - `codex_cloud_*` tools - Cloud background execution
@@ -158,7 +176,9 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 **Competitors**: Only have CLI execution (Zen via clink, mr-tomahawk directly)
 
 #### 2. Persistent Task Tracking
+
 **Unique to us**:
+
 - LocalTaskRegistry (`~/.config/codex-control/local-tasks.json`)
 - CloudTaskRegistry (`~/.config/codex-control/cloud-tasks.json`)
 - Task status across restarts
@@ -167,7 +187,9 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 **Competitors**: Conversation-based only (Zen) or no tracking (mr-tomahawk)
 
 #### 3. Thread Persistence with Resume
+
 **Unique to us**:
+
 - `codex_local_resume` for continuing threads
 - Thread storage in `~/.codex/sessions/`
 - Context preservation across sessions
@@ -176,7 +198,9 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 **Competitors**: No thread persistence (Zen uses conversation IDs, mr-tomahawk has none)
 
 #### 4. Cloud Task Submission & Monitoring
+
 **Unique to us**:
+
 - `codex_cloud_submit` - Background task execution
 - `codex_cloud_status` - Task status checking
 - `codex_cloud_results` - Result retrieval
@@ -186,7 +210,9 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 **Competitors**: No cloud integration at all
 
 #### 5. Environment Management
+
 **Unique to us**:
+
 - `codex_list_environments` - Environment registry
 - `codex_github_setup_guide` - GitHub integration helper
 - Environment templates for different stacks (Node, Python, Go, Rust)
@@ -194,7 +220,9 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 **Competitors**: No environment management
 
 #### 6. Comprehensive Error Handling
+
 **Unique to us**:
+
 - Detailed error logging (ASYNC-EXECUTION-ERRORS.md)
 - Secret redaction (15+ patterns)
 - Error capture and reporting
@@ -203,7 +231,9 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 **Competitors**: Basic error handling only
 
 #### 7. Async Architecture
+
 **Unique to us**:
+
 - All 15 tools support async execution
 - Non-blocking task submission
 - Background processing with immediate return
@@ -216,21 +246,25 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 ## 4. Market Positioning
 
 ### Zen MCP Server
+
 **Position**: Multi-model AI orchestration and collaboration
 **Target User**: Developers wanting to combine different AI models for thinking/planning
 **Use Case**: "Use Claude for implementation, Gemini for analysis, Codex for validation"
 
 ### codex-cli-mcp-tool
+
 **Position**: Simple Codex CLI wrapper
 **Target User**: Developers wanting basic Codex access via MCP
 **Use Case**: "Run Codex commands from Claude Code"
 
 ### Codex Control MCP (Ours)
+
 **Position**: Comprehensive Codex execution controller
 **Target User**: Power users needing advanced Codex workflows
 **Use Case**: "Manage complex Codex tasks with async execution, cloud processing, thread persistence, and monitoring"
 
 **Our differentiators**:
+
 1. **Execution modes** - Local CLI, local SDK, and cloud (vs. just CLI)
 2. **Task management** - Persistent tracking and monitoring (vs. none)
 3. **Thread persistence** - Resume across sessions (vs. none)
@@ -243,28 +277,30 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 
 ### What We Have That Others Don't
 
-| Feature | Zen | mr-tomahawk | Us |
-|---------|-----|-------------|-----|
-| **Cloud execution** | ❌ | ❌ | ✅ |
-| **Task tracking** | ❌ | ❌ | ✅ |
-| **Thread persistence** | ❌ | ❌ | ✅ |
-| **SDK integration** | ❌ | ❌ | ✅ |
-| **Status monitoring** | ❌ | ❌ | ✅ |
-| **Environment management** | ❌ | ❌ | ✅ |
-| **GitHub integration** | ❌ | ⚠️ Basic | ✅ Comprehensive |
-| **Secret redaction** | ❌ | ⚠️ Unknown | ✅ |
-| **Async architecture** | ⚠️ No tracking | ⚠️ Unclear | ✅ Full |
-| **Error diagnostics** | ⚠️ Basic | ⚠️ Unknown | ✅ Comprehensive |
+| Feature                    | Zen            | mr-tomahawk | Us               |
+| -------------------------- | -------------- | ----------- | ---------------- |
+| **Cloud execution**        | ❌             | ❌          | ✅               |
+| **Task tracking**          | ❌             | ❌          | ✅               |
+| **Thread persistence**     | ❌             | ❌          | ✅               |
+| **SDK integration**        | ❌             | ❌          | ✅               |
+| **Status monitoring**      | ❌             | ❌          | ✅               |
+| **Environment management** | ❌             | ❌          | ✅               |
+| **GitHub integration**     | ❌             | ⚠️ Basic    | ✅ Comprehensive |
+| **Secret redaction**       | ❌             | ⚠️ Unknown  | ✅               |
+| **Async architecture**     | ⚠️ No tracking | ⚠️ Unclear  | ✅ Full          |
+| **Error diagnostics**      | ⚠️ Basic       | ⚠️ Unknown  | ✅ Comprehensive |
 
 ### What Others Have That We Don't
 
 **Zen MCP**:
+
 - Multi-model orchestration (chat with different AIs)
 - Thinking tools (thinkdeep, consensus, challenge)
 - clink (spawn sub-CLIs in fresh contexts)
 - 9.6k stars (established community)
 
 **mr-tomahawk**:
+
 - (Nothing obvious - simpler implementation)
 
 ### Should We Add These Features?
@@ -282,36 +318,46 @@ Nothing obvious - their implementation appears simpler/earlier stage.
 ### Our Strengths
 
 #### 1. Specialized Codex Focus
+
 Unlike Zen (multi-model) or mr-tomahawk (basic wrapper), we're **dedicated to Codex excellence**.
 
 #### 2. Production-Ready Async
+
 We have **fully implemented and tested** async execution with:
+
 - Task IDs returned in < 1 second
 - Background processing
 - Status monitoring
 - Result retrieval
 
 #### 3. Cloud Integration
+
 Only MCP with **Codex Cloud support**:
+
 - Background task submission
 - Long-running task execution
 - Device independence
 - Web UI monitoring
 
 #### 4. Thread Persistence
+
 Only MCP with **thread resumption**:
+
 - Context preservation across sessions
 - 45-93% cache rate optimization
 - Multi-step workflows
 
 #### 5. Task Management
+
 Only MCP with **persistent task tracking**:
+
 - Task registry across restarts
 - Historical task list
 - Status monitoring
 - Result retrieval
 
 #### 6. Comprehensive Documentation
+
 - 5 quickref guides (tools, architecture, workflows, security, troubleshooting)
 - Error logs with diagnostics
 - GitHub setup templates
@@ -324,14 +370,18 @@ Only MCP with **persistent task tracking**:
 ### Competitive Threats
 
 #### Low Risk
+
 **Zen MCP Server**:
+
 - Different focus (multi-model orchestration)
 - Complementary product
 - No direct competition
 - Could even integrate together
 
 #### Medium Risk
+
 **mr-tomahawk's codex-cli-mcp-tool**:
+
 - Direct competitor (Codex-specific)
 - But much less feature-rich
 - We're significantly ahead
@@ -379,6 +429,7 @@ Only MCP with **persistent task tracking**:
 **Market position**: Production-ready Codex execution controller with features NO ONE else has.
 
 **Next steps**:
+
 1. Fix async execution issues (stdio configuration)
 2. Complete cloud environment setup
 3. Write comprehensive launch docs

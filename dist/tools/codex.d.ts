@@ -4,8 +4,8 @@
  * Single user-facing tool for all Codex operations.
  * Routes natural language instructions to appropriate hidden primitives.
  */
-import { IntentHints } from '../router/intent_parser.js';
-import { type CodexMetadata } from '../utils/metadata_extractor.js';
+import { IntentHints } from "../router/intent_parser.js";
+import { type CodexMetadata } from "../utils/metadata_extractor.js";
 /**
  * Codex tool input schema
  */
@@ -17,7 +17,7 @@ export interface CodexToolInput {
         repo_root?: string;
     };
     preference?: {
-        mode?: 'auto' | 'local' | 'cloud';
+        mode?: "auto" | "local" | "cloud";
         timeout_ms?: number;
         poll_frequency_ms?: number;
     };
@@ -33,12 +33,12 @@ export interface CodexToolInput {
  */
 export interface CodexToolResponse {
     acknowledged: boolean;
-    action: 'run' | 'check' | 'wait' | 'cancel' | 'setup' | 'results' | 'none';
+    action: "run" | "check" | "wait" | "cancel" | "setup" | "results" | "none";
     decision_trace?: string[];
     task?: {
         id?: string;
-        mode?: 'local' | 'cloud';
-        status?: 'pending' | 'working' | 'completed' | 'failed' | 'canceled' | 'unknown';
+        mode?: "local" | "cloud";
+        status?: "pending" | "working" | "completed" | "failed" | "canceled" | "unknown";
         progress?: {
             percent?: number;
             current_step?: number;
@@ -56,7 +56,7 @@ export interface CodexToolResponse {
         duration_ms?: number;
         artifacts?: string[];
     };
-    next_action?: 'poll' | 'await' | 'none';
+    next_action?: "poll" | "await" | "none";
     user_message: string;
     needs_disambiguation?: boolean;
     disambiguation_options?: Array<{

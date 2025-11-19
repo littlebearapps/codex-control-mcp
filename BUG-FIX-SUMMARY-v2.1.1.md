@@ -13,6 +13,7 @@
 During auditor-toolkit testing, two critical observations were made:
 
 1. **System showed running process**:
+
    ```bash
    ps aux | grep "codex exec"
    nathanschram  70565  0.5  0.1 ... codex exec --experimental-json
@@ -33,6 +34,7 @@ During auditor-toolkit testing, two critical observations were made:
 ### Process Spawning Architecture
 
 **CLI Tools** (`codex_run`, `codex_plan`, `codex_apply`):
+
 ```
 CallToolRequest → ProcessManager.execute()
                 → spawn('codex', args)
@@ -41,6 +43,7 @@ CallToolRequest → ProcessManager.execute()
 ```
 
 **SDK Tools** (`codex_local_exec`, `codex_local_resume`):
+
 ```
 CallToolRequest → @openai/codex-sdk
                 → SDK spawns codex processes internally
@@ -59,6 +62,7 @@ CallToolRequest → @openai/codex-sdk
 **File**: `src/tools/status.ts`
 
 **New Method**:
+
 ```typescript
 private async detectSystemProcesses(): Promise<Array<{
   pid: string;
@@ -73,6 +77,7 @@ private async detectSystemProcesses(): Promise<Array<{
 ```
 
 **Updated Status Output**:
+
 ```
 📊 Codex Control Status
 
@@ -131,6 +136,7 @@ Codex SDK Process:
 **Status**: Documented in `KNOWN-ISSUES.md`
 
 **Workarounds**:
+
 1. Kill stuck process, finish manually (5-10 min)
 2. Activate .venv before starting Claude Code
 3. Use CLI tools instead of SDK tools for test execution
@@ -143,6 +149,7 @@ Codex SDK Process:
 ## 📊 Testing Results
 
 ### Before Fix
+
 ```bash
 # System shows process
 ps aux | grep "codex exec"
@@ -155,6 +162,7 @@ codex_status
 ```
 
 ### After Fix
+
 ```bash
 # Same system process
 ps aux | grep "codex exec"
@@ -173,13 +181,16 @@ codex_status
 ## 📝 Files Changed
 
 ### Source Code (1 file)
+
 - `src/tools/status.ts`: Added `detectSystemProcesses()` method
 
 ### Documentation (2 files)
+
 - `CHANGELOG.md`: Added Bug #4 entry with examples
 - `KNOWN-ISSUES.md`: Created new file documenting both issues
 
 ### Build Output
+
 - `dist/tools/status.js`: Compiled with new system detection
 
 ---
@@ -187,6 +198,7 @@ codex_status
 ## 🎯 Impact Assessment
 
 ### Severity: Medium
+
 - **Users Affected**: Anyone using `codex_local_exec` or `codex_local_resume`
 - **Frequency**: Every SDK task (process tracking), some SDK tasks (Python issue)
 - **Workaround**: Yes (documented)
@@ -195,6 +207,7 @@ codex_status
 ### User Experience Improvement
 
 **Before**:
+
 ```
 User: "Is my task still running?"
 codex_status: "No active processes"
@@ -203,6 +216,7 @@ codex_status: "I don't see it 🤷"
 ```
 
 **After**:
+
 ```
 User: "Is my task still running?"
 codex_status: "Yes! PID 70565, started 4:29PM, 0.5% CPU"
@@ -214,6 +228,7 @@ User: "Perfect, I can see it and monitor it!"
 ## 🚀 Deployment Status
 
 ### Version: v2.1.1
+
 - ✅ Source code fixed
 - ✅ Build successful
 - ✅ Tested in codex-control directory
@@ -223,6 +238,7 @@ User: "Perfect, I can see it and monitor it!"
 - ✅ Known issues documented
 
 ### Ready for Rollout
+
 - ✅ Build verified: `npm run build` successful
 - ✅ No breaking changes
 - ✅ Backward compatible

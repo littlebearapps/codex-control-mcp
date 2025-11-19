@@ -11,24 +11,27 @@
 
 **Overall Result**: ✅ **100% SUCCESS (25/25 tests passed)**
 
-| Test Category | Passed | Failed | Success Rate |
-|---------------|--------|--------|--------------|
-| Process Tracking Visibility | 8/8 | 0 | 100% |
-| Tool Availability | 14/14 | 0 | 100% |
-| System-Wide Detection | 3/3 | 0 | 100% |
-| **TOTAL** | **25/25** | **0** | **100%** |
+| Test Category               | Passed    | Failed | Success Rate |
+| --------------------------- | --------- | ------ | ------------ |
+| Process Tracking Visibility | 8/8       | 0      | 100%         |
+| Tool Availability           | 14/14     | 0      | 100%         |
+| System-Wide Detection       | 3/3       | 0      | 100%         |
+| **TOTAL**                   | **25/25** | **0**  | **100%**     |
 
 ---
 
 ## ✅ Test 1: Process Tracking Visibility (8/8)
 
 ### Test 1a: Status with No Processes
+
 - ✅ Correctly reports 0 processes when none running
 
 ### Test 1b: Status with SDK-Spawned Process
+
 **Spawned test process**: PID 79549
 
 **Output Verification**:
+
 ```
 📊 Codex Control Status
 
@@ -45,6 +48,7 @@
 ```
 
 **Verified**:
+
 - ✅ Shows total processes > 0
 - ✅ Shows SDK-spawned count
 - ✅ Shows process details (PID)
@@ -54,6 +58,7 @@
 - ✅ Shows helpful tip about SDK tools
 
 ### Test 1c: Status After Process Killed
+
 - ✅ Correctly reports 0 processes after cleanup
 
 **Key Finding**: Process detection is **real-time** and **accurate**. The system immediately detects spawned processes and cleanup.
@@ -63,6 +68,7 @@
 ## ✅ Test 2: All 13 Tools Available (14/14)
 
 **Tool Discovery** (all tools visible in `codex_status`):
+
 - ✅ codex_run
 - ✅ codex_plan
 - ✅ codex_apply
@@ -78,6 +84,7 @@
 - ✅ codex_github_setup_guide
 
 **Header Verification**:
+
 - ✅ Correctly shows "13 total" in status output
 
 **Key Finding**: Bug #2 (misleading tool count) remains fixed. All 13 tools properly listed.
@@ -87,6 +94,7 @@
 ## ✅ Test 3: System-Wide Process Detection (3/3)
 
 **Implementation Checks**:
+
 - ✅ System detection method implemented (using `ps aux`)
 - ✅ CLI-tracked vs SDK-spawned breakdown working
 - ✅ Helpful status indicators present (✅ ⚠️ 💡)
@@ -98,22 +106,30 @@
 ## 🐛 Bug Fixes Verified
 
 ### Bug #1: Mode Parameter Mismatch ✅
+
 **Status**: Previously fixed in v2.1.1, still working
+
 - No mode parameter errors detected
 - All tools use `workspace-write` correctly
 
 ### Bug #2: Misleading Tool Count ✅
+
 **Status**: Previously fixed in v2.1.1, still working
+
 - Status shows all 13 tools correctly
 - Categorized display working
 
 ### Bug #3: SDK Tools Silent Failure ✅
+
 **Status**: Previously fixed in v2.1.1, still working
+
 - MCP-compatible responses working
 - No silent failures detected
 
 ### Bug #4: Process Tracking Visibility ✅ (NEW FIX)
+
 **Status**: **FIXED AND VERIFIED**
+
 - ✅ System-wide process detection implemented
 - ✅ Shows CLI-tracked vs SDK-spawned breakdown
 - ✅ Displays process details (PID, CPU, memory, start time)
@@ -125,11 +141,13 @@
 ## 📊 Performance Metrics
 
 ### Process Detection Speed
+
 - **Detection time**: < 100ms (ps aux execution)
 - **Accuracy**: 100% (detected all test processes)
 - **Cleanup detection**: Immediate (< 1 second)
 
 ### Tool Discovery
+
 - **All 13 tools**: Discoverable via `codex_status`
 - **Response time**: < 50ms
 
@@ -138,15 +156,18 @@
 ## 🔍 Edge Cases Tested
 
 ### No Processes Running
+
 - ✅ Correctly reports 0 total processes
 - ✅ Shows "No active Codex tasks" message
 
 ### SDK-Spawned Process
+
 - ✅ Detects process not tracked by ProcessManager
 - ✅ Shows accurate breakdown (CLI: 0, SDK: 1)
 - ✅ Displays full process details
 
 ### Process Cleanup
+
 - ✅ Immediately reflects killed processes
 - ✅ Returns to 0 processes after cleanup
 
@@ -155,6 +176,7 @@
 ## 🎯 Test Coverage
 
 ### Code Coverage
+
 - **ProcessManager**: Status tracking verified
 - **StatusTool**: All output formats tested
 - **detectSystemProcesses()**: Core functionality verified
@@ -162,6 +184,7 @@
 - **Input Validator**: Not tested (already validated in v2.1.0)
 
 ### Functional Coverage
+
 - ✅ Process detection (100%)
 - ✅ Tool discovery (100%)
 - ✅ Status reporting (100%)
@@ -172,6 +195,7 @@
 ## 🚀 Production Readiness
 
 ### Deployment Criteria
+
 - ✅ All tests passing (25/25)
 - ✅ No regressions detected
 - ✅ Bug fixes verified
@@ -180,6 +204,7 @@
 - ✅ Backward compatible
 
 ### Rollout Status
+
 - ✅ Ready for deployment to all 18 projects + root
 - ✅ No breaking changes
 - ✅ MCP configs prepared (lean, full, research)
@@ -190,6 +215,7 @@
 ## 📝 Testing Environment
 
 ### System Details
+
 ```
 Directory: /Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control
 Node.js: v20.x+
@@ -199,6 +225,7 @@ MCP SDK: Latest
 ```
 
 ### MCP Configuration
+
 ```json
 {
   "mcpServers": {
@@ -222,6 +249,7 @@ MCP SDK: Latest
 **v2.1.1 is production-ready!**
 
 All four bugs are fixed and thoroughly tested:
+
 1. ✅ Mode parameter mismatch (workspace-write)
 2. ✅ Misleading tool count (all 13 shown)
 3. ✅ SDK tools silent failure (MCP-compatible responses)

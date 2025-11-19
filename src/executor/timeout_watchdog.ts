@@ -1,12 +1,12 @@
-import { ChildProcess } from 'child_process';
-import treeKill from 'tree-kill';
+import { ChildProcess } from "child_process";
+import treeKill from "tree-kill";
 
 export interface WatchdogConfig {
   // Timeouts
-  idleTimeoutMs?: number;        // Default: 5 minutes (300000)
-  hardTimeoutMs?: number;        // Default: 20 minutes (1200000)
-  warnLeadMs?: number;           // Default: 30 seconds (30000)
-  killGraceMs?: number;          // Default: 5 seconds (5000)
+  idleTimeoutMs?: number; // Default: 5 minutes (300000)
+  hardTimeoutMs?: number; // Default: 20 minutes (1200000)
+  warnLeadMs?: number; // Default: 30 seconds (30000)
+  killGraceMs?: number; // Default: 5 seconds (5000)
 
   // Callbacks
   onProgress?: (progress: ProgressUpdate) => void;
@@ -24,7 +24,7 @@ export interface ProgressUpdate {
 }
 
 export interface TimeoutWarning {
-  level: 'warning';
+  level: "warning";
   logger: string;
   data: {
     message: string;
@@ -35,8 +35,8 @@ export interface TimeoutWarning {
 }
 
 export interface TimeoutError {
-  code: 'ETIMEDOUT' | 'EIDLE';
-  kind: 'inactivity' | 'deadline' | 'manual';
+  code: "ETIMEDOUT" | "EIDLE";
+  kind: "inactivity" | "deadline" | "manual";
   message: string;
   idleMs?: number;
   wallClockMs?: number;
@@ -78,7 +78,7 @@ export class TimeoutWatchdog {
   constructor(
     private child: ChildProcess,
     private taskId: string,
-    config: WatchdogConfig = {}
+    config: WatchdogConfig = {},
   ) {
     this.startTime = Date.now();
     this.lastActivity = Date.now();
@@ -86,14 +86,14 @@ export class TimeoutWatchdog {
 
     // Default config
     this.config = {
-      idleTimeoutMs: config.idleTimeoutMs ?? 5 * 60 * 1000,      // 5 minutes
-      hardTimeoutMs: config.hardTimeoutMs ?? 20 * 60 * 1000,     // 20 minutes
-      warnLeadMs: config.warnLeadMs ?? 30 * 1000,                // 30 seconds
-      killGraceMs: config.killGraceMs ?? 5 * 1000,               // 5 seconds
+      idleTimeoutMs: config.idleTimeoutMs ?? 5 * 60 * 1000, // 5 minutes
+      hardTimeoutMs: config.hardTimeoutMs ?? 20 * 60 * 1000, // 20 minutes
+      warnLeadMs: config.warnLeadMs ?? 30 * 1000, // 30 seconds
+      killGraceMs: config.killGraceMs ?? 5 * 1000, // 5 seconds
       onProgress: config.onProgress ?? (() => {}),
       onWarning: config.onWarning ?? (() => {}),
       onTimeout: config.onTimeout ?? (() => {}),
-      onActivity: config.onActivity ?? (() => {})
+      onActivity: config.onActivity ?? (() => {}),
     };
 
     this.startTimers();
@@ -106,7 +106,7 @@ export class TimeoutWatchdog {
     if (this.aborted) return;
 
     this.lastActivity = Date.now();
-    this.warned = false;  // Reset warning state
+    this.warned = false; // Reset warning state
     this.config.onActivity();
 
     // Reset inactivity timer
@@ -146,10 +146,10 @@ export class TimeoutWatchdog {
   public getPartialResults(): PartialResults {
     return {
       lastEvents: [...this.lastEvents],
-      stdoutTail: Buffer.concat(this.stdoutChunks).toString('utf8'),
-      stderrTail: Buffer.concat(this.stderrChunks).toString('utf8'),
+      stdoutTail: Buffer.concat(this.stdoutChunks).toString("utf8"),
+      stderrTail: Buffer.concat(this.stderrChunks).toString("utf8"),
       lastActivityAt: new Date(this.lastActivity),
-      eventsCount: this.lastEvents.length
+      eventsCount: this.lastEvents.length,
     };
   }
 
@@ -163,22 +163,24 @@ export class TimeoutWatchdog {
   /**
    * Manually trigger timeout (for testing or external kill)
    */
-  public abort(reason: 'inactivity' | 'deadline' | 'manual'): TimeoutError {
+  public abort(reason: "inactivity" | "deadline" | "manual"): TimeoutError {
     if (this.aborted) {
-      throw new Error('Watchdog already aborted');
+      throw new Error("Watchdog already aborted");
     }
 
     this.aborted = true;
     this.clearAllTimers();
 
     const error: TimeoutError = {
-      code: reason === 'inactivity' ? 'EIDLE' : 'ETIMEDOUT',
-      kind: reason === 'manual' ? 'deadline' : reason,
+      code: reason === "inactivity" ? "EIDLE" : "ETIMEDOUT",
+      kind: reason === "manual" ? "deadline" : reason,
       message: this.getTimeoutMessage(reason),
-      idleMs: reason === 'inactivity' ? Date.now() - this.lastActivity : undefined,
-      wallClockMs: reason === 'deadline' ? Date.now() - this.startTime : undefined,
+      idleMs:
+        reason === "inactivity" ? Date.now() - this.lastActivity : undefined,
+      wallClockMs:
+        reason === "deadline" ? Date.now() - this.startTime : undefined,
       pid: this.child.pid!,
-      killed: false
+      killed: false,
     };
 
     // Kill process
@@ -196,7 +198,7 @@ export class TimeoutWatchdog {
   private startTimers(): void {
     // Hard timeout (wall-clock)
     this.hardTimer = setTimeout(() => {
-      this.abort('deadline');
+      this.abort("deadline");
     }, this.config.hardTimeoutMs);
 
     // Inactivity timer (resets on activity)
@@ -219,7 +221,7 @@ export class TimeoutWatchdog {
     }
 
     this.idleTimer = setTimeout(() => {
-      this.abort('inactivity');
+      this.abort("inactivity");
     }, this.config.idleTimeoutMs);
   }
 
@@ -233,14 +235,14 @@ export class TimeoutWatchdog {
       this.warned = true;
 
       const warning: TimeoutWarning = {
-        level: 'warning',
-        logger: 'codex-timeout-watchdog',
+        level: "warning",
+        logger: "codex-timeout-watchdog",
         data: {
           message: `No output for ${Math.floor(idle / 1000)}s. Will abort in ${Math.floor((this.config.idleTimeoutMs - idle) / 1000)}s unless output resumes.`,
           idleMs: idle,
           willAbortInMs: this.config.idleTimeoutMs - idle,
-          taskId: this.taskId
-        }
+          taskId: this.taskId,
+        },
       };
 
       this.config.onWarning(warning);
@@ -258,7 +260,7 @@ export class TimeoutWatchdog {
       progress: elapsed,
       total: total,
       elapsedMs: elapsed,
-      lastActivity: new Date(this.lastActivity)
+      lastActivity: new Date(this.lastActivity),
     };
 
     this.config.onProgress(progress);
@@ -270,12 +272,12 @@ export class TimeoutWatchdog {
 
     // Try SIGTERM first
     try {
-      if (process.platform !== 'win32') {
-        process.kill(-pid, 'SIGTERM');  // Kill process group
+      if (process.platform !== "win32") {
+        process.kill(-pid, "SIGTERM"); // Kill process group
       } else {
-        treeKill(pid, 'SIGTERM');
+        treeKill(pid, "SIGTERM");
       }
-      onKilled('SIGTERM');
+      onKilled("SIGTERM");
     } catch (err) {
       // Process might already be dead
     }
@@ -283,12 +285,12 @@ export class TimeoutWatchdog {
     // Force kill after grace period
     setTimeout(() => {
       try {
-        if (process.platform !== 'win32') {
-          process.kill(-pid, 'SIGKILL');
+        if (process.platform !== "win32") {
+          process.kill(-pid, "SIGKILL");
         } else {
-          treeKill(pid, 'SIGKILL');
+          treeKill(pid, "SIGKILL");
         }
-        onKilled('SIGKILL');
+        onKilled("SIGKILL");
       } catch (err) {
         // Process definitely dead now
       }
@@ -314,14 +316,14 @@ export class TimeoutWatchdog {
 
   private getTimeoutMessage(reason: string): string {
     switch (reason) {
-      case 'inactivity':
+      case "inactivity":
         return `Codex CLI produced no output within the allowed inactivity window (${this.config.idleTimeoutMs / 1000}s).`;
-      case 'deadline':
+      case "deadline":
         return `Codex CLI exceeded the maximum allowed wall-clock time (${this.config.hardTimeoutMs / 1000}s).`;
-      case 'manual':
-        return 'Codex CLI execution was manually aborted.';
+      case "manual":
+        return "Codex CLI execution was manually aborted.";
       default:
-        return 'Codex CLI execution timed out.';
+        return "Codex CLI execution timed out.";
     }
   }
 }

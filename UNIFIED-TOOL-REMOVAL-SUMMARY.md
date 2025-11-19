@@ -19,6 +19,7 @@ Successfully removed the problematic unified `codex` natural language interface 
 ### Issue: Unified Tool Hanging
 
 The unified `codex` tool had a persistent hanging issue:
+
 - Would accept natural language requests
 - Would hang indefinitely during execution
 - No error message, no timeout
@@ -28,11 +29,13 @@ The unified `codex` tool had a persistent hanging issue:
 ### Root Cause: Unnecessary Abstraction Layer
 
 The unified tool tried to replicate what Claude Code already does natively:
+
 ```
 User request → Unified tool → Router → Intent parser → Parameter mapper → Primitive
 ```
 
 This complex routing layer:
+
 - Added ~300 lines of code
 - Introduced failure points
 - Duplicated Claude Code's NLP capabilities
@@ -48,12 +51,14 @@ This complex routing layer:
 Other successful MCP servers (zen, context7, brave-search) don't use unified routing tools. They expose primitives directly and let Claude Code handle natural language understanding.
 
 **Example - Zen MCP**:
+
 ```
 User: "use zen deepthink with gpt-5 to analyze this code"
 Claude Code: Understands "zen" + "deepthink" → Calls mcp__zen__deepthink
 ```
 
 **Now - Codex Control MCP**:
+
 ```
 User: "use codex control to run tests in read-only mode"
 Claude Code: Understands "codex control" + "run" → Calls mcp__codex-control___codex_local_run
@@ -62,6 +67,7 @@ Claude Code: Understands "codex control" + "run" → Calls mcp__codex-control___
 ### Implementation
 
 Removed 5 key pieces:
+
 1. ✅ `import { CodexTool }` statement
 2. ✅ `private codexTool: CodexTool` property
 3. ✅ Unified tool initialization with routing dependencies
@@ -77,6 +83,7 @@ Removed 5 key pieces:
 ### Files Modified
 
 **`src/index.ts`** - 5 edits:
+
 - Removed CodexTool import
 - Removed codexTool property declaration
 - Removed codexTool initialization (complex routing)
@@ -97,9 +104,11 @@ Removed 5 key pieces:
 ### Before: 15 Tools
 
 **1 User-Facing Tool**:
+
 - `codex` - Unified natural language interface (❌ hanging)
 
 **14 Hidden Primitives** (with `_` prefix):
+
 - `_codex_local_run`
 - `_codex_local_status`
 - `_codex_local_exec`
@@ -118,6 +127,7 @@ Removed 5 key pieces:
 ### After: 14 Tools
 
 **14 Hidden Primitives** (with `_` prefix):
+
 - All 14 primitives remain unchanged
 - Claude Code's native NLP handles intent understanding
 - Direct tool invocation, no routing layer
@@ -131,6 +141,7 @@ Removed 5 key pieces:
 **Action**: Called `_codex_local_run` with async task
 
 **Result**: ✅ **PASS**
+
 ```
 Task ID: T-local-mhyh4cdwnnqez7
 Task: List all markdown files in the current directory and count them
@@ -143,6 +154,7 @@ Completed after: 36s
 **Action**: Called `_codex_local_status` to check registry
 
 **Result**: ✅ **PASS**
+
 ```
 Running: 0
 Completed: 10 tasks
@@ -154,6 +166,7 @@ Failed: 0
 **Action**: Called `_codex_cloud_list_environments`
 
 **Result**: ✅ **PASS**
+
 ```
 ✅ 2 environments configured
 - test-environment-1 (node)
@@ -200,9 +213,11 @@ Failed: 0
 Users can be explicit about which primitive they want:
 
 **Example**:
+
 > "use codex control's local run tool to analyze this file in read-only mode with async execution"
 
 Claude Code will:
+
 1. Recognize "codex control"
 2. See "local run" + "async"
 3. Call `_codex_local_run` with `async: true`, `mode: "read-only"`
@@ -212,9 +227,11 @@ Claude Code will:
 Users can use natural language and Claude Code will infer the right tool:
 
 **Example**:
+
 > "use codex control to check the status of my running tasks"
 
 Claude Code will:
+
 1. Recognize "codex control"
 2. Understand "status" intent
 3. Call `_codex_local_status`
@@ -224,9 +241,11 @@ Claude Code will:
 Users can describe what they want to accomplish:
 
 **Example**:
+
 > "use codex control to run my test suite in the cloud and create a PR with fixes"
 
 Claude Code will:
+
 1. Recognize "codex control"
 2. Understand "cloud" + "PR" → cloud submission
 3. Call `_codex_cloud_submit` with appropriate task description
@@ -238,6 +257,7 @@ Claude Code will:
 ### Claude Code's Native NLP is Excellent
 
 Claude Code (powered by Sonnet 4.5) already has:
+
 - ✅ Intent understanding
 - ✅ Parameter extraction
 - ✅ Tool selection logic
@@ -248,6 +268,7 @@ Claude Code (powered by Sonnet 4.5) already has:
 ### MCP Tool Descriptions Guide Selection
 
 Each primitive has a comprehensive description explaining:
+
 - What it does
 - When to use it
 - What parameters it accepts
@@ -258,6 +279,7 @@ Claude Code reads these descriptions and makes intelligent tool selections.
 ### Hidden Tools (`_` prefix) Don't Need User Visibility
 
 The `_` prefix convention signals:
+
 - These are implementation details
 - Not intended for direct user invocation
 - Claude Code can still call them based on intent
@@ -271,6 +293,7 @@ This is exactly how zen MCP works - users don't see individual tool names, they 
 ### What Was Deleted
 
 **`src/tools/codex.ts`** - This file still exists but is no longer used:
+
 - ~430 lines of routing logic
 - Natural language intent parsing
 - Parameter mapping to primitives
@@ -282,6 +305,7 @@ This is exactly how zen MCP works - users don't see individual tool names, they 
 ### Code Complexity Reduction
 
 **Before**:
+
 ```
 CodexControlServer
 ├── CodexTool (unified interface)
@@ -294,6 +318,7 @@ CodexControlServer
 ```
 
 **After**:
+
 ```
 CodexControlServer
 └── 14 primitive tools (direct access)
@@ -308,6 +333,7 @@ CodexControlServer
 ### README.md Changes
 
 **Before**:
+
 ```markdown
 ## Usage
 
@@ -319,6 +345,7 @@ Use the unified `codex` tool with natural language:
 ```
 
 **After**:
+
 ```markdown
 ## Usage
 
@@ -339,9 +366,11 @@ Claude Code will automatically select the appropriate primitive tool.
 ## Quick Start
 
 1. **Run a local task**:
+
    > "use codex control to analyze this file for bugs"
 
 2. **Check task status**:
+
    > "use codex control to show me the status of running tasks"
 
 3. **Cloud execution**:
@@ -381,6 +410,7 @@ Removing ~300 lines eliminated a major source of bugs and maintenance burden.
 ### If We Want Better Discoverability
 
 Instead of complex routing, we could:
+
 1. Improve primitive tool descriptions
 2. Add usage examples to tool schemas
 3. Create better documentation
@@ -390,6 +420,7 @@ Instead of complex routing, we could:
 ### If We Want Convenience Aliases
 
 Instead of routing logic, we could:
+
 1. Create simple wrapper functions
 2. Add common parameter presets
 3. Provide template-based invocations
@@ -420,6 +451,7 @@ Instead of routing logic, we could:
 **Status**: ✅ **Production Ready**
 
 Removing the unified `codex` tool was the right decision:
+
 - ✅ Eliminates hanging issues permanently
 - ✅ Simplifies architecture significantly
 - ✅ Matches industry best practices
@@ -435,12 +467,14 @@ Removing the unified `codex` tool was the right decision:
 ## Recommendation
 
 **Do not reintroduce a unified routing tool.** The current architecture with 14 direct primitives and Claude Code's native NLP is superior in every way:
+
 - More reliable
 - Simpler to maintain
 - Follows proven patterns
 - Better user experience
 
 If users request convenience features, add them as:
+
 - Better documentation
 - Improved tool descriptions
 - Example usage patterns

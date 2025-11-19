@@ -7,10 +7,10 @@
  * - Event stream parsing
  * - Error handling and cleanup
  */
-import { spawn } from 'child_process';
-import fs from 'fs';
-import { JSONLParser } from './jsonl_parser.js';
-import { TimeoutWatchdog } from './timeout_watchdog.js';
+import { spawn } from "child_process";
+import fs from "fs";
+import { JSONLParser } from "./jsonl_parser.js";
+import { TimeoutWatchdog, } from "./timeout_watchdog.js";
 export class ProcessQueue {
     queue = [];
     running = 0;
@@ -71,9 +71,9 @@ export class ProcessManager {
      * Internal: Run a single Codex process
      */
     async runProcess(options) {
-        const { task, mode, outputSchema, model, workingDir, envPolicy, envAllowList, idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout, onMcpProgress } = options;
+        const { task, mode, outputSchema, model, workingDir, envPolicy, envAllowList, idleTimeoutMs, hardTimeoutMs, onProgress, onWarning, onTimeout, onMcpProgress, } = options;
         // Build command args safely (no shell injection)
-        const args = ['exec', '--json'];
+        const args = ["exec", "--json"];
         if (mode) {
             args.push(`--sandbox=${mode}`);
         }
@@ -84,12 +84,14 @@ export class ProcessManager {
             args.push(`--output-schema=${JSON.stringify(outputSchema)}`);
         }
         // Environment variable policy (default: inherit-none)
-        const policy = envPolicy || 'inherit-none';
-        if (policy === 'inherit-all') {
-            args.push('-c', 'shell_environment_policy.inherit=all');
+        const policy = envPolicy || "inherit-none";
+        if (policy === "inherit-all") {
+            args.push("-c", "shell_environment_policy.inherit=all");
         }
-        else if (policy === 'allow-list' && envAllowList && envAllowList.length > 0) {
-            args.push('-c', `shell_environment_policy.allow=${JSON.stringify(envAllowList)}`);
+        else if (policy === "allow-list" &&
+            envAllowList &&
+            envAllowList.length > 0) {
+            args.push("-c", `shell_environment_policy.allow=${JSON.stringify(envAllowList)}`);
         }
         // Note: 'inherit-none' is the Codex CLI default, no flag needed
         // Task goes last as positional argument
@@ -97,18 +99,18 @@ export class ProcessManager {
         return new Promise((resolve) => {
             const parser = new JSONLParser();
             const events = [];
-            let stdout = '';
-            let stderr = '';
+            let stdout = "";
+            let stderr = "";
             // Show iTerm2 badge when Codex starts
-            this.setITermBadge('⚙️ CODEX');
+            this.setITermBadge("⚙️ CODEX");
             // Spawn process (no shell = no injection risk)
-            const proc = spawn('codex', args, {
+            const proc = spawn("codex", args, {
                 cwd: workingDir || process.cwd(),
                 env: {
                     ...process.env,
                     // Inherit CODEX_API_KEY if set, otherwise use ChatGPT Pro
                 },
-                stdio: ['ignore', 'pipe', 'pipe'],
+                stdio: ["ignore", "pipe", "pipe"],
             });
             const processId = `codex-${Date.now()}-${Math.random().toString(36).substring(7)}`;
             this.processes.set(processId, proc);
@@ -158,13 +160,13 @@ export class ProcessManager {
                     }
                     catch (error) {
                         // Log error but don't break execution
-                        console.error('[ProcessManager] MCP progress callback error:', error);
+                        console.error("[ProcessManager] MCP progress callback error:", error);
                     }
                 }, 30000); // Every 30 seconds
             }
             // Parse JSONL from stdout
-            proc.stdout.on('data', (chunk) => {
-                const text = chunk.toString('utf-8');
+            proc.stdout.on("data", (chunk) => {
+                const text = chunk.toString("utf-8");
                 stdout += text;
                 // Record stdout for watchdog
                 watchdog.recordStdout(chunk);
@@ -176,13 +178,13 @@ export class ProcessManager {
                 }
             });
             // Capture stderr (warnings, errors)
-            proc.stderr.on('data', (chunk) => {
-                stderr += chunk.toString('utf-8');
+            proc.stderr.on("data", (chunk) => {
+                stderr += chunk.toString("utf-8");
                 // Record stderr for watchdog
                 watchdog.recordStderr(chunk);
             });
             // Handle process completion
-            proc.on('close', (exitCode, signal) => {
+            proc.on("close", (exitCode, signal) => {
                 // Stop watchdog
                 watchdog.stop();
                 // Stop MCP progress interval (v3.5.0)
@@ -208,7 +210,7 @@ export class ProcessManager {
                 });
             });
             // Handle process errors (spawn failures, etc.)
-            proc.on('error', (error) => {
+            proc.on("error", (error) => {
                 // Stop watchdog
                 watchdog.stop();
                 // Stop MCP progress interval (v3.5.0)
@@ -234,7 +236,7 @@ export class ProcessManager {
     killAll() {
         for (const [id, proc] of this.processes.entries()) {
             console.log(`[ProcessManager] Killing process ${id}`);
-            proc.kill('SIGTERM');
+            proc.kill("SIGTERM");
         }
         this.processes.clear();
     }
@@ -253,11 +255,12 @@ export class ProcessManager {
      * Writes directly to /dev/tty to bypass stdio redirection
      */
     setITermBadge(text) {
-        if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
+        if (process.env.TERM_PROGRAM === "iTerm.app" ||
+            process.env.LC_TERMINAL === "iTerm2") {
             try {
                 // Write directly to terminal device to bypass MCP stdio redirection
-                const badge = Buffer.from(text).toString('base64');
-                fs.writeFileSync('/dev/tty', `\x1b]1337;SetBadgeFormat=${badge}\x07`);
+                const badge = Buffer.from(text).toString("base64");
+                fs.writeFileSync("/dev/tty", `\x1b]1337;SetBadgeFormat=${badge}\x07`);
             }
             catch {
                 // Silently fail if /dev/tty not accessible
@@ -268,10 +271,11 @@ export class ProcessManager {
      * Clear iTerm2 badge
      */
     clearITermBadge() {
-        if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.LC_TERMINAL === 'iTerm2') {
+        if (process.env.TERM_PROGRAM === "iTerm.app" ||
+            process.env.LC_TERMINAL === "iTerm2") {
             try {
                 // Clear badge by writing empty badge format
-                fs.writeFileSync('/dev/tty', '\x1b]1337;SetBadgeFormat=\x07');
+                fs.writeFileSync("/dev/tty", "\x1b]1337;SetBadgeFormat=\x07");
             }
             catch {
                 // Silently fail if /dev/tty not accessible

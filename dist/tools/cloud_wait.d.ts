@@ -5,7 +5,7 @@ export interface CloudWaitInput {
     task_id: string;
     timeout_sec?: number;
     include_output?: boolean;
-    format?: 'json' | 'markdown';
+    format?: "json" | "markdown";
 }
 export declare class CloudWaitTool {
     static getSchema(): {

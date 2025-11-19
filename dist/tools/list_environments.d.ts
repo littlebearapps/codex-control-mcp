@@ -6,7 +6,7 @@ export interface CodexEnvironment {
 }
 export interface ListEnvironmentsResult {
     content: Array<{
-        type: 'text';
+        type: "text";
         text: string;
     }>;
     isError?: boolean;
@@ -29,7 +29,7 @@ export declare class ListEnvironmentsTool {
         };
     };
     execute(input?: {
-        format?: 'json' | 'markdown';
+        format?: "json" | "markdown";
     }): Promise<ListEnvironmentsResult>;
     /**
      * Helper method to generate example config

@@ -17,6 +17,7 @@ Converted codex-control MCP from manual deployment (`/mcp/codex-control/`) to **
 ### 1. Package Configuration ✅
 
 **package.json** - Added bin entry:
+
 ```json
 {
   "bin": {
@@ -26,6 +27,7 @@ Converted codex-control MCP from manual deployment (`/mcp/codex-control/`) to **
 ```
 
 **src/index.ts** - Shebang already present:
+
 ```typescript
 #!/usr/bin/env node
 ```
@@ -33,12 +35,14 @@ Converted codex-control MCP from manual deployment (`/mcp/codex-control/`) to **
 ### 2. Setup Script Created ✅
 
 **`setup-npm-link.sh`**:
+
 - Validates package.json
 - Ensures build exists
 - Creates global npm link
 - Provides testing instructions
 
 **Execution**:
+
 ```bash
 ./setup-npm-link.sh
 # ✅ Global symlink created successfully
@@ -50,22 +54,27 @@ Converted codex-control MCP from manual deployment (`/mcp/codex-control/`) to **
 Updated all 3 profiles to use portable command:
 
 **Files Modified**:
+
 - `~/claude-code-tools/mcp/profiles/lean.json`
 - `~/claude-code-tools/mcp/profiles/research.json`
 - `~/claude-code-tools/mcp/profiles/full.json`
 
 **Before** (hard-coded paths):
+
 ```json
 {
   "codex-control": {
     "command": "node",
-    "args": ["/Users/nathanschram/claude-code-tools/mcp/codex-control/dist/index.js"],
+    "args": [
+      "/Users/nathanschram/claude-code-tools/mcp/codex-control/dist/index.js"
+    ],
     "env": { "CODEX_MAX_CONCURRENCY": "2" }
   }
 }
 ```
 
 **After** (portable, npm-linked):
+
 ```json
 {
   "codex-control": {
@@ -78,6 +87,7 @@ Updated all 3 profiles to use portable command:
 ### 4. Global Symlink Verified ✅
 
 **Symlink chain**:
+
 ```
 /opt/homebrew/bin/codex-control-mcp
   ↓ (symlink)
@@ -87,6 +97,7 @@ Updated all 3 profiles to use portable command:
 ```
 
 **Verification**:
+
 ```bash
 which codex-control-mcp
 # ✅ /opt/homebrew/bin/codex-control-mcp
@@ -98,11 +109,13 @@ ls -la /opt/homebrew/lib/node_modules/codex-control-mcp
 ### 5. Documentation Created ✅
 
 **New files**:
+
 - `NPM-LINK-SETUP.md` - Complete setup guide and troubleshooting
 - `NPM-LINK-ROLLOUT-SUMMARY.md` - This file
 - `setup-npm-link.sh` - Automated setup script
 
 **Updated files**:
+
 - `CLAUDE.md` - Production Deployment section
 - `package.json` - Version 3.0.1 + bin entry
 
@@ -126,6 +139,7 @@ cp -r dist/* ~/claude-code-tools/mcp/codex-control/dist/
 ```
 
 **Problems**:
+
 - 3-step process (error-prone)
 - Two copies of code (version drift risk)
 - Hard-coded paths in configs (not portable)
@@ -143,6 +157,7 @@ npm run build
 ```
 
 **Benefits**:
+
 - ✅ 2-step process (simpler)
 - ✅ Single source of truth (no drift)
 - ✅ Portable configs (works on any machine)
@@ -157,6 +172,7 @@ npm run build
 **Goal**: Verify npm link works correctly before rolling out to all 18 projects.
 
 **Steps**:
+
 1. ✅ npm link created (done)
 2. ✅ Templates updated (done)
 3. ⏳ Copy lean profile to root:
@@ -203,13 +219,16 @@ rm -rf ~/claude-code-tools/mcp/codex-control/
 ### npm link Mechanics
 
 **What `npm link` does**:
+
 1. Creates symlink in global `node_modules`:
+
    ```
    /opt/homebrew/lib/node_modules/codex-control-mcp
    → ~/claude-code-tools/lba/apps/mcp-servers/codex-control
    ```
 
 2. Creates executable in global bin:
+
    ```
    /opt/homebrew/bin/codex-control-mcp
    → ../lib/node_modules/codex-control-mcp/dist/index.js
@@ -242,20 +261,21 @@ Restart Claude Code → picks up new code
 
 ## Benefits Summary
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| **Deployment** | Manual `cp -r dist/*` | Automatic (symlink) |
-| **Steps** | 3 (build, copy, restart) | 2 (build, restart) |
-| **Version drift** | Possible (2 copies) | Impossible (1 source) |
-| **Portability** | Machine-specific paths | Portable command |
-| **Maintenance** | 2 directories | 1 directory |
-| **npm publish** | Needs refactoring | Ready to publish |
+| Aspect            | Before                   | After                 |
+| ----------------- | ------------------------ | --------------------- |
+| **Deployment**    | Manual `cp -r dist/*`    | Automatic (symlink)   |
+| **Steps**         | 3 (build, copy, restart) | 2 (build, restart)    |
+| **Version drift** | Possible (2 copies)      | Impossible (1 source) |
+| **Portability**   | Machine-specific paths   | Portable command      |
+| **Maintenance**   | 2 directories            | 1 directory           |
+| **npm publish**   | Needs refactoring        | Ready to publish      |
 
 ---
 
 ## Testing Checklist
 
 ### ✅ Completed
+
 - [x] package.json bin entry added
 - [x] Shebang in src/index.ts verified
 - [x] TypeScript rebuilt successfully
@@ -266,6 +286,7 @@ Restart Claude Code → picks up new code
 - [x] Documentation created
 
 ### ⏳ Next Steps (Phase 1)
+
 - [ ] Copy lean profile to root `.mcp.json`
 - [ ] Restart Claude Code in root
 - [ ] Test `_codex_local_run` with async
@@ -275,6 +296,7 @@ Restart Claude Code → picks up new code
 - [ ] Make small code change, rebuild, verify propagation
 
 ### ⏳ Next Steps (Phase 2-4)
+
 - [ ] Regenerate all project configs with `generate-all-profiles.sh`
 - [ ] Test in 3-5 different projects
 - [ ] Verify async functionality across projects

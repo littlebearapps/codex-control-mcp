@@ -21,12 +21,14 @@ A simple, effective git operations safety system that protects against accidenta
 ### Three-Tier Classification
 
 **Tier 1: ALWAYS BLOCKED** (Truly destructive - no recovery)
+
 - `git gc --prune=now`
 - `git reflog expire --expire-unreachable=now`
 - `git push --force` to protected branches (main/master/trunk/release)
 - `git filter-repo` on protected refs
 
 **Tier 2: REQUIRES CONFIRMATION** (Risky but recoverable)
+
 - `git reset --hard`
 - `git rebase`
 - `git push --force` to feature branches
@@ -35,6 +37,7 @@ A simple, effective git operations safety system that protects against accidenta
 - Delete repository
 
 **Tier 3: SAFE** (Normal workflow)
+
 - Everything else (status, log, diff, add, commit, merge, etc.)
 
 ### User Experience
@@ -122,17 +125,21 @@ MCP Delegator: Creates safety checkpoint
 ## Safety Features
 
 ### 1. Detection
+
 - Pattern matching for git commands in natural language
 - Handles variations: "rebase", "git rebase", "Rebase feature onto main"
 - Normalizes commands (resolves aliases)
 
 ### 2. Blocking
+
 - Tier 1 operations NEVER proceed (too dangerous)
 - Tier 2 operations require explicit user confirmation
 - Clear error messages with safer alternatives
 
 ### 3. Auto-Checkpointing
+
 When risky operation is approved:
+
 1. Creates safety branch: `refs/safety/operation-timestamp-sha`
 2. Stashes uncommitted changes (if any)
 3. Extends reflog retention to 90 days
@@ -140,6 +147,7 @@ When risky operation is approved:
 5. Provides rollback instructions
 
 ### 4. Recovery
+
 ```bash
 # Rollback to checkpoint
 git reset --hard refs/safety/rebase-2025-11-16-abc123
@@ -155,19 +163,19 @@ git show refs/safety/rebase-2025-11-16-abc123
 
 ## Comparison with Original Plan
 
-| Aspect | Original Plan | Simple Implementation |
-|--------|--------------|----------------------|
-| **Lines of code** | ~2000+ | ~300 |
-| **Implementation time** | 4 weeks | 1-2 hours |
-| **Token system** | HMAC, JTI, TOCTOU | None |
-| **Config files** | 3 files | 0 files |
-| **Session management** | Complex | None |
-| **User confirmation** | Special commands | Built-in dialog ✅ |
-| **AI bypass prevention** | Cryptographic | Not needed ✅ |
-| **Auto-checkpoint** | Yes | Yes ✅ |
-| **Checkpoint cleanup** | Manual | Auto (30 days) ✅ |
-| **Audit logging** | Complex | Simple ✅ |
-| **Test coverage** | Planned | 9/9 passing ✅ |
+| Aspect                   | Original Plan     | Simple Implementation |
+| ------------------------ | ----------------- | --------------------- |
+| **Lines of code**        | ~2000+            | ~300                  |
+| **Implementation time**  | 4 weeks           | 1-2 hours             |
+| **Token system**         | HMAC, JTI, TOCTOU | None                  |
+| **Config files**         | 3 files           | 0 files               |
+| **Session management**   | Complex           | None                  |
+| **User confirmation**    | Special commands  | Built-in dialog ✅    |
+| **AI bypass prevention** | Cryptographic     | Not needed ✅         |
+| **Auto-checkpoint**      | Yes               | Yes ✅                |
+| **Checkpoint cleanup**   | Manual            | Auto (30 days) ✅     |
+| **Audit logging**        | Complex           | Simple ✅             |
+| **Test coverage**        | Planned           | 9/9 passing ✅        |
 
 ---
 
@@ -247,7 +255,10 @@ Safety branches are automatically kept for 30 days. To clean up manually:
 
 ```typescript
 const checkpointing = new SafetyCheckpointing();
-const deletedCount = await checkpointing.cleanupOldCheckpoints(process.cwd(), 30);
+const deletedCount = await checkpointing.cleanupOldCheckpoints(
+  process.cwd(),
+  30,
+);
 console.log(`Deleted ${deletedCount} old safety checkpoints`);
 ```
 
@@ -260,8 +271,9 @@ cat ~/.config/mcp-delegator/checkpoints.log
 ### Customize Protected Branches
 
 Currently hard-coded in `risky_operation_detector.ts`:
+
 ```typescript
-const PROTECTED_BRANCHES = ['main', 'master', 'trunk', 'release'];
+const PROTECTED_BRANCHES = ["main", "master", "trunk", "release"];
 ```
 
 To customize, edit the pattern in `ALWAYS_BLOCKED_PATTERNS`.
@@ -309,6 +321,7 @@ To customize, edit the pattern in `ALWAYS_BLOCKED_PATTERNS`.
 This simple implementation provides **adequate security** for the actual threat model (preventing accidents in cooperative multi-agent workflows) while maintaining **excellent user experience** through Claude Code's built-in permission dialogs.
 
 **The key insight**: We don't need complex cryptographic tokens because:
+
 1. The AIs are cooperative helpers, not adversaries
 2. The user is always in the loop
 3. The goal is preventing mistakes, not preventing AI bypass

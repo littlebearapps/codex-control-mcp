@@ -20,6 +20,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ### Why Use JSON Format
 
 **Token Savings**: 97% reduction (18,000 → 500 tokens per task)
+
 - Faster AI agent responses
 - Lower costs
 - Structured data extraction
@@ -28,6 +29,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ### Optimized Workflow Pattern
 
 **Traditional (Markdown)**:
+
 ```typescript
 // 1. Submit task
 { "task": "Run tests", "mode": "read-only" }
@@ -39,6 +41,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Optimized (JSON)** ✅:
+
 ```typescript
 // 1. Submit task
 { "task": "Run tests", "mode": "read-only", "format": "json" }
@@ -54,6 +57,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ### When to Use JSON Format
 
 **✅ Always use JSON for**:
+
 - AI agent automation
 - Multi-task workflows
 - Batch processing
@@ -61,6 +65,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 - CI/CD pipelines
 
 **❌ Use Markdown for**:
+
 - Human-readable output
 - Interactive debugging
 - One-off manual tasks
@@ -70,6 +75,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Run tests, extract results, fix failures, verify fixes
 
 **Step 1: Run Tests (JSON)**
+
 ```typescript
 {
   "task": "Run complete test suite and report results",
@@ -79,6 +85,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Response** (150 tokens):
+
 ```json
 {
   "version": "3.6",
@@ -92,6 +99,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Step 2: Get Results (JSON)**
+
 ```typescript
 {
   "task_id": "T-local-abc123",
@@ -100,6 +108,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Response** (300 tokens with metadata):
+
 ```json
 {
   "version": "3.6",
@@ -123,13 +132,14 @@ Common development workflows using MCP Delegator with JSON format optimization.
       }
     },
     "output": {
-      "included": true  // Included because test failed
+      "included": true // Included because test failed
     }
   }
 }
 ```
 
 **Step 3: Fix Failures (JSON)**
+
 ```typescript
 {
   "task": "Fix the 2 failing tests: test_auth_timeout and test_api_validation. Issue is TypeError at src/auth.ts:42 - check for null values.",
@@ -139,6 +149,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Step 4: Verify Fixes (JSON)**
+
 ```typescript
 {
   "task": "Run only the 2 previously failing tests to verify fixes",
@@ -148,6 +159,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Total Token Usage**:
+
 - Markdown: ~40,000 tokens
 - JSON: ~1,200 tokens
 - **Savings**: 97%
@@ -161,6 +173,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Analyze code for bugs, security issues, or improvements.
 
 **Steps**:
+
 ```
 1. Use codex_run with read-only mode
    → Fast, no file changes
@@ -174,6 +187,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Analyze
 {
@@ -196,6 +210,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Use Cases**:
+
 - Pre-commit code review
 - Security audit
 - Performance analysis
@@ -208,6 +223,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Plan large-scale refactoring with detailed analysis.
 
 **Steps**:
+
 ```
 1. Use codex_local_exec (read-only)
    → Get detailed analysis with thread persistence
@@ -223,6 +239,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Initial analysis
 {
@@ -252,6 +269,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Benefits**:
+
 - ✅ Thread persistence preserves context
 - ✅ High cache rates (45-93%) save costs
 - ✅ Iterative exploration before commitment
@@ -265,6 +283,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Build new feature with test-driven approach.
 
 **Steps**:
+
 ```
 1. codex_local_exec (read-only)
    → Analyze existing code, plan approach
@@ -282,6 +301,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Analysis
 {
@@ -313,6 +333,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Best Practices**:
+
 - ✅ Use feature branches (not main)
 - ✅ Write tests first
 - ✅ Leverage thread persistence
@@ -325,6 +346,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Debug issue, find root cause, apply minimal fix.
 
 **Steps**:
+
 ```
 1. codex_local_exec (read-only)
    → Reproduce bug, analyze symptoms
@@ -340,6 +362,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Reproduce and analyze
 {
@@ -369,6 +392,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Benefits**:
+
 - ✅ Systematic debugging approach
 - ✅ Context preserved across steps
 - ✅ Minimal, targeted fixes
@@ -382,6 +406,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Execute test suite, identify failures, apply fixes.
 
 **Steps**:
+
 ```
 1. codex_run (read-only)
    → Run test suite, capture failures
@@ -396,6 +421,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example (Few Failures)**:
+
 ```typescript
 // Step 1: Run tests
 {
@@ -411,6 +437,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example (Many Failures)**:
+
 ```typescript
 // Use Cloud for long-running task
 {
@@ -427,6 +454,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Identify untested code and add coverage.
 
 **Steps**:
+
 ```
 1. codex_local_exec (read-only)
    → Run coverage tool, identify gaps
@@ -439,6 +467,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Coverage analysis
 {
@@ -480,6 +509,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Run comprehensive tests in background.
 
 **Steps**:
+
 ```
 1. codex_cloud_submit
    → Submit task to Codex Cloud
@@ -495,6 +525,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Submit
 {
@@ -524,6 +555,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Large-scale refactoring that takes hours.
 
 **Steps**:
+
 ```
 1. Setup GitHub environment
    → Use codex_github_setup_guide
@@ -539,6 +571,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Example**:
+
 ```typescript
 // Evening: Submit task
 {
@@ -565,6 +598,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Complete feature development with automated PR.
 
 **Prerequisites**:
+
 ```
 1. GitHub environment configured
    → Use codex_github_setup_guide
@@ -574,6 +608,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Workflow**:
+
 ```typescript
 // Submit complete feature task
 {
@@ -592,6 +627,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 ```
 
 **Task Description Best Practices**:
+
 - ✅ Specify branch name explicitly
 - ✅ Include testing requirements
 - ✅ Specify PR title and description needs
@@ -604,6 +640,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Fix GitHub issues automatically.
 
 **Workflow**:
+
 ```typescript
 // Fix specific GitHub issue
 {
@@ -626,6 +663,7 @@ Common development workflows using MCP Delegator with JSON format optimization.
 **Goal**: Run Codex tasks in GitHub Actions.
 
 **Setup** (`.github/workflows/codex-review.yml`):
+
 ```yaml
 name: Codex Code Review
 
@@ -655,32 +693,35 @@ jobs:
 
 ## Workflow Selection Matrix
 
-| Scenario | Tool Chain | Duration | Persistence |
-|----------|-----------|----------|-------------|
-| **Quick analysis** | `codex_run` | 1-5 min | ❌ No |
-| **Iterative dev** | `codex_local_exec` + `resume` | 5-30 min | ✅ Thread |
-| **Long refactoring** | `codex_cloud_submit` | 30+ min | ✅ Task |
-| **Preview changes** | `codex_plan` → `codex_apply` | 2-10 min | ❌ No |
-| **Multi-step debugging** | `codex_local_exec` + `resume` | 10-20 min | ✅ Thread |
-| **GitHub PR** | `codex_cloud_submit` | 20-60 min | ✅ Task |
+| Scenario                 | Tool Chain                    | Duration  | Persistence |
+| ------------------------ | ----------------------------- | --------- | ----------- |
+| **Quick analysis**       | `codex_run`                   | 1-5 min   | ❌ No       |
+| **Iterative dev**        | `codex_local_exec` + `resume` | 5-30 min  | ✅ Thread   |
+| **Long refactoring**     | `codex_cloud_submit`          | 30+ min   | ✅ Task     |
+| **Preview changes**      | `codex_plan` → `codex_apply`  | 2-10 min  | ❌ No       |
+| **Multi-step debugging** | `codex_local_exec` + `resume` | 10-20 min | ✅ Thread   |
+| **GitHub PR**            | `codex_cloud_submit`          | 20-60 min | ✅ Task     |
 
 ---
 
 ## Best Practices Across Workflows
 
 ### Before Starting
+
 - ✅ Check git status (clean working directory)
 - ✅ Create feature branch (not main)
 - ✅ Review existing code structure
 - ✅ Define clear success criteria
 
 ### During Execution
+
 - ✅ Use descriptive task descriptions
 - ✅ Leverage thread persistence for multi-step tasks
 - ✅ Monitor token usage (local SDK tools)
 - ✅ Check intermediate results
 
 ### After Completion
+
 - ✅ Review all changes (`git diff`)
 - ✅ Run tests locally
 - ✅ Verify no secrets committed
@@ -688,6 +729,7 @@ jobs:
 - ✅ Update documentation if needed
 
 ### Error Recovery
+
 - ✅ Use `codex_local_resume` to continue from failure
 - ✅ Review error messages carefully
 - ✅ Check `codex_status` for queue issues
@@ -700,11 +742,13 @@ jobs:
 **Fully automated pipeline** - No manual versioning or publishing required.
 
 ### Automated on Every PR
+
 - Multi-platform testing (Node 20.x/22.x on Ubuntu/macOS/Windows)
 - Lint, type check, coverage, security audit
 - CodeQL security scanning
 
 ### Automated on Main Commits
+
 - **semantic-release** determines version from conventional commits:
   - `fix:` → Patch (3.x.x)
   - `feat:` → Minor (3.x.0)
@@ -714,6 +758,7 @@ jobs:
 - Create GitHub releases
 
 ### Provenance E409 Fix (v3.3.3+)
+
 - **Problem**: npm registry race condition causes E409 "packument save" errors
 - **Solution**: Post-publish verification script (based on CKEditor solution)
 - Handles case where package publishes successfully despite error message
@@ -721,6 +766,7 @@ jobs:
 - **See**: `docs/PROVENANCE-E409-FIX.md` for complete details
 
 ### Continuous Security
+
 - Weekly CodeQL scans
 - Dependabot dependency updates
 - Secret scanning with push protection

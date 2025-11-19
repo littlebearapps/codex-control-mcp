@@ -1,4 +1,5 @@
 # Implementation Checklist
+
 ## MCP Delegator CI/CD & Security Setup
 
 **Use this checklist to track progress through the 4-phase rollout.**
@@ -49,9 +50,9 @@
         branches: 95,
         functions: 95,
         lines: 95,
-        statements: 95
-      }
-    }
+        statements: 95,
+      },
+    },
   };
   ```
 - [ ] Run `npm test -- --coverage` locally
@@ -61,6 +62,7 @@
 ### Documentation
 
 - [ ] Create `SECURITY.md`:
+
   ```markdown
   # Security Policy
 
@@ -75,6 +77,7 @@
 
   Please report security vulnerabilities to security@littlebearapps.com
   ```
+
 - [ ] Create `CONTRIBUTING.md`:
   - Explain conventional commits
   - PR process
@@ -349,6 +352,7 @@
   ```
 - [ ] Update version strategy in docs
 - [ ] Create breaking change commit:
+
   ```bash
   git commit --allow-empty -m "feat!: public release of mcp-delegator
 
@@ -367,6 +371,7 @@
 
   Migration: No code changes required for existing users."
   ```
+
 - [ ] Push and create PR
 - [ ] Get approval
 - [ ] Merge to main
@@ -421,17 +426,20 @@
 ### Ongoing Maintenance
 
 **Weekly**:
+
 - [ ] Review and merge Dependabot PRs
 - [ ] Check CI status
 - [ ] Monitor security alerts
 
 **Monthly**:
+
 - [ ] Review CodeQL findings
 - [ ] Update dependencies
 - [ ] Check npm download stats
 - [ ] Review documentation for updates
 
 **Quarterly**:
+
 - [ ] Audit Trusted Publisher configuration
 - [ ] Review branch protection rules
 - [ ] Audit npm package access
@@ -468,6 +476,7 @@
 Track these metrics to measure success:
 
 **Technical**:
+
 - [ ] CI success rate >95%
 - [ ] Code coverage ≥95%
 - [ ] Zero high/critical vulnerabilities
@@ -475,6 +484,7 @@ Track these metrics to measure success:
 - [ ] Time to release <5 minutes
 
 **Operational**:
+
 - [ ] PR review time <24 hours
 - [ ] Dependabot PRs reviewed within 7 days
 - [ ] Security alerts triaged within 48 hours

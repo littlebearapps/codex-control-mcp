@@ -8,24 +8,26 @@
 
 ## Test Suite Summary
 
-| Test Suite | Total | Passed | Failed | Pass Rate |
-|------------|-------|--------|--------|-----------|
-| **Intent Parser - Positive Cases** | 47 | 35 | 12 | 74% |
-| **Intent Parser - Negative Cases** | 10 | 10 | 0 | 100% ✅ |
-| **Intent Parser - Disambiguation** | 5 | 0 | 5 | 0% |
-| **Intent Parser - Parameter Extraction** | 4 | 3 | 1 | 75% |
-| **Intent Parser - Confidence Scoring** | 6 | 3 | 3 | 50% |
-| **Intent Parser - Edge Cases** | 10 | 10 | 0 | 100% ✅ |
-| **Intent Parser - Reasoning Generation** | 3 | 3 | 0 | 100% ✅ |
-| **Intent Parser - Clarification Suggestions** | 3 | 2 | 1 | 67% |
-| **TOTAL** | **87** | **66** | **21** | **76%** |
+| Test Suite                                    | Total  | Passed | Failed | Pass Rate |
+| --------------------------------------------- | ------ | ------ | ------ | --------- |
+| **Intent Parser - Positive Cases**            | 47     | 35     | 12     | 74%       |
+| **Intent Parser - Negative Cases**            | 10     | 10     | 0      | 100% ✅   |
+| **Intent Parser - Disambiguation**            | 5      | 0      | 5      | 0%        |
+| **Intent Parser - Parameter Extraction**      | 4      | 3      | 1      | 75%       |
+| **Intent Parser - Confidence Scoring**        | 6      | 3      | 3      | 50%       |
+| **Intent Parser - Edge Cases**                | 10     | 10     | 0      | 100% ✅   |
+| **Intent Parser - Reasoning Generation**      | 3      | 3      | 0      | 100% ✅   |
+| **Intent Parser - Clarification Suggestions** | 3      | 2      | 1      | 67%       |
+| **TOTAL**                                     | **87** | **66** | **21** | **76%**   |
 
 ---
 
 ## ✅ Passing Test Categories
 
 ### 1. Negative Cases (100%)
+
 All 10 negative test cases are passing correctly:
+
 - Empty input
 - Gibberish
 - Vague input
@@ -33,7 +35,9 @@ All 10 negative test cases are passing correctly:
 - All properly rejected or given low confidence
 
 ### 2. Edge Cases (100%)
+
 All 10 edge case tests passing:
+
 - Empty string
 - Whitespace only
 - Very long input (10,000 characters)
@@ -46,7 +50,9 @@ All 10 edge case tests passing:
 - Environment ID extraction
 
 ### 3. Reasoning Generation (100%)
+
 All 3 reasoning tests passing:
+
 - Reasoning explains keyword matches
 - Reasoning explains context matches
 - Alternatives include reasoning
@@ -58,6 +64,7 @@ All 3 reasoning tests passing:
 ### 1. Positive Cases (12 failures out of 47)
 
 **Failing Primitives**:
+
 - `_codex_local_exec` - Input 3: "Execute a comprehensive security audit"
 - `_codex_local_resume` - Input 3: "Keep working on that refactoring"
 - `_codex_local_results` - Input 2: "Show me what completed"
@@ -67,6 +74,7 @@ All 3 reasoning tests passing:
 - `_codex_cloud_cancel` - All 3 inputs: "Cancel cloud task", "Stop the cloud execution", "Abort cloud task"
 
 **Common Pattern**:
+
 - Cloud primitives are not matching as expected
 - Some keyword patterns need refinement
 - Confidence thresholds may be too strict
@@ -76,6 +84,7 @@ All 3 reasoning tests passing:
 **All disambiguation tests are failing**. This indicates a fundamental issue with disambiguation logic.
 
 **Failing Cases**:
+
 1. "Run something" - Should match both `_codex_local_run` and `_codex_cloud_submit`
 2. "Check status" - Should match both `_codex_local_status` and `_codex_cloud_status`
 3. "Get results" - Should match both `_codex_local_results` and `_codex_cloud_results`
@@ -87,6 +96,7 @@ All 3 reasoning tests passing:
 ### 3. Confidence Scoring (3 failures out of 6)
 
 **Failing Tests**:
+
 1. **High confidence (90-100)**: "Cancel cloud task T-cloud-abc123"
    - Expected: 80-100
    - Actual: Lower than expected
@@ -105,6 +115,7 @@ All 3 reasoning tests passing:
 ### 4. Parameter Extraction (1 failure)
 
 **Failing Test**: "Set up GitHub for https://github.com/myorg/myrepo"
+
 - Expected: `repoUrl` parameter extracted
 - Actual: Parameter extraction failing
 - **Issue**: Parameter extraction not working correctly for GitHub setup primitive
@@ -112,6 +123,7 @@ All 3 reasoning tests passing:
 ### 5. Clarification Suggestions (1 failure)
 
 **Failing Test**: "No clarification for clear input" - "Cancel cloud task T-cloud-abc123"
+
 - Expected: No disambiguation needed (clear input)
 - Actual: Disambiguation required
 - **Issue**: Parser is marking clear input as ambiguous
@@ -156,16 +168,19 @@ All 3 reasoning tests passing:
 ## 📊 Progress Metrics
 
 ### Test Coverage
+
 - **Current**: 87 tests written
 - **Target**: 95-100 tests (Week 4 plan)
 - **Status**: ✅ On track (87% complete)
 
 ### Pass Rate
+
 - **Current**: 76% (66/87)
 - **Target**: ≥90% (Week 4 success criteria)
 - **Status**: ⚠️ Below target (needs 12 more passing tests)
 
 ### Test Categories Completed
+
 - ✅ Positive cases (47 tests)
 - ✅ Negative cases (10 tests)
 - ✅ Disambiguation (5 tests)
@@ -183,12 +198,14 @@ All 3 reasoning tests passing:
 ## 🎯 Next Steps
 
 ### Immediate (Today)
+
 1. Fix disambiguation logic (Priority 1)
 2. Fix cloud primitive keyword patterns (Priority 1)
 3. Re-run tests and verify fixes
 4. Aim for 90%+ pass rate before proceeding
 
 ### Week 4 Remaining Work
+
 1. Fix all P1 and P2 issues
 2. Write Router unit tests (30 tests)
 3. Write E2E golden conversation tests (10-15 tests)

@@ -40,12 +40,14 @@
 **Steps**:
 
 1. **Note current branch**:
+
    ```bash
    git branch
    # Expected: main (or current branch)
    ```
 
 2. **Run Codex task** (in Claude Code):
+
    ```
    Use codex control to create a feature branch called "feature/test-git-verification" and commit a small documentation change
    ```
@@ -53,6 +55,7 @@
 3. **Wait for task completion**
 
 4. **Check results**:
+
    ```
    Use codex control to get results for [task-id]
    ```
@@ -70,11 +73,13 @@
    ```
 
 **Expected Results**:
+
 - If Codex failed to create branch: Git verification reports error + recommendation
 - If Codex succeeded: Git verification shows ✅ for branch creation
 - No silent failures (always get clear status)
 
 **Actual Results**:
+
 - [ ] PASS - Git verification accurately detected branch status
 - [ ] FAIL - (describe what happened)
 
@@ -87,16 +92,19 @@
 **Steps**:
 
 1. **Make a small file change**:
+
    ```bash
    echo "# Test" >> TEST.md
    ```
 
 2. **Run Codex task**:
+
    ```
    Use codex control to commit TEST.md with message "test: verify git commit detection"
    ```
 
 3. **Check results**:
+
    ```
    Use codex control to get results for [task-id]
    ```
@@ -113,11 +121,13 @@
    ```
 
 **Expected Results**:
+
 - Git verification accurately reports commit status
 - If failed: provides actionable `git commit` command
 - If succeeded: shows commit details
 
 **Actual Results**:
+
 - [ ] PASS - Commit verification accurate
 - [ ] FAIL - (describe what happened)
 
@@ -130,17 +140,20 @@
 **Steps**:
 
 1. **Create multiple files**:
+
    ```bash
    echo "File 1" > test1.md
    echo "File 2" > test2.md
    ```
 
 2. **Run Codex task**:
+
    ```
    Use codex control to stage test1.md and test2.md
    ```
 
 3. **Check results**:
+
    ```
    Use codex control to get results for [task-id]
    ```
@@ -157,11 +170,13 @@
    ```
 
 **Expected Results**:
+
 - Git verification shows accurate staging status
 - Reports both staged and unstaged files
 - Provides recommendations for unstaged files
 
 **Actual Results**:
+
 - [ ] PASS - Staging verification accurate
 - [ ] FAIL - (describe what happened)
 
@@ -174,6 +189,7 @@
 **Steps**:
 
 1. **Run complete task**:
+
    ```
    Use codex control to:
    1. Create feature branch "feature/complete-test"
@@ -198,11 +214,13 @@
    ```
 
 **Expected Results**:
+
 - Git verification checks ALL operations
 - Reports comprehensive status for each step
 - Provides recommendations for any failures
 
 **Actual Results**:
+
 - [ ] PASS - Complete workflow verified accurately
 - [ ] FAIL - (describe what happened)
 
@@ -215,6 +233,7 @@
 **Steps**:
 
 1. **Run non-git task**:
+
    ```
    Use codex control to analyze the README.md file for potential improvements (read-only mode)
    ```
@@ -227,10 +246,12 @@
    - [ ] Git verification section shows "No git operations expected"
 
 **Expected Results**:
+
 - Git verification gracefully skips for non-git tasks
 - No false errors about missing git operations
 
 **Actual Results**:
+
 - [ ] PASS - Correctly skipped git verification
 - [ ] FAIL - (describe what happened)
 
@@ -247,6 +268,7 @@
 **Steps**:
 
 1. **Start long-running task** (5+ minutes):
+
    ```
    Use codex control to run the test suite and analyze all failures in detail (read-only mode)
    ```
@@ -254,6 +276,7 @@
    **Note the Task ID**: `T-local-___________`
 
 2. **Wait 30 seconds**, then check status:
+
    ```
    Use codex control to check local status
    ```
@@ -266,6 +289,7 @@
    - [ ] Shows activity metrics (files changed, commands executed)
 
 4. **Wait another 60 seconds**, check status again:
+
    ```
    Use codex control to check local status
    ```
@@ -277,16 +301,19 @@
    - [ ] Activity metrics updated
 
 **Expected Results**:
+
 - Progress updates appear in status output
 - Progress percentage increases over time
 - Current action shows what Codex is doing
 - Activity metrics show work being done
 
 **Actual Results**:
+
 - [ ] PASS - Progress visible and updating
 - [ ] FAIL - (describe what happened)
 
 **Screenshots/Logs** (paste status output):
+
 ```
 First check (30s):
 
@@ -305,11 +332,13 @@ Second check (90s):
 **Steps**:
 
 1. **Start quick task**:
+
    ```
    Use codex control to list all Python files in the current directory (read-only mode)
    ```
 
 2. **Immediately check status**:
+
    ```
    Use codex control to check local status
    ```
@@ -320,11 +349,13 @@ Second check (90s):
    - [ ] No errors or crashes from rapid status check
 
 **Expected Results**:
+
 - Progress tracking works for quick tasks
 - No performance issues
 - Gracefully handles already-completed tasks
 
 **Actual Results**:
+
 - [ ] PASS - Works for quick tasks
 - [ ] FAIL - (describe what happened)
 
@@ -337,6 +368,7 @@ Second check (90s):
 **Steps**:
 
 1. **Start first task**:
+
    ```
    Use codex control to analyze all Python files for code quality issues (read-only mode)
    ```
@@ -344,6 +376,7 @@ Second check (90s):
    **Task ID 1**: `T-local-___________`
 
 2. **Start second task** (different Claude Code session or wait a bit):
+
    ```
    Use codex control to analyze all TypeScript files for type errors (read-only mode)
    ```
@@ -351,6 +384,7 @@ Second check (90s):
    **Task ID 2**: `T-local-___________`
 
 3. **Check status**:
+
    ```
    Use codex control to check local status
    ```
@@ -362,11 +396,13 @@ Second check (90s):
    - [ ] Progress updates correctly for each
 
 **Expected Results**:
+
 - Multiple tasks tracked independently
 - Progress shown for each task separately
 - No cross-contamination of progress data
 
 **Actual Results**:
+
 - [ ] PASS - Multiple tasks tracked correctly
 - [ ] FAIL - (describe what happened)
 
@@ -381,6 +417,7 @@ Second check (90s):
 1. **Start and complete a task** (use a quick one)
 
 2. **After completion, check status**:
+
    ```
    Use codex control to check local status
    ```
@@ -391,6 +428,7 @@ Second check (90s):
    - [ ] Can get full results with task ID
 
 4. **Get results**:
+
    ```
    Use codex control to get results for [task-id]
    ```
@@ -400,11 +438,13 @@ Second check (90s):
    - [ ] No errors retrieving results
 
 **Expected Results**:
+
 - Completed tasks retrievable
 - Results accessible after completion
 - No errors from progress tracking after completion
 
 **Actual Results**:
+
 - [ ] PASS - Completed tasks handled correctly
 - [ ] FAIL - (describe what happened)
 
@@ -417,6 +457,7 @@ Second check (90s):
 **Steps**:
 
 1. **Start long task** (10+ minutes):
+
    ```
    Use codex control to run comprehensive code analysis on the entire codebase (read-only mode)
    ```
@@ -436,15 +477,18 @@ Second check (90s):
    - Are updates too infrequent (not helpful)?
 
 **Expected Results**:
+
 - Progress updates every 10 events (rate limited)
 - Updates appear helpful, not overwhelming
 - Clear visibility into current activity
 
 **Actual Results**:
+
 - [ ] PASS - Update frequency is appropriate
 - [ ] FAIL - Too frequent / Too infrequent (describe)
 
 **Observations**:
+
 ```
 0:30 -
 1:00 -
@@ -465,6 +509,7 @@ Second check (90s):
 **Steps**:
 
 1. **Start git-heavy task**:
+
    ```
    Use codex control to:
    1. Create feature branch "feature/integration-test"
@@ -488,11 +533,13 @@ Second check (90s):
    - [ ] No performance degradation
 
 **Expected Results**:
+
 - Both features work harmoniously
 - No conflicts or errors
 - Complete visibility into task execution and git operations
 
 **Actual Results**:
+
 - [ ] PASS - Both features work together
 - [ ] FAIL - (describe what happened)
 
@@ -507,6 +554,7 @@ Second check (90s):
 1. **Start long task**
 
 2. **Cancel it**:
+
    ```
    Use codex control to cancel [task-id]
    ```
@@ -517,6 +565,7 @@ Second check (90s):
    - [ ] Task marked as canceled
 
 **Actual Results**:
+
 - [ ] PASS
 - [ ] FAIL - (describe)
 
@@ -533,6 +582,7 @@ Second check (90s):
    - [ ] No crashes or errors
 
 **Actual Results**:
+
 - [ ] PASS
 - [ ] FAIL - (describe)
 
@@ -543,18 +593,21 @@ Second check (90s):
 ### Overall Results
 
 **Issue #1 (Git Operations)**:
-- Tests Passed: ___ / 6
-- Tests Failed: ___ / 6
+
+- Tests Passed: \_\_\_ / 6
+- Tests Failed: \_\_\_ / 6
 - Critical Issues Found: (list)
 
 **Issue #2 (Progress Visibility)**:
-- Tests Passed: ___ / 5
-- Tests Failed: ___ / 5
+
+- Tests Passed: \_\_\_ / 5
+- Tests Failed: \_\_\_ / 5
 - Critical Issues Found: (list)
 
 **Integration Tests**:
-- Tests Passed: ___ / 2
-- Tests Failed: ___ / 2
+
+- Tests Passed: \_\_\_ / 2
+- Tests Failed: \_\_\_ / 2
 
 ### Issues Discovered
 
@@ -575,8 +628,8 @@ Second check (90s):
 
 ### Sign-off
 
-**Tester**: _______________
-**Date**: _______________
+**Tester**: **\*\***\_\_\_**\*\***
+**Date**: **\*\***\_\_\_**\*\***
 **Version Tested**: 3.1.0
 **Approved**: Yes / No / Conditional
 

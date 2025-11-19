@@ -12,6 +12,7 @@
 Restructure Codex Control MCP from **infrastructure-oriented** (10 primitives) to **capability-oriented** (1 user tool + 10 hidden primitives) design, matching the proven pattern of zen-mcp-server.
 
 **Key Changes**:
+
 - **User sees**: 1 tool (`codex`)
 - **Agent uses**: 10 hidden primitives (`_codex_local_*`, `_codex_cloud_*`)
 - **Result**: 90% reduction in user-visible complexity
@@ -23,6 +24,7 @@ Restructure Codex Control MCP from **infrastructure-oriented** (10 primitives) t
 ### Current Architecture (v2.1.1)
 
 **User-Facing Tools** (10):
+
 ```
 codex_local_run, codex_local_status, codex_local_exec,
 codex_local_resume, codex_local_results, codex_cloud_submit,
@@ -31,6 +33,7 @@ codex_cloud_list_environments, codex_cloud_github_setup
 ```
 
 **Issues**:
+
 1. **Decision Paralysis**: "Which tool do I use?" (local vs cloud? status vs results?)
 2. **Mental Model Mismatch**: Users think in tasks ("run tests"), tools organized by infrastructure
 3. **Poor Discoverability**: 10 tools overwhelm `/tools` menu
@@ -47,11 +50,13 @@ Tools designed for **how they work** (infrastructure) not **what users want to a
 ### Phase 1: One Tool Per AI CLI
 
 **User-Facing** (1 tool):
+
 ```
 codex - Natural language interface to OpenAI Codex
 ```
 
 **Agent-Only** (14 primitives, hidden with `_` prefix):
+
 ```
 _codex_local_run      - CLI-based execution (read-only/preview/apply)
 _codex_local_status   - Quick status check (passive polling)
@@ -74,6 +79,7 @@ _codex_cloud_github_setup      - Generate GitHub integration guide
 ### Future Phase 2: Capability Tools (v4.0+)
 
 **User-Facing** (5 capability tools):
+
 ```
 debug   - Systematic investigation and root cause analysis
 review  - Code review with severity levels
@@ -83,6 +89,7 @@ test    - Comprehensive test generation and execution
 ```
 
 **Agent-Only** (13+ primitives):
+
 ```
 _codex              - OpenAI Codex interface
 _claude_code        - Claude Code interface
@@ -103,6 +110,7 @@ Capability tools internally choose best AI for each task.
 **Rule**: Claude Code NEVER waits for Codex task completion.
 
 **Behavior**:
+
 ```
 1. Claude Code calls MCP tool
    ↓
@@ -120,11 +128,13 @@ Capability tools internally choose best AI for each task.
 ### All Tools Are Async
 
 **User-facing `codex` tool**:
+
 - Returns task ID immediately for ALL execution operations
 - Never blocks waiting for Codex completion
 - Status/results fetched separately via task ID
 
 **Hidden primitives**:
+
 - `_codex_local_*`: Async via LocalTaskRegistry (background process tracking)
 - `_codex_cloud_*`: Async via CloudTaskRegistry (fire-and-forget submission)
 
@@ -156,10 +166,12 @@ Capability tools internally choose best AI for each task.
 **Solution**: Add active polling and cancellation primitives
 
 **New Tools**:
+
 - `_codex_local_wait` / `_codex_cloud_wait`: Server-side polling with backoff
 - `_codex_local_cancel` / `_codex_cloud_cancel`: Task termination
 
 **Wait Tool Behavior**:
+
 ```typescript
 // Agent calls once, server handles polling internally
 _codex_cloud_wait({
@@ -179,11 +191,13 @@ _codex_cloud_wait({
 ```
 
 **Polling Strategy**:
+
 - Backoff with jitter: 2s (±20%) → 5s → 10s → cap at 15s
 - Prevents thundering herd on cloud infrastructure
 - Reduces agent tool call spam (one wait vs many status checks)
 
 **Cancel Tool Behavior**:
+
 ```typescript
 _codex_cloud_cancel({
   task_id: "T-abc123",
@@ -209,6 +223,7 @@ _codex_cloud_cancel({
 **Solution**: Infer progress from Codex JSONL event stream and report granular steps
 
 **Enhanced Task Registry Schema**:
+
 ```sql
 ALTER TABLE tasks ADD COLUMN progress_steps JSON;
 -- Example: {"current": 2, "total": 5, "description": "Running tests", "percentage": 40}
@@ -218,6 +233,7 @@ ALTER TABLE tasks ADD COLUMN keep_alive_until TIMESTAMP;
 ```
 
 **Progress Inference from JSONL Events**:
+
 ```typescript
 // Codex emits events during execution
 turn.started → "Planning approach" (step 1/5, 20%)
@@ -228,6 +244,7 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 ```
 
 **Enhanced Status Response**:
+
 ```typescript
 {
   task_id: "T-local-abc123",
@@ -260,6 +277,7 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 **Anthropic Principle**: "Describe tools as you would to a new hire on your team"
 
 **Before (Technical)**:
+
 ```typescript
 {
   name: "_codex_cloud_status",
@@ -268,6 +286,7 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 ```
 
 **After (Conversational)**:
+
 ```typescript
 {
   name: "_codex_cloud_status",
@@ -283,12 +302,13 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 ```
 
 **Description Pattern**:
+
 1. **Analogy**: "like peeking at a tracking number"
 2. **Use case**: "when you want to know 'is it done yet?'"
 3. **Anti-pattern**: "WITHOUT downloading potentially large outputs"
 4. **Returns**: Explicit list of what's included
-5. **Cross-reference**: "For actual results, use _codex_cloud_results"
-6. **Alternative**: "For continuous updates, use _codex_cloud_wait"
+5. **Cross-reference**: "For actual results, use \_codex_cloud_results"
+6. **Alternative**: "For continuous updates, use \_codex_cloud_wait"
 7. **Parameter examples**: "format: T-cloud-abc123"
 
 **ALL 14 Tool Descriptions Will Follow This Pattern** (see Appendix C for complete rewrite)
@@ -304,16 +324,19 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 **Solution**: Align state model and terminology WITHOUT implementing custom RPC methods
 
 **SEP-1391 Terminology Adoption**:
+
 - Operation states: `pending`, `working`, `completed`, `canceled`, `failed`, `unknown`
   - (vs our current: `queued`, `running`, `succeeded`)
 - Add `poll_frequency_ms` guidance in responses
 - Add `keep_alive_until` TTL for result expiration
 
 **What We WON'T Do**:
+
 - ❌ Custom RPC methods (`tools/async/status`, `tools/async/result`)
 - ❌ Token-based tracking (use task IDs as we do now)
 
 **What We WILL Do**:
+
 - ✅ Use SEP-1391 state names in responses
 - ✅ Provide polling guidance (`poll_frequency_ms`)
 - ✅ Implement TTL (`keep_alive_until`)
@@ -328,6 +351,7 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 ### 1. User-Facing Tool: `codex`
 
 **Input Schema** (Enhanced with Structured Hints):
+
 ```typescript
 {
   // Primary interface: Natural language
@@ -361,6 +385,7 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 ```
 
 **Response Schema** (Unified):
+
 ```typescript
 {
   acknowledged: boolean;
@@ -403,6 +428,7 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 ```
 
 **Examples**:
+
 ```typescript
 // Execute tests (intelligent routing)
 { instruction: "run tests" }
@@ -436,9 +462,14 @@ turn.completed → "Finalizing" (step 5/5, 100%)
 **Purpose**: Parse natural language instruction and route to appropriate primitive.
 
 **Decision Logic**:
+
 ```typescript
 class CodexRouter {
-  route(instruction: string, preference: Preference, context: Context): Primitive {
+  route(
+    instruction: string,
+    preference: Preference,
+    context: Context,
+  ): Primitive {
     const intent = this.parseIntent(instruction);
 
     // Setup operations
@@ -459,20 +490,23 @@ class CodexRouter {
     const mode = preference.mode || this.inferMode(intent, context);
 
     // ALL execution operations are async - return task ID immediately
-    if (mode === 'cloud') {
-      const taskId = await this.executeAsync('_codex_cloud_submit', intent);
-      return this.formatAsyncResponse(taskId, 'cloud');
+    if (mode === "cloud") {
+      const taskId = await this.executeAsync("_codex_cloud_submit", intent);
+      return this.formatAsyncResponse(taskId, "cloud");
     }
 
     // Local execution - choose CLI vs SDK
     const needsThread = intent.isIterative() || context.hasExistingThread();
-    const primitive = needsThread ? '_codex_local_exec' : '_codex_local_run';
+    const primitive = needsThread ? "_codex_local_exec" : "_codex_local_run";
 
     const taskId = await this.executeAsync(primitive, intent);
-    return this.formatAsyncResponse(taskId, 'local');
+    return this.formatAsyncResponse(taskId, "local");
   }
 
-  private async executeAsync(primitive: string, intent: Intent): Promise<string> {
+  private async executeAsync(
+    primitive: string,
+    intent: Intent,
+  ): Promise<string> {
     // Spawn background process/submit to cloud
     // Return task ID immediately (within 100ms)
     // Task continues in background
@@ -495,6 +529,7 @@ class CodexRouter {
 **Approach**: Rule-based decision tree (deterministic, fast <10ms, maintainable)
 
 **Rationale**:
+
 - Codex Control has a VERY constrained domain (~10 verbs, ~5 entities, ~4 operation types)
 - NOT a general NLU problem requiring ML/LLM
 - Deterministic routing ensures same input → same result
@@ -502,6 +537,7 @@ class CodexRouter {
 - Easy to extend with new verb patterns
 
 **Implementation**:
+
 ```typescript
 class IntentParser {
   parse(instruction: string, hints?: Hints): Intent {
@@ -515,34 +551,46 @@ class IntentParser {
     const taskId = this.extractTaskId(instruction);
 
     // Priority 1: Setup operations (most specific keywords)
-    if (lower.includes('github') || lower.match(/set\s?up/)) {
-      return { type: 'setup', target: 'github' };
+    if (lower.includes("github") || lower.match(/set\s?up/)) {
+      return { type: "setup", target: "github" };
     }
 
     // Priority 2: Task-specific operations (task ID present)
     if (taskId) {
-      if (lower.includes('cancel') || lower.includes('stop') || lower.includes('abort')) {
-        return { type: 'cancel', taskId };
+      if (
+        lower.includes("cancel") ||
+        lower.includes("stop") ||
+        lower.includes("abort")
+      ) {
+        return { type: "cancel", taskId };
       }
-      if (lower.includes('wait') || lower.includes('until')) {
-        return { type: 'wait', taskId };
+      if (lower.includes("wait") || lower.includes("until")) {
+        return { type: "wait", taskId };
       }
-      if (lower.includes('result') || lower.includes('output') || lower.includes('show')) {
-        return { type: 'fetch', taskId };
+      if (
+        lower.includes("result") ||
+        lower.includes("output") ||
+        lower.includes("show")
+      ) {
+        return { type: "fetch", taskId };
       }
-      return { type: 'status', taskId }; // Default for task ID
+      return { type: "status", taskId }; // Default for task ID
     }
 
     // Priority 3: Implicit queries (no task ID, but query keywords)
-    if (lower.includes('check') || lower.includes('status') || lower.includes('how is')) {
-      return { type: 'status', taskId: null }; // Needs disambiguation
+    if (
+      lower.includes("check") ||
+      lower.includes("status") ||
+      lower.includes("how is")
+    ) {
+      return { type: "status", taskId: null }; // Needs disambiguation
     }
-    if (lower.includes('wait')) {
-      return { type: 'wait', taskId: null }; // Needs disambiguation
+    if (lower.includes("wait")) {
+      return { type: "wait", taskId: null }; // Needs disambiguation
     }
 
     // Priority 4: Execution (default fallback)
-    return { type: 'execute', task: instruction };
+    return { type: "execute", task: instruction };
   }
 
   private extractTaskId(text: string): string | null {
@@ -556,13 +604,14 @@ class IntentParser {
     return {
       type: hints.operation,
       taskId: hints.taskId || this.extractTaskId(instruction),
-      task: instruction
+      task: instruction,
     };
   }
 }
 ```
 
 **Validation Against Real Use Cases**:
+
 ```typescript
 // Test cases (6/7 routed correctly without disambiguation)
 "run tests" → { type: 'execute', task: 'run tests' } ✅
@@ -579,16 +628,22 @@ class IntentParser {
 ### 2.6. Enhanced Router with Disambiguation (NEW)
 
 **Disambiguation Algorithm**:
+
 ```typescript
 class CodexRouter {
-  private async resolveTaskId(intent: Intent, registry: TaskRegistry): Promise<string> {
+  private async resolveTaskId(
+    intent: Intent,
+    registry: TaskRegistry,
+  ): Promise<string> {
     if (intent.taskId) return intent.taskId; // Explicit task ID
 
     // Query recent tasks (last 10 minutes)
     const recent = await registry.getRecent(600_000);
 
     if (recent.length === 0) {
-      throw new Error('No recent tasks found. Specify task ID or run a task first.');
+      throw new Error(
+        "No recent tasks found. Specify task ID or run a task first.",
+      );
     }
 
     if (recent.length === 1) {
@@ -596,7 +651,7 @@ class CodexRouter {
     }
 
     // Multiple tasks - prioritize running over completed
-    const running = recent.filter(t => t.status === 'running');
+    const running = recent.filter((t) => t.status === "running");
     if (running.length === 1) {
       return running[0].id; // Auto-resolve: single running task
     }
@@ -606,32 +661,35 @@ class CodexRouter {
   }
 
   private createDisambiguationResponse(tasks: Task[]): never {
-    const options = tasks.map((t, i) =>
-      `${i + 1}) ${t.alias || t.id} (${t.status}, ${formatTime(t.updated_at)})`
+    const options = tasks.map(
+      (t, i) =>
+        `${i + 1}) ${t.alias || t.id} (${t.status}, ${formatTime(t.updated_at)})`,
     );
 
     throw new DisambiguationError({
       message: `I found ${tasks.length} recent tasks. Which one?`,
       options,
-      tasks: tasks.map(t => ({ id: t.id, label: options[tasks.indexOf(t)] }))
+      tasks: tasks.map((t) => ({ id: t.id, label: options[tasks.indexOf(t)] })),
     });
   }
 }
 ```
 
 **Auto-Resolve Rate**: 70-80% of cases resolve without user intervention
+
 - Single recent task (last 10 min): ~50% of cases
 - Single running task among recent: ~20-30% of cases
 - Needs manual disambiguation: ~20-30% of cases
 
 **Confidence Scoring** (optional enhancement):
+
 ```typescript
 // If confidence > threshold, proceed but warn user
 if (confidence > 0.85 && runningTasks.length === 1) {
   return {
     task_id: runningTasks[0].id,
     userMessage: `Using running task ${runningTasks[0].alias}. If wrong, say 'switch to #2'.`,
-    alternatives: recent.slice(0, 3)
+    alternatives: recent.slice(0, 3),
   };
 }
 ```
@@ -643,6 +701,7 @@ if (confidence > 0.85 && runningTasks.length === 1) {
 **Storage**: SQLite database at `~/.config/codex-control/tasks.db`
 
 **Schema**:
+
 ```sql
 CREATE TABLE tasks (
   id TEXT PRIMARY KEY,           -- Internal UUID
@@ -665,6 +724,7 @@ CREATE INDEX idx_status ON tasks(status, updated_at DESC);
 ```
 
 **Behavior**:
+
 - Every async execution creates a task record
 - Status checks query registry first, then reconcile with actual status
 - Ambiguous "check my task" prompts with recent tasks for disambiguation
@@ -674,22 +734,25 @@ CREATE INDEX idx_status ON tasks(status, updated_at DESC);
 **Current 10 primitives are KEPT AS-IS** because:
 
 ✅ **Already optimized for AI agent efficiency**:
+
 - Clear naming convention (`_codex_local_*`, `_codex_cloud_*`)
 - Granular operations (status vs results = different costs/frequencies)
 - Minimal overlap (each serves distinct purpose)
 
 **NO merging recommended** because:
+
 - Status checks: Lightweight, frequent, "Is it done?"
 - Results fetch: Heavyweight, one-time, "Give me everything"
 - Different use patterns require separate primitives
 
 **Only change**: Optimize tool descriptions for AI understanding:
+
 ```typescript
 // Before (user-facing)
-description: "Check status of cloud tasks. Shows registry info."
+description: "Check status of cloud tasks. Shows registry info.";
 
 // After (agent-facing)
-description: "Internal primitive: Check Cloud task status. Lightweight operation for polling. Use _codex_cloud_results for full output retrieval. Returns: status enum, progress %, ETA."
+description: "Internal primitive: Check Cloud task status. Lightweight operation for polling. Use _codex_cloud_results for full output retrieval. Returns: status enum, progress %, ETA.";
 ```
 
 ### 5. Response Model
@@ -699,21 +762,23 @@ description: "Internal primitive: Check Cloud task status. Lightweight operation
 ```typescript
 interface CodexResponse {
   success: boolean;
-  message: string;           // Human-readable summary
-  task_id?: string;          // For async operations
-  status?: TaskStatus;       // For status checks
-  results?: {                // For completed tasks
+  message: string; // Human-readable summary
+  task_id?: string; // For async operations
+  status?: TaskStatus; // For status checks
+  results?: {
+    // For completed tasks
     summary: string;
     output: string;
     files_changed?: string[];
     duration_ms: number;
     cost_usd?: number;
   };
-  next_actions?: string[];   // Suggested follow-ups
+  next_actions?: string[]; // Suggested follow-ups
 }
 ```
 
 **Examples**:
+
 ```typescript
 // Execution started (ALL executions are async - return immediately)
 {
@@ -781,6 +846,7 @@ interface CodexResponse {
 ### Phase 1: Add New Tool (v3.0.0-alpha)
 
 **Week 1-2: Core Implementation**
+
 - [ ] Create `codex` tool with Router component (deterministic, rule-based)
 - [ ] Implement Enhanced Task Registry (SQLite with progress tracking)
   - [ ] Add `progress_steps JSON` column
@@ -792,6 +858,7 @@ interface CodexResponse {
 - [ ] Add progress inference from Codex JSONL event stream
 
 **Week 3: Enhanced Hidden Primitives**
+
 - [ ] **Add 4 new primitives**: `_codex_local_wait`, `_codex_local_cancel`, `_codex_cloud_wait`, `_codex_cloud_cancel`
 - [ ] Implement wait tool behavior (server-side polling with backoff + jitter)
 - [ ] Implement cancel tool behavior (process termination + status update)
@@ -809,14 +876,16 @@ interface CodexResponse {
 **Week 4: Testing** (5 days, ~230 tests total)
 
 **Day 1-2: Parser Tests** (~50 tests, TDD approach)
+
 - [ ] Verb extraction: run, check, show, cancel, wait, setup
-- [ ] Task ID extraction: T-local-*, T-cloud-* patterns
+- [ ] Task ID extraction: T-local-_, T-cloud-_ patterns
 - [ ] Priority ordering: setup > task query > execution
 - [ ] Edge cases: typos, variations, empty strings, special chars
 - [ ] Fast-path hints: Verify hints bypass NLP correctly
 - [ ] Synonym handling: "run"/"execute"/"start", "check"/"status"
 
 **Day 3: Router Tests** (~30 tests)
+
 - [ ] Intent → primitive mapping: All 14 primitives covered
 - [ ] Mode inference: Local vs cloud heuristics (quick/long-running)
 - [ ] Disambiguation logic:
@@ -829,6 +898,7 @@ interface CodexResponse {
 - [ ] DryRun mode: Route without execution
 
 **Day 4: Golden Conversation Tests** (~10-15 E2E scenarios)
+
 - [ ] Quick execution: "run tests" → task ID → check → results
 - [ ] Cloud execution: "run full tests" → cloud submit → wait → results
 - [ ] Disambiguation: "check my task" with multiple tasks → user selects
@@ -840,6 +910,7 @@ interface CodexResponse {
 - [ ] Error recovery: Invalid request → helpful error message
 
 **Day 5: Integration & Async Tests**
+
 - [ ] **Async behavior** (CRITICAL):
   - [ ] All executions return task ID <100ms
   - [ ] Claude Code never blocks waiting for Codex
@@ -859,12 +930,14 @@ interface CodexResponse {
 ### Phase 2: Documentation & Beta (v3.0.0-beta)
 
 **Week 5: Documentation**
+
 - [ ] Update README to show only `codex` tool
 - [ ] Update CLAUDE.md with new architecture
 - [ ] Update quickrefs with examples
 - [ ] Add migration guide for users
 
 **Week 6: Beta Testing**
+
 - [ ] Deploy behind feature flag
 - [ ] Monitor: "which tool should I use?" questions
 - [ ] Track: routing accuracy, user satisfaction
@@ -873,11 +946,13 @@ interface CodexResponse {
 ### Phase 3: Stable Release (v3.0.0)
 
 **Week 7: Refinement**
+
 - [ ] Fix issues from beta
 - [ ] Optimize routing heuristics based on data
 - [ ] Performance tuning
 
 **Week 8: Release**
+
 - [ ] Remove feature flag
 - [ ] Public announcement
 - [ ] Update MCP registry
@@ -889,6 +964,7 @@ interface CodexResponse {
 ### Quantitative
 
 **User Experience**:
+
 - [ ] 90% reduction in visible tools (10 → 1)
 - [ ] 80% reduction in "which tool?" support questions
 - [ ] 95% routing accuracy (correct primitive chosen)
@@ -897,6 +973,7 @@ interface CodexResponse {
 - [ ] **0% blocking time** (Claude Code always responsive)
 
 **Agent Efficiency**:
+
 - [ ] No increase in token usage (natural language already used)
 - [ ] Maintain granular control (10 primitives available)
 - [ ] Improved orchestration (single entry point)
@@ -918,6 +995,7 @@ interface CodexResponse {
 **Problem**: Natural language is ambiguous. "check my task" could mean status OR results.
 
 **Mitigation**:
+
 - Implement disambiguation prompts
 - Use context clues (task state, user history)
 - Provide confirmation for destructive operations
@@ -927,6 +1005,7 @@ interface CodexResponse {
 **Problem**: Task registry requires durable storage across restarts.
 
 **Mitigation**:
+
 - Use SQLite (reliable, lightweight)
 - Implement schema migrations
 - Add TTL and compaction for old tasks
@@ -936,6 +1015,7 @@ interface CodexResponse {
 **Problem**: Existing users/scripts reference old tool names.
 
 **Mitigation**:
+
 - Keep `_` prefixed tools available
 - Add deprecation warnings
 - Provide migration guide
@@ -946,6 +1026,7 @@ interface CodexResponse {
 **Problem**: Router must be "smart enough" or users will want manual control.
 
 **Mitigation**:
+
 - Start with conservative defaults
 - Allow explicit overrides via `preference`
 - Monitor routing accuracy
@@ -978,6 +1059,7 @@ interface CodexResponse {
 ### v4.0: Multi-AI Support
 
 Add support for multiple AI CLIs:
+
 - `codex` - OpenAI Codex
 - `claude-code` - Anthropic Claude Code
 - `gemini` - Google Gemini
@@ -987,6 +1069,7 @@ Each follows same natural language pattern.
 ### v5.0: Capability Tools
 
 Add zen-style capability tools:
+
 - `debug` - Root cause analysis
 - `review` - Code review
 - `plan` - Project planning
@@ -994,6 +1077,7 @@ Add zen-style capability tools:
 - `test` - Test generation/execution
 
 These tools:
+
 - Become primary user interface
 - Internally choose best AI for each task
 - Accept optional AI preference from users
@@ -1151,7 +1235,8 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 
 ### Local Execution Primitives
 
-#### 1. _codex_local_run
+#### 1. \_codex_local_run
+
 ```typescript
 {
   name: "_codex_local_run",
@@ -1165,7 +1250,8 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 }
 ```
 
-#### 2. _codex_local_status
+#### 2. \_codex_local_status
+
 ```typescript
 {
   name: "_codex_local_status",
@@ -1177,7 +1263,8 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 }
 ```
 
-#### 3. _codex_local_wait 🆕
+#### 3. \_codex_local_wait 🆕
+
 ```typescript
 {
   name: "_codex_local_wait",
@@ -1191,7 +1278,8 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 }
 ```
 
-#### 4. _codex_local_cancel 🆕
+#### 4. \_codex_local_cancel 🆕
+
 ```typescript
 {
   name: "_codex_local_cancel",
@@ -1204,12 +1292,14 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 }
 ```
 
-#### 5-7. _codex_local_exec, _codex_local_resume, _codex_local_results
+#### 5-7. \_codex_local_exec, \_codex_local_resume, \_codex_local_results
+
 (Similar conversational pattern applied - see full implementation)
 
 ### Cloud Execution Primitives
 
-#### 8. _codex_cloud_submit
+#### 8. \_codex_cloud_submit
+
 ```typescript
 {
   name: "_codex_cloud_submit",
@@ -1224,13 +1314,16 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 }
 ```
 
-#### 9-11. _codex_cloud_status, _codex_cloud_wait, _codex_cloud_cancel
+#### 9-11. \_codex_cloud_status, \_codex_cloud_wait, \_codex_cloud_cancel
+
 (Similar conversational pattern - emphasize Web UI links and cloud-specific behaviors)
 
-#### 12-14. _codex_cloud_results, _codex_cloud_list_environments, _codex_cloud_github_setup
+#### 12-14. \_codex_cloud_results, \_codex_cloud_list_environments, \_codex_cloud_github_setup
+
 (Continued pattern with concrete examples)
 
 **All descriptions follow**:
+
 - ✅ Opening analogy (relatable comparison)
 - ✅ Use case (when to use THIS tool)
 - ✅ Anti-pattern (when NOT to use, what NOT to expect)
@@ -1250,24 +1343,28 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 ### Key Findings
 
 **1. Parser Approach Validated**
+
 - Analyzed three approaches: Regex+Extraction, Rule-Based Tree, Keyword Scoring
 - **Selected**: Rule-based decision tree
 - **Rationale**: Codex Control's constrained domain (~10 verbs, ~5 entities) doesn't require ML/LLM
 - **Validation**: Tested against 7 real use cases → 6/7 routed correctly without disambiguation
 
 **2. Disambiguation Strategy Validated**
+
 - **Auto-resolve rate**: 70-80% of cases (no user interruption)
 - **Heuristics**: Recent tasks (10 min) + prioritize running status
 - **Fallback**: Manual disambiguation for 20-30% of cases
 - **Key insight**: Disambiguation is a router problem, not a parser problem
 
 **3. Testing Strategy Validated**
+
 - **Total tests**: ~230 (vs ~140 current)
 - **Breakdown**: 50 parser + 30 router + 10-15 golden + 140 primitives
 - **Week 4 structure**: Realistic and achievable with 5-day breakdown
 - **TDD approach**: Write tests during implementation, not after
 
 **4. Zero Impact on Async Behavior**
+
 - Parser: Synchronous string operations (<5ms)
 - Router: Async task spawning, immediate task ID return
 - Disambiguation: Returns response immediately (if needed)
@@ -1276,21 +1373,25 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 ### Expert Recommendations Incorporated
 
 **Enhanced Tool Contract**:
+
 - Added `hints` parameter for fast-path routing (agent bypass NLP)
 - Added `dryRun` and `explain` for debugging
 - Unified response schema with `decisionTrace`, `recommendedPollMs`, `ttlMs`
 
 **Parser Implementation**:
+
 - Priority ordering: setup > task-specific > implicit queries > execution
 - Fast-path via hints (agent can skip NLP when certain)
-- Task ID extraction with pattern matching (T-local-*, T-cloud-*)
+- Task ID extraction with pattern matching (T-local-_, T-cloud-_)
 
 **Router Enhancements**:
+
 - Auto-resolve algorithm with 70-80% success rate
 - Confidence scoring for edge cases
 - Disambiguation error with helpful user prompts
 
 **Testing Structure**:
+
 - Day-by-day breakdown ensures Week 4 is sufficient
 - Golden conversations test E2E workflows
 - Coverage targets (>90% parser/router, >80% overall)
@@ -1314,6 +1415,7 @@ Following Anthropic's "new hire" pattern with analogies, use cases, cross-refere
 **Status**: ✅ **Ready for Phase 1 Implementation**
 
 With these additions, the plan is:
+
 - ✅ Complete (no design gaps)
 - ✅ Validated (6-step thinkdeep analysis)
 - ✅ Concrete (exact TypeScript code structures)

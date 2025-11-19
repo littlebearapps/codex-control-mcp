@@ -5,7 +5,7 @@
  * Enables multi-instance tracking by filtering tasks per working directory.
  * Survives Claude Code restarts by storing to filesystem.
  */
-import { ProgressSummary } from '../executor/progress_inference.js';
+import { ProgressSummary } from "../executor/progress_inference.js";
 export interface CloudTask {
     taskId: string;
     workingDir: string;
@@ -14,7 +14,7 @@ export interface CloudTask {
     model?: string;
     attempts?: number;
     timestamp: string;
-    status: 'submitted' | 'completed' | 'failed' | 'cancelled';
+    status: "submitted" | "completed" | "failed" | "cancelled";
     lastCheckedStatus?: string;
     notes?: string;
     progress?: ProgressSummary;
@@ -22,7 +22,7 @@ export interface CloudTask {
 export interface CloudTaskFilter {
     workingDir?: string;
     envId?: string;
-    status?: CloudTask['status'];
+    status?: CloudTask["status"];
     limit?: number;
     before?: string;
     after?: string;
@@ -43,7 +43,7 @@ export declare class CloudTaskRegistry {
     /**
      * Register a new cloud task
      */
-    registerTask(task: Omit<CloudTask, 'timestamp' | 'status'>): Promise<CloudTask>;
+    registerTask(task: Omit<CloudTask, "timestamp" | "status">): Promise<CloudTask>;
     /**
      * Update an existing task
      */

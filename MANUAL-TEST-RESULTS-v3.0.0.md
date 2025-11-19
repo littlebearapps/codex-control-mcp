@@ -15,6 +15,7 @@
 📊 **Test Coverage**: All 5 local async primitives + mutation modes
 
 ### Key Achievements
+
 1. **Unified Registry Integration Complete** - All tools now use SQLite `globalTaskRegistry`
 2. **Async Workflow Verified** - Background execution with wait/cancel/results fully functional
 3. **Mutation Mode Fixed** - Workspace-write operations work correctly with confirmation
@@ -25,6 +26,7 @@
 ## Test Scope
 
 ### Primitives Tested
+
 1. ✅ `_codex_local_exec` - SDK execution with threading
 2. ✅ `_codex_local_wait` - Wait for task completion
 3. ✅ `_codex_local_status` - View task registry
@@ -33,6 +35,7 @@
 6. ✅ `_codex_local_run` - Simple one-shot execution (mutation mode)
 
 ### Execution Modes Tested
+
 - ✅ `read-only` - Safe analysis (default)
 - ✅ `workspace-write` - File modifications with confirmation
 - ✅ Async execution - Background task processing
@@ -48,14 +51,17 @@
 **Root Cause**: v3.0.0 migration incomplete - multiple tools still using legacy JSON registry
 
 #### Symptoms
+
 ```
 Task T-local-abc123 not found
 ```
+
 - `_codex_local_exec` created tasks in JSON registry (`~/.config/codex-control/local-tasks.json`)
 - `_codex_local_wait`, `_codex_local_cancel` looked for tasks in SQLite (`~/.config/codex-control/tasks.db`)
 - Result: Tools couldn't find each other's tasks
 
 #### Investigation
+
 ```bash
 # SQLite database existed but was empty
 sqlite3 ~/.config/codex-control/tasks.db "SELECT COUNT(*) FROM tasks;"
@@ -67,6 +73,7 @@ cat ~/.config/codex-control/local-tasks.json | jq '.tasks | length'
 ```
 
 #### Files Fixed
+
 1. **`src/tools/local_exec.ts`**
    - Changed import: `localTaskRegistry` → `globalTaskRegistry`
    - Updated registration to use SQLite `registerTask()` method
@@ -91,6 +98,7 @@ cat ~/.config/codex-control/local-tasks.json | jq '.tasks | length'
    - Changed task ID generation to unified format
 
 #### Fix Verification
+
 ```bash
 # Before fix: Empty SQLite
 sqlite3 ~/.config/codex-control/tasks.db "SELECT COUNT(*) FROM tasks;"
@@ -112,12 +120,15 @@ sqlite3 ~/.config/codex-control/tasks.db "SELECT id, status FROM tasks;"
 **Root Cause**: `confirm` parameter not passed to validator
 
 #### Symptoms
+
 ```
 ❌ Validation Error: Mutation mode requires confirm=true
 ```
+
 Even when `confirm: true` was provided in the request!
 
 #### Investigation
+
 ```typescript
 // local_run.ts line 65-71 (BEFORE FIX)
 const validation = InputValidator.validateAll({
@@ -133,10 +144,12 @@ const validation = InputValidator.validateAll({
 The `validateAll()` method expects `confirm` parameter but `local_run.ts` wasn't passing it!
 
 #### Files Fixed
+
 1. **`src/tools/local_run.ts`** (line 71)
    - Added: `confirm: input.confirm` to `validateAll()` call
 
 #### Fix Verification
+
 ```javascript
 // Before fix: Error even with confirm: true
 {
@@ -172,6 +185,7 @@ File created successfully: `/tmp/codex-test-manual/test-file.txt`
 ```
 
 **Result**: ✅ Success
+
 - Task ID: `T-local-mhyc0c5zs5q56c` (unified format)
 - Returned immediately (non-blocking)
 - Task ran in background
@@ -191,6 +205,7 @@ File created successfully: `/tmp/codex-test-manual/test-file.txt`
 ```
 
 **Result**: ✅ Success
+
 - Found task in registry ✓
 - Tracked progress with polling ✓
 - Detected completion after 20s ✓
@@ -209,12 +224,14 @@ File created successfully: `/tmp/codex-test-manual/test-file.txt`
 ```
 
 **Result**: ✅ Success
+
 - Showed 1 running task ✓
 - Showed 1 completed task ✓
 - Displayed elapsed time ✓
 - Task details accurate ✓
 
 Output:
+
 ```
 **Running**: 1
 **Completed**: 1
@@ -242,12 +259,14 @@ Output:
 ```
 
 **Result**: ✅ Success
+
 - Found task in registry ✓
 - Parsed JSON result ✓
 - Showed thread ID for resumption ✓
 - Displayed event count and output ✓
 
 Output:
+
 ```
 ✅ Codex SDK Task Completed
 
@@ -271,11 +290,13 @@ Output:
 ```
 
 **Result**: ✅ Success
+
 - Found task in registry ✓
 - Updated status to 'canceled' ✓
 - Returned confirmation ✓
 
 Output:
+
 ```json
 {
   "success": true,
@@ -286,6 +307,7 @@ Output:
 ```
 
 Verification:
+
 ```bash
 sqlite3 ~/.config/codex-control/tasks.db \
   "SELECT id, status FROM tasks WHERE id = 'T-local-mhycdfjuyrbm33';"
@@ -308,12 +330,14 @@ sqlite3 ~/.config/codex-control/tasks.db \
 ```
 
 **Result**: ✅ Success
+
 - Validation passed ✓
 - File created successfully ✓
 - Synchronous completion ✓
 - 10 events captured ✓
 
 Verification:
+
 ```bash
 cat /tmp/codex-test-manual/test-file.txt
 # Hello from Codex mutation mode test ✓
@@ -356,6 +380,7 @@ cat /tmp/codex-test-manual/test-file.txt
    - Already used `globalTaskRegistry` ✓ (no changes needed)
 
 ### Build Results
+
 ```bash
 npm run build
 # ✅ Success - no TypeScript errors
@@ -366,6 +391,7 @@ npm run build
 ## Database Verification
 
 ### SQLite Registry Structure
+
 ```sql
 -- Task table schema
 CREATE TABLE tasks (
@@ -386,12 +412,14 @@ CREATE TABLE tasks (
 ```
 
 ### Test Data Snapshot
+
 ```bash
 sqlite3 ~/.config/codex-control/tasks.db ".mode column" ".headers on" \
   "SELECT id, origin, status, substr(instruction,1,40) as task FROM tasks;"
 ```
 
 Output:
+
 ```
 id                      origin  status     task
 ----------------------  ------  ---------  ----------------------------------------
@@ -405,6 +433,7 @@ T-local-mhycdfjuyrbm33  local   canceled   Analyze all JavaScript files in this 
 ## Test Environment
 
 ### System Information
+
 - **OS**: macOS (Darwin 25.0.0)
 - **Node.js**: v20+ (required for MCP)
 - **MCP Server**: codex-control v3.0.0
@@ -412,6 +441,7 @@ T-local-mhycdfjuyrbm33  local   canceled   Analyze all JavaScript files in this 
 - **Test Directory**: `/tmp/codex-test-manual` (safe, isolated)
 
 ### Dependencies
+
 ```json
 {
   "@modelcontextprotocol/sdk": "^1.0.0",
@@ -428,6 +458,7 @@ T-local-mhycdfjuyrbm33  local   canceled   Analyze all JavaScript files in this 
 **Important**: MCP servers are loaded once when Claude Code starts. Code changes require **Claude Code restart** to take effect.
 
 Restarts required during testing:
+
 1. After fixing registry integration bug (4 files)
 2. After fixing mutation validation bug (1 file)
 
@@ -438,6 +469,7 @@ Total restarts: **2**
 ## Known Limitations
 
 ### Not Tested (Out of Scope)
+
 - ❌ `_codex_local_resume` - Thread resumption (requires initial exec)
 - ❌ Cloud primitives (`_codex_cloud_*`) - Requires cloud environment setup
 - ❌ GitHub integration - Requires repository configuration
@@ -446,6 +478,7 @@ Total restarts: **2**
 - ❌ Error cases - Only happy path tested
 
 ### Future Testing Recommendations
+
 1. Test thread resumption workflow (`local_exec` → `local_resume`)
 2. Test cloud execution with real environment
 3. Test natural language routing (`codex` tool)
@@ -459,23 +492,27 @@ Total restarts: **2**
 ## Conclusions
 
 ### What Worked
+
 ✅ **Registry unification successful** - All local tools now share SQLite database
 ✅ **Async workflow complete** - Background execution with full lifecycle tracking
 ✅ **Mutation mode functional** - File modifications work with proper confirmation
 ✅ **Task ID format unified** - Consistent `T-{origin}-...` format across all tools
 
 ### What Was Fixed
+
 1. **4 tools** migrated from JSON to SQLite registry
 2. **1 validation** bug fixed (confirm parameter)
 3. **Task ID format** standardized across all tools
 4. **Registry updates** added for async completion/failure
 
 ### Test Coverage
+
 - **100%** of local async primitives tested
 - **100%** of critical bugs found and fixed
 - **100%** of test cases passed after fixes
 
 ### Quality Metrics
+
 - **0** TypeScript compilation errors
 - **0** runtime errors in tests
 - **2/2** bugs fixed (100% resolution)
@@ -486,12 +523,14 @@ Total restarts: **2**
 ## Recommendations
 
 ### Immediate Actions
+
 1. ✅ **Deploy to production** - All critical bugs fixed
 2. ✅ **Update version** - Consider v3.0.1 (bugfix release)
 3. 📝 **Update CHANGELOG** - Document bug fixes
 4. 📝 **Update README** - Confirm async workflow documentation accurate
 
 ### Future Enhancements
+
 1. **Deprecate JSON registry** - Remove `local_task_registry.ts` entirely
 2. **Add migration script** - Convert old JSON tasks to SQLite
 3. **Add integration tests** - Automated test suite for CI/CD
@@ -499,6 +538,7 @@ Total restarts: **2**
 5. **Add cleanup task** - Remove old completed/canceled tasks
 
 ### Documentation Needs
+
 1. Update `quickrefs/workflows.md` with async examples
 2. Add troubleshooting section for registry issues
 3. Document restart requirement for MCP code changes
@@ -532,4 +572,4 @@ All critical bugs found during manual testing have been identified, fixed, and v
 
 ---
 
-*End of Manual Test Report*
+_End of Manual Test Report_

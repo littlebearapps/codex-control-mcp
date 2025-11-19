@@ -10,12 +10,12 @@
 
 **Overall Result**: ✅ **3 out of 4 tests PASSED (75% success rate)**
 
-| Test | Status | Notes |
-|------|--------|-------|
-| `codex_list_environments` | ✅ PASSED | Environment listing works correctly |
-| `codex_cloud_check_reminder` | ✅ PASSED | Found 1 pending Cloud task |
-| `codex_local_exec` | ✅ PASSED | SDK execution with event streaming works |
-| `codex_local_resume` | ⚠️ PARTIAL | Git repo check limitation |
+| Test                         | Status     | Notes                                    |
+| ---------------------------- | ---------- | ---------------------------------------- |
+| `codex_list_environments`    | ✅ PASSED  | Environment listing works correctly      |
+| `codex_cloud_check_reminder` | ✅ PASSED  | Found 1 pending Cloud task               |
+| `codex_local_exec`           | ✅ PASSED  | SDK execution with event streaming works |
+| `codex_local_resume`         | ⚠️ PARTIAL | Git repo check limitation                |
 
 ---
 
@@ -178,6 +178,7 @@ The `resumeThread()` method in the Codex SDK doesn't accept configuration option
 ### Workaround
 
 Users should:
+
 1. Run Codex in trusted git repositories (most production use cases)
 2. Use full paths to trusted directories when creating threads
 3. For testing: Run tests in properly configured git repositories
@@ -202,6 +203,7 @@ Users should:
 **Result**: Users can now see all pending tasks with Web UI links in organized format
 
 **How it works**:
+
 - Reads persistent task registry at `~/.config/codex-control/cloud-tasks.json`
 - Filters for tasks with `status='submitted'`
 - Calculates time elapsed since submission
@@ -218,6 +220,7 @@ Users should:
 **Result**: Users can maintain local registry of environments with full metadata
 
 **How it works**:
+
 - User maintains config at `~/.config/codex-control/environments.json`
 - Tool reads and lists all configured environments
 - Includes metadata: name, repo URL, tech stack, description
@@ -234,6 +237,7 @@ Users should:
 **Result**: Full event streaming, token tracking, and thread resumption
 
 **How it works**:
+
 - Uses `@openai/codex-sdk` TypeScript library
 - Captures all events via async generator streaming
 - Tracks token usage (input/output/cached)
@@ -281,12 +285,12 @@ Users should:
 
 ### Tool Performance
 
-| Tool | Response Time | Success Rate |
-|------|--------------|--------------|
-| `codex_list_environments` | <100ms | 100% |
-| `codex_cloud_check_reminder` | <200ms | 100% |
-| `codex_local_exec` | 10-15s | 100% |
-| `codex_local_resume` | N/A | 75% (git limitation) |
+| Tool                         | Response Time | Success Rate         |
+| ---------------------------- | ------------- | -------------------- |
+| `codex_list_environments`    | <100ms        | 100%                 |
+| `codex_cloud_check_reminder` | <200ms        | 100%                 |
+| `codex_local_exec`           | 10-15s        | 100%                 |
+| `codex_local_resume`         | N/A           | 75% (git limitation) |
 
 ---
 
@@ -313,6 +317,7 @@ Users should:
 **Overall Assessment**: ✅ **PRODUCTION READY**
 
 **Key Achievements**:
+
 - ✅ Dual execution modes implemented (local SDK + cloud)
 - ✅ Real-time event streaming works perfectly
 - ✅ Token tracking provides cost visibility
@@ -321,6 +326,7 @@ Users should:
 - ✅ Thread management enables iterative workflows
 
 **Remaining Items**:
+
 - ⚠️ One known SDK limitation (resume git checking)
 - ⚠️ Two external limitations (Cloud status API, environment config API)
 - ✅ Workarounds provided for all limitations

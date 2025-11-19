@@ -143,6 +143,7 @@ Week 2 was partially completed during initial planning phase. Full implementatio
 ### Deliverables
 
 **New Files**:
+
 - `src/executor/progress_inference.ts` (244 lines)
 - `src/tools/local_wait.ts` (233 lines)
 - `src/tools/cloud_wait.ts` (311 lines)
@@ -152,6 +153,7 @@ Week 2 was partially completed during initial planning phase. Full implementatio
 - `WEEK-3-COMPLETION.md`
 
 **Modified Files**:
+
 - `src/index.ts` - Registered 15 tools
 - All 3 task registries - Added progress support
 - All 14 tool files - Rewrote descriptions
@@ -259,6 +261,7 @@ Week 2 was partially completed during initial planning phase. Full implementatio
 ### Deliverables (Day 1)
 
 **Completed**:
+
 - ✅ `src/core/intent-parser.ts` (293 lines)
 - ✅ `src/core/router.ts` (204 lines)
 - ✅ `test/test-helpers.ts` (168 lines)
@@ -268,6 +271,7 @@ Week 2 was partially completed during initial planning phase. Full implementatio
 - ✅ `WEEK-4-DAY-1-COMPLETION.md`
 
 **Pending**:
+
 - ⏸️ `test/router.test.ts` (30 tests)
 - ⏸️ `test/e2e-golden-conversations.test.ts` (10-15 tests)
 - ⏸️ `test/integration.test.ts` (5-10 tests)
@@ -339,29 +343,29 @@ Week 2 was partially completed during initial planning phase. Full implementatio
 
 ### Code Metrics
 
-| Metric | Before v3.0 | After Week 3 | Target v3.0 |
-|--------|-------------|--------------|-------------|
-| User-visible tools | 10 | 15 (hidden) | 1 |
-| Lines of code | ~8,000 | ~9,100 | ~10,000 |
-| Test coverage | ~30% | ~35% | ≥80% |
-| Documentation pages | 5 | 8 | 12 |
+| Metric              | Before v3.0 | After Week 3 | Target v3.0 |
+| ------------------- | ----------- | ------------ | ----------- |
+| User-visible tools  | 10          | 15 (hidden)  | 1           |
+| Lines of code       | ~8,000      | ~9,100       | ~10,000     |
+| Test coverage       | ~30%        | ~35%         | ≥80%        |
+| Documentation pages | 5           | 8            | 12          |
 
 ### Developer Experience
 
-| Metric | Before | After Week 3 | Target |
-|--------|--------|--------------|--------|
-| Tool discovery time | 5-10 min | 2-3 min | <1 min |
-| Avg tools per workflow | 3-4 | 2-3 | 1 |
-| Progress visibility | None | Real-time | Real-time |
-| Error clarity | Low | Medium | High |
+| Metric                 | Before   | After Week 3 | Target    |
+| ---------------------- | -------- | ------------ | --------- |
+| Tool discovery time    | 5-10 min | 2-3 min      | <1 min    |
+| Avg tools per workflow | 3-4      | 2-3          | 1         |
+| Progress visibility    | None     | Real-time    | Real-time |
+| Error clarity          | Low      | Medium       | High      |
 
 ### Performance
 
-| Metric | Before | After Week 3 | Target |
-|--------|--------|--------------|--------|
-| MCP startup time | ~200ms | ~250ms | <300ms |
-| Tool call latency | ~50ms | ~60ms | <100ms |
-| Cache hit rate (local SDK) | 45-93% | 45-93% | 45-93% |
+| Metric                     | Before | After Week 3 | Target |
+| -------------------------- | ------ | ------------ | ------ |
+| MCP startup time           | ~200ms | ~250ms       | <300ms |
+| Tool call latency          | ~50ms  | ~60ms        | <100ms |
+| Cache hit rate (local SDK) | 45-93% | 45-93%       | 45-93% |
 
 ---
 

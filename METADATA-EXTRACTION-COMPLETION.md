@@ -23,6 +23,7 @@ Successfully implemented **structured metadata extraction** for Codex Control MC
 **Purpose**: Extract structured metadata from Codex output text for programmatic consumption by AI agents.
 
 **Key Features**:
+
 1. **Test Results Extraction** - Supports Jest, Pytest, Mocha formats
 2. **File Operations** - Git-style diff parsing (modified, added, deleted, lines changed)
 3. **Thread Information** - Token usage, cache hit rates (e.g., 96.8%)
@@ -33,11 +34,13 @@ Successfully implemented **structured metadata extraction** for Codex Control MC
 ### Integration Points
 
 **Modified**: `src/tools/codex.ts`
+
 - Added import: `import { extractMetadata, type CodexMetadata } from '../utils/metadata_extractor.js'`
 - Added field to `CodexToolResponse` interface: `metadata?: CodexMetadata`
 - Updated `convertPrimitiveResult()` to extract and attach metadata
 
 **Pattern Fixes**:
+
 - Fixed Pytest test result extraction (was swapping passed/failed counts)
 - Fixed error location regex to prevent newline capture (`[:\s]*` → `[:,\t ]*`)
 - Added deduplication logic to prevent duplicate error locations
@@ -52,9 +55,9 @@ Successfully implemented **structured metadata extraction** for Codex Control MC
 
 ```typescript
 export interface CodexMetadata {
-  success: boolean;                    // Overall success/failure
-  exit_code?: number;                  // Process exit code
-  duration_seconds?: number;           // Execution time
+  success: boolean; // Overall success/failure
+  exit_code?: number; // Process exit code
+  duration_seconds?: number; // Execution time
 
   // Test execution metadata
   test_results?: {
@@ -62,7 +65,7 @@ export interface CodexMetadata {
     failed: number;
     skipped: number;
     total: number;
-    failed_tests?: string[];           // Names of failed tests
+    failed_tests?: string[]; // Names of failed tests
   };
 
   // File operation metadata
@@ -77,7 +80,7 @@ export interface CodexMetadata {
   // Thread/SDK metadata
   thread_info?: {
     thread_id?: string;
-    cache_hit_rate?: number;           // e.g., 96.8%
+    cache_hit_rate?: number; // e.g., 96.8%
     tokens?: {
       input: number;
       cached: number;
@@ -88,24 +91,24 @@ export interface CodexMetadata {
 
   // Task status metadata
   task_status?: {
-    status: 'pending' | 'running' | 'completed' | 'failed' | 'canceled';
+    status: "pending" | "running" | "completed" | "failed" | "canceled";
     progress_percent?: number;
     task_id?: string;
   };
 
   // Error/failure metadata (KEY ENHANCEMENT)
   error_context?: {
-    error_message?: string;            // "Cannot read property 'name' of null"
-    error_type?: string;               // "TypeError"
-    failed_files?: string[];           // ["utils.ts", "api.ts"]
+    error_message?: string; // "Cannot read property 'name' of null"
+    error_type?: string; // "TypeError"
+    failed_files?: string[]; // ["utils.ts", "api.ts"]
     error_locations?: Array<{
-      file: string;                    // "utils.ts"
-      line?: number;                   // 42
-      column?: number;                 // 15
-      message: string;                 // "at processUser"
+      file: string; // "utils.ts"
+      line?: number; // 42
+      column?: number; // 15
+      message: string; // "at processUser"
     }>;
-    stack_trace?: string;              // First 5 lines
-    suggestions?: string[];            // ⭐ ACTIONABLE GUIDANCE
+    stack_trace?: string; // First 5 lines
+    suggestions?: string[]; // ⭐ ACTIONABLE GUIDANCE
   };
 }
 ```
@@ -119,14 +122,14 @@ export interface CodexMetadata {
 **Total Tests**: 7
 **Pass Rate**: 100% (7/7) ✅
 
-| Test | Status | Details |
-|------|--------|---------|
-| Jest test results | ✅ PASS | 45 passed, 2 failed correctly extracted |
-| File operations | ✅ PASS | Git diff parsing works (modified/added/deleted) |
-| Thread info | ✅ PASS | 96.8% cache hit rate, token usage extracted |
-| Completed task | ✅ PASS | Task status metadata populated |
-| Pytest results | ✅ PASS | 30 passed, 1 failed (fixed pattern swap) |
-| SyntaxError | ✅ PASS | Error context with suggestions |
+| Test                | Status  | Details                                                |
+| ------------------- | ------- | ------------------------------------------------------ |
+| Jest test results   | ✅ PASS | 45 passed, 2 failed correctly extracted                |
+| File operations     | ✅ PASS | Git diff parsing works (modified/added/deleted)        |
+| Thread info         | ✅ PASS | 96.8% cache hit rate, token usage extracted            |
+| Completed task      | ✅ PASS | Task status metadata populated                         |
+| Pytest results      | ✅ PASS | 30 passed, 1 failed (fixed pattern swap)               |
+| SyntaxError         | ✅ PASS | Error context with suggestions                         |
 | TypeError locations | ✅ PASS | Error locations with deduplication and noise filtering |
 
 ### What Works Perfectly
@@ -165,6 +168,7 @@ export interface CodexMetadata {
 ## Benefits for AI Agents
 
 ### Before (v3.0.0 without metadata)
+
 ```json
 {
   "acknowledged": true,
@@ -176,6 +180,7 @@ export interface CodexMetadata {
 **Problem**: AI agent must parse natural language to extract test counts, failures, duration.
 
 ### After (v3.0.0 with metadata)
+
 ```json
 {
   "acknowledged": false,
@@ -206,6 +211,7 @@ export interface CodexMetadata {
 ```
 
 **Benefit**: AI agent can make programmatic decisions:
+
 ```typescript
 if (response.metadata?.test_results?.failed > 0) {
   // Fix failing tests
@@ -225,6 +231,7 @@ if (response.metadata?.test_results?.failed > 0) {
 **User Request**: "run tests"
 
 **Response Metadata**:
+
 ```json
 {
   "metadata": {
@@ -253,6 +260,7 @@ if (response.metadata?.test_results?.failed > 0) {
 **User Request**: "continue with previous analysis" (resume thread)
 
 **Response Metadata**:
+
 ```json
 {
   "metadata": {
@@ -278,6 +286,7 @@ if (response.metadata?.test_results?.failed > 0) {
 **User Request**: "refactor authentication"
 
 **Response Metadata**:
+
 ```json
 {
   "metadata": {
@@ -300,6 +309,7 @@ if (response.metadata?.test_results?.failed > 0) {
 **User Request**: "fix the bug"
 
 **Response Metadata**:
+
 ```json
 {
   "metadata": {
@@ -309,9 +319,7 @@ if (response.metadata?.test_results?.failed > 0) {
       "error_message": "Cannot read property 'name' of null",
       "error_type": "TypeError",
       "failed_files": ["utils.ts", "api.ts"],
-      "error_locations": [
-        { "file": "utils.ts", "line": 42, "column": 15 }
-      ],
+      "error_locations": [{ "file": "utils.ts", "line": 42, "column": 15 }],
       "suggestions": [
         "Check utils.ts, api.ts for errors",
         "Start investigation at utils.ts:42",
@@ -354,16 +362,19 @@ Added to CodexToolResponse.metadata
 ### Pattern Matching Examples
 
 **Jest Tests**:
+
 ```typescript
-/Tests:\s*(\d+)\s*failed,\s*(\d+)\s*passed,\s*(\d+)\s*total/i
+/Tests:\s*(\d+)\s*failed,\s*(\d+)\s*passed,\s*(\d+)\s*total/i;
 ```
 
 **Pytest Tests**:
+
 ```typescript
-/(\d+)\s*passed,\s*(\d+)\s*failed/i
+/(\d+)\s*passed,\s*(\d+)\s*failed/i;
 ```
 
 **Git Operations**:
+
 ```typescript
 /modified:\s+(.+?)(?:\n|$)/gi
 /(?:new file|added):\s+(.+?)(?:\n|$)/gi
@@ -371,13 +382,15 @@ Added to CodexToolResponse.metadata
 ```
 
 **Token Usage**:
+
 ```typescript
-/"total_token_usage":\s*\{[^}]*"input_tokens":\s*(\d+),[^}]*"cached_input_tokens":\s*(\d+),[^}]*"output_tokens":\s*(\d+)/
+/"total_token_usage":\s*\{[^}]*"input_tokens":\s*(\d+),[^}]*"cached_input_tokens":\s*(\d+),[^}]*"output_tokens":\s*(\d+)/;
 ```
 
 **Error Locations**:
+
 ```typescript
-/([\\/\w.-]+\\.(?:ts|js|tsx|jsx|py|go|rs)):(\d+)(?::(\d+))?[:\s]*(.+?)(?:\n|$)/gi
+/([\\/\w.-]+\\.(?:ts|js|tsx|jsx|py|go|rs)):(\d+)(?::(\d+))?[:\s]*(.+?)(?:\n|$)/gi;
 ```
 
 ---
@@ -387,6 +400,7 @@ Added to CodexToolResponse.metadata
 **Design**: Metadata extraction is **optional enhancement**, not critical functionality.
 
 **Error Handling**:
+
 ```typescript
 try {
   response.metadata = extractMetadata(textContent, exitCode, threadId, taskId);
@@ -403,16 +417,19 @@ try {
 ## Performance Considerations
 
 ### Extraction Speed
+
 - **Regex-based**: Fast pattern matching (<1ms per extraction)
 - **Lazy evaluation**: Only extracts metadata when primitive execution completes
 - **No blocking**: Doesn't slow down Codex execution
 
 ### Memory Usage
+
 - **Minimal overhead**: Metadata objects are small (<1KB typically)
 - **No caching**: Extracted fresh each time (no stale data)
 - **Garbage collected**: Objects released after response sent
 
 ### Token Impact
+
 - **Zero token cost**: Extraction happens locally, not via LLM
 - **Reduces AI parsing**: Agent doesn't need to parse natural language
 - **Improves efficiency**: Programmatic decisions > text analysis
@@ -422,17 +439,20 @@ try {
 ## Future Enhancements (Optional)
 
 ### Additional Extraction Patterns
+
 1. **Coverage Reports** - Extract line/branch coverage percentages
 2. **Lint Results** - Parse ESLint/Prettier output
 3. **Build Metrics** - Extract webpack bundle sizes, build times
 4. **Git Branch Info** - Current branch, commit hash, PR numbers
 
 ### Enhanced Suggestions
+
 1. **Contextual Recommendations** - Based on error types and project structure
 2. **Historical Patterns** - Learn from previous successful fixes
 3. **Severity Scoring** - Prioritize critical errors over warnings
 
 ### Multi-Framework Support
+
 1. **More Test Frameworks** - Jasmine, Ava, Tape, Vitest
 2. **More Languages** - Go tests, Rust tests, Ruby RSpec
 3. **More CI Systems** - GitHub Actions output, CircleCI, Jenkins
@@ -444,6 +464,7 @@ try {
 ### For AI Agents Using Codex Control MCP
 
 **Before** (parsing natural language):
+
 ```typescript
 const response = await tools.codex({ request: "run tests" });
 const output = response.user_message;
@@ -459,6 +480,7 @@ if (failed > 0) {
 ```
 
 **After** (using structured metadata):
+
 ```typescript
 const response = await tools.codex({ request: "run tests" });
 
@@ -480,6 +502,7 @@ if (response.metadata?.test_results?.failed > 0) {
 ```
 
 **Benefits**:
+
 - ✅ No regex parsing
 - ✅ No natural language interpretation
 - ✅ Direct programmatic access
@@ -492,16 +515,18 @@ if (response.metadata?.test_results?.failed > 0) {
 **Guarantee**: All existing workflows continue to work unchanged.
 
 **Why**:
+
 1. `metadata` field is **optional** in `CodexToolResponse`
 2. Agents not using metadata simply ignore it
 3. `user_message` field still contains full text output
 4. Zero breaking changes to existing API
 
 **Example**:
+
 ```typescript
 // Old agent (ignores metadata)
 const response = await tools.codex({ request: "run tests" });
-console.log(response.user_message);  // Still works
+console.log(response.user_message); // Still works
 
 // New agent (uses metadata)
 const response = await tools.codex({ request: "run tests" });
@@ -515,6 +540,7 @@ if (response.metadata?.test_results?.failed > 0) {
 ## Production Deployment
 
 ### Build Status
+
 ```bash
 $ npm run build
 ✅ TypeScript compilation successful
@@ -523,6 +549,7 @@ $ npm run build
 ```
 
 ### Test Coverage
+
 ```bash
 $ npx ts-node test-metadata-extraction.ts
 ✅ 7/7 tests passing (100%)
@@ -531,6 +558,7 @@ $ npx ts-node test-metadata-extraction.ts
 ```
 
 ### Deployment Checklist
+
 - [x] TypeScript compiles cleanly
 - [x] Core metadata extraction tested
 - [x] Test framework patterns validated (Jest, Pytest, Mocha)
@@ -549,38 +577,45 @@ $ npx ts-node test-metadata-extraction.ts
 ## Bugs Fixed During Testing
 
 ### Bug 1: Pytest Test Result Swap
+
 **Issue**: Pytest pattern was capturing passed/failed counts in wrong order.
 **Root Cause**: Jest format is "failed, passed" but Pytest format is "passed, failed".
 **Fix**: Added index-based logic to handle different test framework orderings.
 **Verification**: Test 6 now passes (30 passed, 1 failed correctly extracted).
 
 ### Bug 2: Newline Capture in Error Locations
+
 **Issue**: Error location regex was capturing the next line as the message.
 **Root Cause**: Pattern used `[:\s]*` which matches newlines (`\s` includes `\n`).
 **Example**:
+
 ```
 at utils.ts:42:15
 at processUser...
 ```
+
 Regex captured "at processUser..." as message for utils.ts:42:15.
 **Fix**: Changed to `[:,\t ]*` to only match colons, tabs, and spaces (not newlines).
 **Verification**: Messages no longer leak from next line.
 
 ### Bug 3: Duplicate Error Locations
+
 **Issue**: Same file:line:column appearing multiple times in error_locations array.
 **Root Cause**: No deduplication logic - stack traces often repeat locations.
 **Fix**: Added Set-based deduplication using `file:line:column` as unique key.
 **Verification**: Each location now appears only once.
 
 ### Bug 4: Noise Messages
+
 **Issue**: Unhelpful messages like "Stack trace:", ")", or just numbers.
 **Root Cause**: Regex captured everything after location as message, including noise.
 **Fix**: Added noise pattern filtering for:
+
 - "Stack trace:" headers
 - Closing parentheses
 - Just numbers
 - Just whitespace/colons
-**Verification**: Noise messages now replaced with empty strings.
+  **Verification**: Noise messages now replaced with empty strings.
 
 ---
 
@@ -616,6 +651,7 @@ Regex captured "at processUser..." as message for utils.ts:42:15.
 **Structured metadata extraction enables AI agents to make programmatic decisions without parsing natural language.**
 
 **Most Valuable Feature**: **Error context with actionable suggestions** - AI agents now get specific guidance like:
+
 - "Start investigation at utils.ts:42"
 - "Check variable types and null/undefined values"
 - "Run failing tests individually to isolate issues"
@@ -627,17 +663,20 @@ This transforms error messages from vague descriptions to **actionable investiga
 ## Next Steps (Optional)
 
 ### For Immediate Use
+
 1. ✅ Build is complete - ready to use
 2. ✅ Tests validate core functionality
 3. ✅ No user action required (metadata is automatic)
 
 ### For Future Enhancements
+
 1. Add more test framework patterns (Jasmine, Ava, etc.)
 2. Enhance suggestion quality with ML-based recommendations
 3. Add coverage report extraction
 4. Track historical patterns for better suggestions
 
 ### For Advanced Users
+
 1. Review `test-metadata-extraction.ts` for usage examples
 2. Extend `CodexMetadata` interface for custom fields
 3. Add project-specific extraction patterns

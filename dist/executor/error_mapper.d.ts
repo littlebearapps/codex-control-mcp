@@ -4,8 +4,8 @@
  * Maps Codex CLI errors and failures to MCP error format
  * Provides structured error responses for MCP clients
  */
-import { CodexProcessResult } from './process_manager.js';
-import { CodexEvent } from './jsonl_parser.js';
+import { CodexProcessResult } from "./process_manager.js";
+import { CodexEvent } from "./jsonl_parser.js";
 export interface MCPError {
     code: string;
     message: string;
@@ -20,7 +20,7 @@ export type ErrorObject = {
     retryable?: boolean;
     duration_ms?: number;
 };
-export declare function mapTimeoutError(timeoutType: 'idle' | 'hard', elapsedSeconds: number, partialResults?: {
+export declare function mapTimeoutError(timeoutType: "idle" | "hard", elapsedSeconds: number, partialResults?: {
     lastEvents?: any[];
     lastOutput?: string;
 }): ErrorObject;

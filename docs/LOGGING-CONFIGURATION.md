@@ -14,6 +14,7 @@ MCP Delegator logs important events and diagnostics to **stderr**. This document
 ## What Gets Logged
 
 ### Startup Events
+
 ```
 [MCPDelegator] Server started successfully via npm link ✅
 [MCPDelegator] Name: mcp-delegator
@@ -24,6 +25,7 @@ MCP Delegator logs important events and diagnostics to **stderr**. This document
 ```
 
 ### Automatic Cleanup (Issue 1.3 fix)
+
 ```
 [MCPDelegator] Running stuck task cleanup on startup...
 [MCPDelegator] ✅ No stuck tasks found
@@ -31,28 +33,33 @@ MCP Delegator logs important events and diagnostics to **stderr**. This document
 ```
 
 Or if stuck tasks found:
+
 ```
 [MCPDelegator] ⚠️  Cleaned up 3 stuck task(s) from previous session(s)
 ```
 
 Periodic cleanup (every 15 min):
+
 ```
 [MCPDelegator] ⚠️  Periodic cleanup: marked 2 stuck task(s) as failed
 ```
 
 ### Shutdown Events
+
 ```
 [MCPDelegator] Shutting down...
 [MCPDelegator] Stopped periodic cleanup scheduler
 ```
 
 ### Error Events
+
 ```
 [TaskRegistry] Failed to update task T-local-abc123: SQLITE_BUSY
 [TaskRegistry] ✅ Retry succeeded for task T-local-abc123
 ```
 
 Or if retry fails:
+
 ```
 [TaskRegistry] ❌ Retry FAILED for task T-local-abc123: SQLITE_LOCKED
 ```
@@ -66,6 +73,7 @@ Or if retry fails:
 When Claude Code starts the MCP server, stderr is typically visible in the terminal where Claude Code is running.
 
 **macOS/Linux**:
+
 ```bash
 # Start Claude Code from terminal to see logs
 claude
@@ -74,6 +82,7 @@ claude
 ```
 
 **Expected Output**:
+
 ```
 [MCPDelegator] Server started successfully via npm link ✅
 [MCPDelegator] Name: mcp-delegator
@@ -92,10 +101,7 @@ Update your MCP configuration to capture stderr:
   "mcpServers": {
     "mcp-delegator": {
       "command": "bash",
-      "args": [
-        "-c",
-        "mcp-delegator 2>> ~/Library/Logs/mcp-delegator.log"
-      ],
+      "args": ["-c", "mcp-delegator 2>> ~/Library/Logs/mcp-delegator.log"],
       "env": {
         "CODEX_MAX_CONCURRENCY": "2"
       }
@@ -105,6 +111,7 @@ Update your MCP configuration to capture stderr:
 ```
 
 **Then view logs**:
+
 ```bash
 # Watch logs in real-time
 tail -f ~/Library/Logs/mcp-delegator.log
@@ -154,6 +161,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 ## What to Look For
 
 ### Successful Startup
+
 ```
 [MCPDelegator] Server started successfully via npm link ✅
 [MCPDelegator] Scheduling periodic cleanup every 15 minutes...
@@ -162,6 +170,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 ✅ **Good**: Server initialized and periodic cleanup scheduled
 
 ### Stuck Tasks Detected
+
 ```
 [MCPDelegator] ⚠️  Cleaned up 5 stuck task(s) from previous session(s)
 ```
@@ -169,22 +178,26 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 ⚠️ **Warning**: Previous tasks were stuck (likely from crashed sessions)
 
 ### Database Errors
+
 ```
 [TaskRegistry] Failed to update task T-local-abc123: SQLITE_BUSY
 [TaskRegistry] ❌ Retry FAILED for task T-local-abc123: SQLITE_LOCKED
 ```
 
 ❌ **Error**: Database issues - check for:
+
 - Concurrent access (multiple MCP servers?)
 - Disk space issues
 - File permissions
 
 ### Silent Shutdown
+
 ```
 (no logs)
 ```
 
 ❌ **Problem**: MCP server crashed without logging shutdown
+
 - Check system logs for crashes
 - Look for out-of-memory errors
 - Verify Node.js installation
@@ -198,6 +211,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 **Cause**: Logs not captured or MCP server not starting
 
 **Solutions**:
+
 1. Run MCP server manually: `node dist/index.js`
 2. Check Claude Code terminal output
 3. Enable log file redirection (Method 2 above)
@@ -206,6 +220,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 ### Issue: Stuck Tasks Keep Accumulating
 
 **Symptoms in Logs**:
+
 ```
 [MCPDelegator] ⚠️  Cleaned up 10 stuck task(s) from previous session(s)
 [MCPDelegator] ⚠️  Periodic cleanup: marked 3 stuck task(s) as failed
@@ -215,6 +230,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 **Cause**: Tasks timing out or crashing repeatedly
 
 **Solutions**:
+
 1. Check task complexity (are they too large?)
 2. Review timeout settings (v3.2.1+ has 5 min idle / 20 min hard timeouts)
 3. Consider using cloud execution for long tasks
@@ -223,6 +239,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 ### Issue: Database Lock Errors
 
 **Symptoms in Logs**:
+
 ```
 [TaskRegistry] Failed to update task T-local-abc123: SQLITE_BUSY
 [TaskRegistry] ❌ Retry FAILED for task T-local-abc123: SQLITE_LOCKED
@@ -231,6 +248,7 @@ Currently, MCP Delegator uses **console.error()** for all logging (stderr). Futu
 **Cause**: SQLite database locked by another process
 
 **Solutions**:
+
 1. Stop all Claude Code instances
 2. Check for multiple MCP servers in config
 3. Verify only one mcp-delegator process running:
@@ -252,6 +270,7 @@ Phase 2 structured logging will add:
 5. **User-Configurable Verbosity**: Control log detail level
 
 **Example Future Log (JSON)**:
+
 ```json
 {
   "timestamp": "2025-11-17T10:30:00Z",
@@ -270,26 +289,28 @@ Phase 2 structured logging will add:
 
 ## Quick Reference
 
-| Need | Command |
-|------|---------|
-| **View logs in real-time** | `tail -f ~/Library/Logs/mcp-delegator.log` |
-| **View last 50 lines** | `tail -50 ~/Library/Logs/mcp-delegator.log` |
-| **Search for errors** | `grep -i "error" ~/Library/Logs/mcp-delegator.log` |
-| **Test server manually** | `mcp-delegator` or `node dist/index.js` |
-| **Check running processes** | `ps aux \| grep mcp-delegator` |
-| **View system console (macOS)** | Open Console.app, search "MCPDelegator" |
+| Need                            | Command                                            |
+| ------------------------------- | -------------------------------------------------- |
+| **View logs in real-time**      | `tail -f ~/Library/Logs/mcp-delegator.log`         |
+| **View last 50 lines**          | `tail -50 ~/Library/Logs/mcp-delegator.log`        |
+| **Search for errors**           | `grep -i "error" ~/Library/Logs/mcp-delegator.log` |
+| **Test server manually**        | `mcp-delegator` or `node dist/index.js`            |
+| **Check running processes**     | `ps aux \| grep mcp-delegator`                     |
+| **View system console (macOS)** | Open Console.app, search "MCPDelegator"            |
 
 ---
 
 ## Summary
 
 **Current State (v3.4.2)**:
+
 - ✅ Logs output to stderr
 - ✅ Startup, cleanup, and error events logged
 - ✅ Manual capture via file redirection
 - ✅ Accessible via system console
 
 **Coming Soon (v3.5.0+)**:
+
 - Structured logging with levels
 - JSON output for machine parsing
 - Log rotation

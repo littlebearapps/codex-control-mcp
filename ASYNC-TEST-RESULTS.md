@@ -9,6 +9,7 @@
 ## Executive Summary
 
 All async tools successfully tested in production:
+
 - ✅ Local SDK tools return task IDs immediately (non-blocking)
 - ✅ Local CLI tools return task IDs immediately (non-blocking)
 - ✅ Tasks execute in background while Claude Code remains responsive
@@ -29,6 +30,7 @@ All async tools successfully tested in production:
 **Task**: Create test file and list TypeScript files
 
 **Parameters**:
+
 ```json
 {
   "task": "Create a test file called 'async-test.txt' with the current timestamp and a success message. Then list all .txt files in this directory.",
@@ -43,6 +45,7 @@ All async tools successfully tested in production:
 **Task ID Returned**: `sdk-1762935084228-kdevp`
 
 **Behavior**:
+
 - Task ID returned **immediately** (< 1 second)
 - Execution continued in background
 - Status showed "Running" during execution
@@ -50,6 +53,7 @@ All async tools successfully tested in production:
 - Results retrievable via `codex_local_results`
 
 **Evidence**:
+
 ```
 ✅ Codex SDK Task Started (Async)
 **Task ID**: `sdk-1762935084228-kdevp`
@@ -63,6 +67,7 @@ Status: ✅ Done
 ```
 
 **Output**:
+
 ```
 Events: 17 events captured
 Exit Code: 0
@@ -78,6 +83,7 @@ Output: Turn completed
 **Task**: List and count TypeScript files
 
 **Parameters**:
+
 ```json
 {
   "task": "List all TypeScript files in the src/ directory and count them",
@@ -91,12 +97,14 @@ Output: Turn completed
 **Task ID Returned**: `local-1762935177487-nu51sa`
 
 **Behavior**:
+
 - Task ID returned **immediately** (< 1 second)
 - Execution continued in background
 - Status showed "Running" during execution
 - Results retrieved successfully after completion
 
 **Evidence**:
+
 ```
 ✅ Codex Task Started (Async)
 **Task ID**: `local-1762935177487-nu51sa`
@@ -110,6 +118,7 @@ Status: ✅ Done
 ```
 
 **Output**:
+
 ```
 Events: 14 events captured
 Exit Code: 0
@@ -150,12 +159,14 @@ Count: 22 TypeScript files in src/
 **Result**: ✅ PASS
 
 **Behavior**:
+
 - Successfully tracked multiple concurrent tasks
 - Showed running vs completed status correctly
 - Displayed task metadata (task description, time ago)
 - Registry persisted across checks
 
 **Evidence**:
+
 ```
 Working Dir: /Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control
 
@@ -177,12 +188,14 @@ Tasks:
 **Result**: ✅ PASS
 
 **Behavior**:
+
 - Successfully retrieved results for completed tasks
 - Showed exit codes, event counts, and output
 - Handled both SDK and CLI task results
 - No errors or missing data
 
 **Evidence**:
+
 ```
 SDK Task (sdk-1762935084228-kdevp):
   Events: 17 events captured
@@ -202,11 +215,13 @@ CLI Task (local-1762935177487-nu51sa):
 ### Critical Bug: SDK Thread ID Null
 
 **Problem**:
+
 - `codex_local_exec` was returning `thread.id` which was `null`
 - SDK doesn't assign thread ID until execution starts
 - Users received useless `null` in response
 
 **Root Cause**:
+
 ```typescript
 // In Codex SDK
 const thread = codex.startThread(options);
@@ -214,6 +229,7 @@ console.log(thread.id); // null - not assigned yet!
 ```
 
 **Fix Applied**:
+
 1. Generate local task ID: `sdk-${timestamp}-${random}`
 2. Register in LocalTaskRegistry (like CLI tools)
 3. Return task ID immediately
@@ -221,12 +237,14 @@ console.log(thread.id); // null - not assigned yet!
 5. Include thread ID in results for use with `codex_local_resume`
 
 **Files Modified**:
+
 - `src/tools/local_exec.ts` (lines 1-244)
 - Added LocalTaskRegistry import
 - Changed from returning thread.id to returning generated task ID
 - Wrapped SDK execution in Promise for registry
 
 **Verification**:
+
 ```
 Before: Thread ID: `null`
 After:  Task ID: `sdk-1762935084228-kdevp`
@@ -238,12 +256,12 @@ After:  Task ID: `sdk-1762935084228-kdevp`
 
 ### Response Times
 
-| Tool | Return Time | Completion Time | Notes |
-|------|-------------|-----------------|-------|
-| `codex_local_exec` | < 1 sec | ~103 sec | Non-blocking ✅ |
-| `codex_cli_run` | < 1 sec | ~30 sec | Non-blocking ✅ |
-| `codex_local_status` | < 1 sec | N/A | Instant ✅ |
-| `codex_local_results` | < 1 sec | N/A | Instant ✅ |
+| Tool                  | Return Time | Completion Time | Notes           |
+| --------------------- | ----------- | --------------- | --------------- |
+| `codex_local_exec`    | < 1 sec     | ~103 sec        | Non-blocking ✅ |
+| `codex_cli_run`       | < 1 sec     | ~30 sec         | Non-blocking ✅ |
+| `codex_local_status`  | < 1 sec     | N/A             | Instant ✅      |
+| `codex_local_results` | < 1 sec     | N/A             | Instant ✅      |
 
 ### Claude Code Responsiveness
 
@@ -329,12 +347,14 @@ After:  Task ID: `sdk-1762935084228-kdevp`
 ## Deployment Status
 
 ### This Project (codex-control)
+
 - ✅ Async implementation complete
 - ✅ Bug fixes applied and tested
 - ✅ All tools verified working
 - ✅ Ready for use
 
 ### Other Projects (18 projects + root)
+
 - ⏳ Need to restart Claude Code to pick up new tool names
 - ⏳ No configuration changes required (tools discovered automatically)
 - ⏳ Ready for testing in auditor-toolkit and other projects
@@ -370,6 +390,7 @@ After:  Task ID: `sdk-1762935084228-kdevp`
 **Status**: ✅ Production Ready
 
 All async implementation goals achieved:
+
 - No blocking behavior in any tool
 - Claude Code remains responsive during execution
 - Task tracking works reliably

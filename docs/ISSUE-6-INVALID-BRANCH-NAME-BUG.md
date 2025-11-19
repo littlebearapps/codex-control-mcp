@@ -32,13 +32,16 @@ In `src/security/safety_checkpointing.ts`, the operation name sanitization is in
 
 ```typescript
 // Current code (BUGGY)
-const operation = riskyOpsToCheckpoint[0].operation.replace(/\s+/g, '-').toLowerCase();
+const operation = riskyOpsToCheckpoint[0].operation
+  .replace(/\s+/g, "-")
+  .toLowerCase();
 const checkpoint = await checkpointing.createCheckpoint(operation, workingDir);
 ```
 
 This only replaces whitespace with dashes, but doesn't handle special characters that are invalid in git branch names.
 
 **Invalid characters in git branch names**:
+
 - `~` (tilde) - used for revision shortcuts
 - `^` (caret) - used for parent commits
 - `:` (colon) - used in refspecs
@@ -53,13 +56,14 @@ This only replaces whitespace with dashes, but doesn't handle special characters
 **Severity**: CRITICAL - Blocks execution of certain Tier 2 operations
 
 **Affected Operations**:
+
 - ✅ `git reset HEAD~N` - FAILS (contains `~`)
 - ✅ `git commit --amend` - Works (no special chars)
 - ✅ `git clean -fdx` - Works (no special chars)
 - ✅ `git push --force` - Works (no special chars)
 - ✅ `git rebase` - Works (no special chars)
 - ✅ `git reset --hard` - Works (no special chars)
-- ⚠️  Any future operations with special chars - WILL FAIL
+- ⚠️ Any future operations with special chars - WILL FAIL
 
 ## Fix Required
 
@@ -70,10 +74,10 @@ This only replaces whitespace with dashes, but doesn't handle special characters
 function sanitizeOperationName(operation: string): string {
   return operation
     .toLowerCase()
-    .replace(/[~^:?*[\\\s@{}]/g, '-') // Replace invalid chars with dash
-    .replace(/\.{2,}/g, '-')          // Replace .. with dash
-    .replace(/-+/g, '-')              // Collapse multiple dashes
-    .replace(/^-|-$/g, '');           // Remove leading/trailing dashes
+    .replace(/[~^:?*[\\\s@{}]/g, "-") // Replace invalid chars with dash
+    .replace(/\.{2,}/g, "-") // Replace .. with dash
+    .replace(/-+/g, "-") // Collapse multiple dashes
+    .replace(/^-|-$/g, ""); // Remove leading/trailing dashes
 }
 ```
 
@@ -93,6 +97,7 @@ function sanitizeOperationName(operation: string): string {
 ---
 
 **Next Steps**:
+
 1. Locate and read `src/security/safety_checkpointing.ts`
 2. Implement robust sanitization function
 3. Apply fix to all 4 execution tools

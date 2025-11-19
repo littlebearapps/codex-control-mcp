@@ -9,6 +9,7 @@
 ### What's New
 
 **Core Features**:
+
 - ✅ **JSON Format Parameter**: All 15 tools now accept optional `format: "json"` parameter
 - ✅ **Structured Envelopes**: 5 envelope categories with consistent schema (execution_ack, result_set, status_snapshot, wait_result, registry_info)
 - ✅ **Error Envelopes**: Unified error format with 6 error codes (TIMEOUT, VALIDATION, TOOL_ERROR, NOT_FOUND, UNSUPPORTED, INTERNAL)
@@ -16,6 +17,7 @@
 - ✅ **Schema Versioning**: All envelopes include `schema_id` for version tracking (e.g., `codex/v3.6/execution_ack/v1`)
 
 **Token Efficiency**:
+
 - **97% average token reduction** when using JSON format (5,250 → 197 tokens)
 - **Example**: Task completion reduced from 18,000 → 300 tokens (98.3% savings)
 - **Structured data**: Enables zero-cost parsing (no regex/markdown parsing needed)
@@ -30,6 +32,7 @@
 5. **registry_info** (150 tokens vs 1,200 markdown) - Tools: `_codex_cloud_list_environments`, `_codex_cloud_github_setup`, `_codex_cleanup_registry`
 
 **6 Error Codes**:
+
 - **TIMEOUT**: Task exceeded time limits (idle/hard timeout) - includes `partial_results`
 - **VALIDATION**: Invalid parameters (Zod validation errors) - retryable after fixing
 - **TOOL_ERROR**: Codex CLI execution failed - includes `exit_code` and `stderr`
@@ -38,6 +41,7 @@
 - **INTERNAL**: Server error - includes `stack_trace` for debugging
 
 **Common Envelope Structure**:
+
 ```json
 {
   "version": "3.6",
@@ -47,11 +51,14 @@
   "request_id": "uuid-v4",
   "ts": "2025-11-18T12:00:00Z",
   "status": "success",
-  "data": { /* category-specific data */ }
+  "data": {
+    /* category-specific data */
+  }
 }
 ```
 
 **Files Modified** (Phase 1 - Core Infrastructure):
+
 - `src/tools/local_run.ts`: Added JSON format support
 - `src/tools/local_exec.ts`: Added JSON format support
 - `src/tools/local_resume.ts`: Added JSON format support
@@ -65,6 +72,7 @@
 - `src/tools/codex.ts`: Added `convertPrimitiveResult()` helper function
 
 **Documentation** (Phase 2):
+
 - ✅ `quickrefs/tools.md`: Added JSON format usage examples for all tools
 - ✅ `quickrefs/workflows.md`: Added JSON format workflow patterns
 - ✅ `quickrefs/architecture.md`: Added comprehensive JSON schema documentation (~350 lines)
@@ -75,6 +83,7 @@
   - Cost analysis: $100 → $5 per 1M tokens
 
 **Testing** (Phase 3):
+
 - ✅ `test-json-schemas.ts`: **NEW** - 28 tests validating all envelope categories and error formats
 - ✅ `test-json-errors.ts`: **NEW** - 9 tests validating all 6 error codes and retryable logic
 - ✅ `test-json-integration.ts`: **NEW** - 6 tests for end-to-end workflows
@@ -83,6 +92,7 @@
 - ✅ **Backward compatibility**: All existing tests still pass
 
 **Benefits for AI Agents**:
+
 1. **Automatic Parsing**: Direct property access instead of regex/markdown parsing
 2. **Type Safety**: Structured envelopes enable schema validation
 3. **Error Recovery**: Retryable flag enables smart retry logic
@@ -117,11 +127,13 @@
 ```
 
 **Implementation Method**:
+
 - Built using MCP Delegator itself ("eating our own dog food")
 - Phases 1-3 completed using Codex tasks
 - Full implementation findings documented in `docs/V3.6-IMPLEMENTATION-FINDINGS.md`
 
 **See Also**:
+
 - `docs/AI-AGENT-BEST-PRACTICES.md` - Comprehensive guide for AI agents
 - `quickrefs/architecture.md` - Complete JSON schema reference
 - `docs/V3.6-IMPLEMENTATION-FINDINGS.md` - Implementation details and lessons learned
@@ -130,10 +142,9 @@
 
 # [3.5.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.4.0...v3.5.0) (2025-11-17)
 
-
 ### Features
 
-* add MCP progress notifications (v3.4.3 - DISABLED) ([#13](https://github.com/littlebearapps/mcp-delegator/issues/13)) ([937a269](https://github.com/littlebearapps/mcp-delegator/commit/937a26938a6259c26f78b4a6aa80dcb52a73c203)), closes [#8](https://github.com/littlebearapps/mcp-delegator/issues/8) [#4157](https://github.com/littlebearapps/mcp-delegator/issues/4157) [#3174](https://github.com/littlebearapps/mcp-delegator/issues/3174)
+- add MCP progress notifications (v3.4.3 - DISABLED) ([#13](https://github.com/littlebearapps/mcp-delegator/issues/13)) ([937a269](https://github.com/littlebearapps/mcp-delegator/commit/937a26938a6259c26f78b4a6aa80dcb52a73c203)), closes [#8](https://github.com/littlebearapps/mcp-delegator/issues/8) [#4157](https://github.com/littlebearapps/mcp-delegator/issues/4157) [#3174](https://github.com/littlebearapps/mcp-delegator/issues/3174)
 
 ## [3.4.3] - 2025-11-17
 
@@ -144,6 +155,7 @@
 Real-time task visibility in Claude Code's status bar for all async Codex executions.
 
 **What's New**:
+
 - **Status Bar Integration**: Running Codex tasks now appear in Claude Code's status bar with live progress updates
 - **Non-Blocking Execution**: Claude Code remains responsive while Codex runs in the background
 - **Multiple Update Strategies**:
@@ -154,6 +166,7 @@ Real-time task visibility in Claude Code's status bar for all async Codex execut
 - **Completion Tracking**: Final notifications mark tasks as complete in status bar
 
 **Files Modified**:
+
 - `src/types/progress.ts`: **NEW** - Helper functions and types for MCP progress notifications
 - `src/index.ts`: Updated to pass `extra` parameter to execution tools
 - `src/executor/process_manager.ts`: Added `onMcpProgress` callback with 30-second intervals
@@ -163,6 +176,7 @@ Real-time task visibility in Claude Code's status bar for all async Codex execut
 - `src/tools/cloud.ts`: Added submission notification
 
 **User Experience Impact**:
+
 - ✅ Users can see Codex is working (no more "did it freeze?" confusion)
 - ✅ Real-time progress tracking in status bar
 - ✅ No blocking - work on other tasks while Codex runs
@@ -183,17 +197,20 @@ This release focuses on 6 critical improvements identified during UAT testing in
 #### 1. Automatic Cleanup Scheduler (Issue 1.3) 🧹
 
 **Problem Solved**:
+
 - Tasks getting stuck in "working" state for hours/days due to SQLite exceptions or process crashes
 - Old completed tasks accumulating indefinitely in the registry
 - No automatic recovery mechanism
 
 **Solution**:
+
 - **Startup cleanup**: Runs on MCP server initialization, marks stuck tasks (>1 hour) as failed
 - **Periodic cleanup**: Runs every 15 minutes to catch tasks that hang during server lifetime
 - **Old task pruning**: Configurable via `_codex_cleanup_registry` tool (default: delete tasks >24 hours old)
 - **Error handling with retry**: `updateTask()` now retries failed database operations after 1-second delay
 
 **Files Modified**:
+
 - `src/index.ts`: Added cleanup scheduler infrastructure
 - `src/state/task_registry.ts`: Added error handling and retry logic to `updateTask()`
 
@@ -202,16 +219,19 @@ This release focuses on 6 critical improvements identified during UAT testing in
 #### 2. Default showAll to True (Issue 3.2) 📋
 
 **Problem Solved**:
+
 - Users confused when `_codex_local_status` showed no tasks despite having active work
 - MCP server's `process.cwd()` doesn't match user's current directory
 - Default behavior was to filter by directory (showing nothing)
 
 **Solution**:
+
 - Changed default from `showAll || false` to `showAll ?? true`
 - Updated usage tips to explain MCP limitation: "MCP server can't auto-detect your current directory (shows all by default)"
 - Updated schema description to clarify new default behavior
 
 **Files Modified**:
+
 - `src/tools/local_status.ts`: Changed default logic and documentation
 
 **Impact**: Users now see all tasks by default instead of confusing empty results
@@ -219,20 +239,24 @@ This release focuses on 6 critical improvements identified during UAT testing in
 #### 3. Smart Truncation (Issue 3.1) 📏
 
 **Problem Solved**:
+
 - 10KB limit was too restrictive for comprehensive reports
 - Users losing critical information at the end of output
 - No context about what was truncated
 
 **Solution**:
+
 - **Increased limit**: 10KB → 50KB (5x increase)
 - **Smart truncation**: Show first 40KB + last 5KB (preserves beginning AND end)
 - **Clear indicators**: Shows exact truncated size and line count
 - **User-friendly message**: "Output size: X chars (showing first 40KB + last 5KB)"
 
 **Files Modified**:
+
 - `src/tools/local_results.ts`: Implemented smart truncation algorithm
 
 **Example Output**:
+
 ```
 ... [Truncated 12,543 characters (~156 lines)] ...
 
@@ -242,20 +266,24 @@ This release focuses on 6 critical improvements identified during UAT testing in
 #### 4. Enhanced Error Reporting (Issues 1.2 + 3.3) 💡
 
 **Problem Solved**:
+
 - Cryptic error messages (raw stderr dumps)
 - No actionable suggestions for common failures
 - Silent failures (exit code 0 but no work performed)
 
 **Solution**:
+
 - **Pattern-based stderr parsing**: Detects common error types (auth, git, network, timeout, permissions)
 - **Actionable suggestions**: Each error includes specific fix instructions
 - **Silent failure detection**: Catches tasks that exit successfully but did no work
 - **User-friendly messages**: Clear error descriptions instead of technical stderr
 
 **Files Modified**:
+
 - `src/executor/error_mapper.ts`: Added `parseStderrForErrors()` and `detectSilentFailure()` methods
 
 **Example Error Message**:
+
 ```json
 {
   "Error": "Task requires a git repository",
@@ -269,20 +297,23 @@ This release focuses on 6 critical improvements identified during UAT testing in
 ```
 
 **Covered Error Types**:
+
 - Authentication failures → "Run `codex auth` or set CODEX_API_KEY"
 - Git repository errors → "Run `git init` or use skipGitRepoCheck=true"
 - Network/API errors → "Check internet connection and try again"
 - Rate limits → "Wait X minutes before retrying"
-- Timeouts → "Task took too long - use _codex_cloud_submit for long tasks"
+- Timeouts → "Task took too long - use \_codex_cloud_submit for long tasks"
 - Permission errors → "Check file permissions: chmod +x ..."
 
 #### 5. Logging Documentation (Issue 1.5) 📚
 
 **Problem Solved**:
+
 - No documentation on how to access MCP server logs
 - Users unable to troubleshoot startup issues or cleanup behavior
 
 **Solution**:
+
 - Created comprehensive logging guide: `docs/LOGGING-CONFIGURATION.md`
 - Documents 4 methods to access logs:
   1. Terminal output (when running Claude Code from terminal)
@@ -293,20 +324,24 @@ This release focuses on 6 critical improvements identified during UAT testing in
 - Troubleshooting guide for common issues
 
 **File Created**:
+
 - `docs/LOGGING-CONFIGURATION.md`
 
 #### 6. Progress Indicator Fix (Discovered during testing) 📊
 
 **Problem Solved**:
+
 - `_codex_local_wait` showing stale progress (e.g., 50%) even when task completed (100%)
 - Progress saved to database every 10 events but not updated on completion
 
 **Solution**:
+
 - Force `progressPercentage` to 100% when `isComplete === true`
 - Update progress one final time after task completes
 - Ensures database always reflects accurate completion state
 
 **Files Modified**:
+
 - `src/executor/progress_inference.ts`: Added completion check
 - `src/tools/local_exec.ts`: Added final progress update
 
@@ -315,6 +350,7 @@ This release focuses on 6 critical improvements identified during UAT testing in
 #### 7. Wait Tools Removal (Architectural Cleanup) 🏗️
 
 **Problem Identified**:
+
 - `_codex_local_wait` and `_codex_cloud_wait` were blocking anti-patterns
 - Froze Claude Code for minutes with no visibility during wait
 - Created user anxiety ("is it stuck?")
@@ -322,11 +358,13 @@ This release focuses on 6 critical improvements identified during UAT testing in
 - Redundant - `_status` + `_results` provide same functionality without blocking
 
 **Solution**:
+
 - **Removed** `_codex_local_wait` tool entirely
 - **Removed** `_codex_cloud_wait` tool entirely
 - **Tool count**: 15 primitives → 13 primitives
 
 **Better Async Pattern** (documented in tools.md):
+
 ```typescript
 // OLD (blocking):
 _codex_local_exec → _codex_local_wait (BLOCKS 2-3 min) → results
@@ -336,6 +374,7 @@ _codex_local_exec → continue other work → check _codex_local_status periodic
 ```
 
 **Benefits**:
+
 - ✅ Claude Code can work on multiple tasks concurrently
 - ✅ Users see periodic status checks (no frozen appearance)
 - ✅ Better visibility into task progress
@@ -343,10 +382,12 @@ _codex_local_exec → continue other work → check _codex_local_status periodic
 - ✅ Cleaner architecture (proper async patterns)
 
 **Files Removed**:
+
 - `src/tools/local_wait.ts`
 - `src/tools/cloud_wait.ts`
 
 **Files Modified**:
+
 - `src/index.ts`: Removed wait tool registration and imports
 
 ### Production Testing Results ✅
@@ -363,12 +404,14 @@ All fixes tested in production environment (`/tmp/mcp-delegator-production-test`
 ### Breaking Changes ⚠️
 
 **Removed Tools** (no existing users affected - pre-release):
+
 - ❌ `_codex_local_wait` - removed (use `_codex_local_status` polling instead)
 - ❌ `_codex_cloud_wait` - removed (use `_codex_cloud_status` polling instead)
 
 **Rationale**: No users have downloaded this MCP yet, so this is the perfect time to remove architectural anti-patterns before first public release.
 
 **Migration Guide** (for future reference):
+
 ```typescript
 // If code was using wait (not recommended):
 const result = await _codex_local_wait({ task_id });
@@ -379,13 +422,14 @@ let status;
 do {
   await sleep(10000); // Wait 10 seconds
   status = await _codex_local_status({ task_id });
-} while (status.status !== 'completed');
+} while (status.status !== "completed");
 const result = await _codex_local_results({ task_id });
 ```
 
 ### Backward Compatibility
 
 ✅ **All other updates are backward compatible**:
+
 - Default behavior changes are user-friendly (show more, not less)
 - New error messages preserve all original details in `details` field
 - Cleanup runs automatically but doesn't affect running tasks
@@ -394,6 +438,7 @@ const result = await _codex_local_results({ task_id });
 ### Migration Notes
 
 **No user action required** - all changes take effect immediately after:
+
 1. Restart Claude Code (to reload MCP server with new version)
 2. Verify cleanup is running: Check MCP server logs for startup message
 
@@ -401,10 +446,9 @@ const result = await _codex_local_results({ task_id });
 
 ## [3.4.1](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.2...v3.4.1) (2025-11-17)
 
-
 ### Features
 
-* **config:** migrate config directory from codex-control to mcp-delegator ([#TBD](https://github.com/littlebearapps/mcp-delegator/issues/TBD))
+- **config:** migrate config directory from codex-control to mcp-delegator ([#TBD](https://github.com/littlebearapps/mcp-delegator/issues/TBD))
   - Config directory renamed for consistency: `~/.config/codex-control/` → `~/.config/mcp-delegator/`
   - **Automatic migration** on first run - no user action required
   - Preserves all task history, environments, and configuration
@@ -412,55 +456,54 @@ const result = await _codex_local_results({ task_id });
   - Warning if both directories exist
 
 **BREAKING CHANGE**: Config directory path changed to match package name
+
 - **Old**: `~/.config/codex-control/`
 - **New**: `~/.config/mcp-delegator/`
 
 **Migration**: Automatic on first run of v3.4.1+
 
 **Manual Migration** (if needed):
+
 ```bash
 mv ~/.config/codex-control ~/.config/mcp-delegator
 ```
 
 **Verification**:
+
 ```bash
 ls -la ~/.config/mcp-delegator/  # Should show tasks.db, environments.json
 ```
 
 ## [3.3.2](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.1...v3.3.2) (2025-11-16)
 
-
 ### Bug Fixes
 
-* temporarily disable provenance to debug E409 errors ([3f33a67](https://github.com/littlebearapps/mcp-delegator/commit/3f33a67853bba3fdde7bf2fe894fd688369224ac))
+- temporarily disable provenance to debug E409 errors ([3f33a67](https://github.com/littlebearapps/mcp-delegator/commit/3f33a67853bba3fdde7bf2fe894fd688369224ac))
 
 ## [3.3.1](https://github.com/littlebearapps/mcp-delegator/compare/v3.3.0...v3.3.1) (2025-11-16)
 
 # [3.3.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.2.2...v3.3.0) (2025-11-16)
 
-
 ### Features
 
-* customize semantic-release to trigger on docs commits ([#12](https://github.com/littlebearapps/mcp-delegator/issues/12)) ([33c7d87](https://github.com/littlebearapps/mcp-delegator/commit/33c7d87e5a230e141fe7686d69c3689a96a7f377))
+- customize semantic-release to trigger on docs commits ([#12](https://github.com/littlebearapps/mcp-delegator/issues/12)) ([33c7d87](https://github.com/littlebearapps/mcp-delegator/commit/33c7d87e5a230e141fe7686d69c3689a96a7f377))
 
 # 1.0.0 (2025-11-16)
 
-
 ### Bug Fixes
 
-* **sandbox:** critical sandbox mode bug fix + comprehensive git operations testing ([5ee090e](https://github.com/littlebearapps/mcp-delegator/commit/5ee090e90cf1ec6561dcbc0c5aed3b8340005848))
-
+- **sandbox:** critical sandbox mode bug fix + comprehensive git operations testing ([5ee090e](https://github.com/littlebearapps/mcp-delegator/commit/5ee090e90cf1ec6561dcbc0c5aed3b8340005848))
 
 ### Features
 
-* add CI/CD infrastructure and security hardening (Phase 1 & 2) ([a7f2cef](https://github.com/littlebearapps/mcp-delegator/commit/a7f2cef2bd25b7f6fc7dd32af744095cc26d9542))
-* add structured metadata extraction for AI agent decision-making ([8004694](https://github.com/littlebearapps/mcp-delegator/commit/80046944bfd55d1d195d4d4d94577778a0c7ff47))
-* Codex Control MCP v2.1.0 - Dual Execution Modes ([f1080b1](https://github.com/littlebearapps/mcp-delegator/commit/f1080b1ecbc607f2f2754aa7d9c4afcc2ba023a4))
-* complete v3.0.0 unified natural language interface ([14871bb](https://github.com/littlebearapps/mcp-delegator/commit/14871bb559b84b8c9954acbb68f82f4ca09c67d6))
-* **local-exec:** add comprehensive mode documentation ([bad9ce3](https://github.com/littlebearapps/mcp-delegator/commit/bad9ce372beb947180a494b35d16973b10d00301))
-* v2.1.1 - async/non-blocking execution for all tools ([f338e8e](https://github.com/littlebearapps/mcp-delegator/commit/f338e8e517144c955cbbe857b7f26293818503e5))
-* v3.0.1 - npm package ready + unified tool removal + bug fixes ([3b622ce](https://github.com/littlebearapps/mcp-delegator/commit/3b622ceb8c710860fd1792a474741f422eb682e4))
-* v3.2.1 - complete timeout/hang detection for all execution tools ([f7852e7](https://github.com/littlebearapps/mcp-delegator/commit/f7852e7fed9fab7e4b6c90dd5d60457231196405))
+- add CI/CD infrastructure and security hardening (Phase 1 & 2) ([a7f2cef](https://github.com/littlebearapps/mcp-delegator/commit/a7f2cef2bd25b7f6fc7dd32af744095cc26d9542))
+- add structured metadata extraction for AI agent decision-making ([8004694](https://github.com/littlebearapps/mcp-delegator/commit/80046944bfd55d1d195d4d4d94577778a0c7ff47))
+- Codex Control MCP v2.1.0 - Dual Execution Modes ([f1080b1](https://github.com/littlebearapps/mcp-delegator/commit/f1080b1ecbc607f2f2754aa7d9c4afcc2ba023a4))
+- complete v3.0.0 unified natural language interface ([14871bb](https://github.com/littlebearapps/mcp-delegator/commit/14871bb559b84b8c9954acbb68f82f4ca09c67d6))
+- **local-exec:** add comprehensive mode documentation ([bad9ce3](https://github.com/littlebearapps/mcp-delegator/commit/bad9ce372beb947180a494b35d16973b10d00301))
+- v2.1.1 - async/non-blocking execution for all tools ([f338e8e](https://github.com/littlebearapps/mcp-delegator/commit/f338e8e517144c955cbbe857b7f26293818503e5))
+- v3.0.1 - npm package ready + unified tool removal + bug fixes ([3b622ce](https://github.com/littlebearapps/mcp-delegator/commit/3b622ceb8c710860fd1792a474741f422eb682e4))
+- v3.2.1 - complete timeout/hang detection for all execution tools ([f7852e7](https://github.com/littlebearapps/mcp-delegator/commit/f7852e7fed9fab7e4b6c90dd5d60457231196405))
 
 # Changelog
 
@@ -478,11 +521,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Added MCP-compliant timeout detection to prevent AI agents and Claude Code from waiting indefinitely when tasks hang or freeze.
 
 **Problem Solved**:
+
 - During UAT testing (Test 2.6), Codex CLI hung for 36 minutes with no output
 - Claude Code and user had no way to detect hang or take action
 - AI agent sat frozen waiting for task that would never complete
 
 **Solution**:
+
 - **TimeoutWatchdog** class with two-tier timeout system:
   - **Inactivity timeout** (default: 5 min) - Resets on any stdout/stderr output, catches silent hangs
   - **Hard timeout** (default: 20 min) - Wall-clock maximum, prevents infinite execution
@@ -496,18 +541,16 @@ Added MCP-compliant timeout detection to prevent AI agents and Claude Code from 
 **Tools with Full Timeout Detection** (6/6 ✅ COMPLETE):
 
 **Process-Spawning Tools** (2 tools):
+
 1. ✅ `_codex_local_run` - Via ProcessManager + TimeoutWatchdog (5 min idle / 20 min hard)
 2. ✅ `_codex_cloud_submit` - Via runCodexCloud() + TimeoutWatchdog (5 min idle / 10 min hard)
 
-**SDK Background Execution** (2 tools):
-3. ✅ `_codex_local_exec` - Background task monitoring (5 min idle / 20 min hard)
-4. ✅ `_codex_local_resume` - Background task monitoring (5 min idle / 20 min hard)
+**SDK Background Execution** (2 tools): 3. ✅ `_codex_local_exec` - Background task monitoring (5 min idle / 20 min hard) 4. ✅ `_codex_local_resume` - Background task monitoring (5 min idle / 20 min hard)
 
-**Polling/Wait Tools** (2 tools):
-5. ✅ `_codex_local_wait` - Hard timeout wrapper (11 min max)
-6. ✅ `_codex_cloud_wait` - Hard timeout wrapper (31 min max)
+**Polling/Wait Tools** (2 tools): 5. ✅ `_codex_local_wait` - Hard timeout wrapper (11 min max) 6. ✅ `_codex_cloud_wait` - Hard timeout wrapper (31 min max)
 
 **Implementation**:
+
 - **New File**: `src/executor/timeout_watchdog.ts` (TimeoutWatchdog class, 300+ lines)
 - **Modified**: `src/executor/process_manager.ts` - Integrated TimeoutWatchdog for CLI process spawning
 - **Modified**: `src/tools/cloud.ts` - Added TimeoutWatchdog to cloud submission
@@ -518,19 +561,23 @@ Added MCP-compliant timeout detection to prevent AI agents and Claude Code from 
 - **Dependency**: Added `tree-kill@^1.2.2` for cross-platform process cleanup
 
 **Configuration**:
+
 - `idleTimeoutMs`: Inactivity timeout in milliseconds (default: 300000 = 5 min)
 - `hardTimeoutMs`: Hard deadline in milliseconds (default: 1200000 = 20 min)
 - Callbacks: `onProgress`, `onWarning`, `onTimeout` for MCP notification integration
 
 **Test 2.6 Impact**:
+
 - **Before**: 36-minute hang with no detection
 - **After**: Would be caught in 5 minutes 30 seconds with warning at 4m 30s
 
 **Documentation**:
+
 - Complete design document: `docs/TIMEOUT-HANG-DETECTION-IMPLEMENTATION.md` (27KB, 600+ lines of code)
 - MCP specification research: Official progress tracking and logging protocols
 
 **Coverage Details**:
+
 - **Process-spawning tools** use TimeoutWatchdog with full MCP notification support
 - **SDK background execution** monitors idle time and hard deadline, updates task registry on timeout
 - **Wait tools** have hard timeout wrappers to prevent infinite polling
@@ -588,11 +635,13 @@ This project has been renamed from "Codex Control MCP" to "MCP Delegator" to bet
   - New: `"command": "mcp-delegator"`
 
 **Migration**:
+
 - Run `./setup-npm-link.sh` to create new global symlink
 - Update `.mcp.json` files to use `mcp-delegator` as command
 - Restart Claude Code in all working directories
 
 **See**:
+
 - Complete naming analysis: `docs/NAMING-AND-FEATURES-ANALYSIS-2025-11-15.md`
 - Missing features roadmap: `docs/MISSING-CODEX-FEATURES-IMPLEMENTATION-GUIDE.md`
 
@@ -603,14 +652,17 @@ This project has been renamed from "Codex Control MCP" to "MCP Delegator" to bet
 Identified 6 missing Codex CLI features for future implementation:
 
 **Phase 1 (v3.3.0)** - HIGH Priority:
+
 - Model selection tools (`_codex_list_models`, `_codex_set_default_model`)
 - Reasoning level control (`_codex_set_reasoning_level`) - 50-90% cost savings potential!
 
 **Phase 2 (v3.4.0)** - MEDIUM Priority:
+
 - Multimodal support (`_codex_local_run_with_images`)
 - Web search integration (`_codex_local_run_with_search`)
 
 **Phase 3 (v3.4.3)** - MEDIUM Priority:
+
 - Session commands (`_codex_session_init`, `_codex_session_review`)
 - Configuration profiles (`_codex_list_profiles`, `_codex_set_profile`)
 
@@ -660,6 +712,7 @@ All tools now support non-blocking async execution - Claude Code never freezes w
 Three critical bugs have been identified and fixed that prevented the MCP server from functioning correctly:
 
 #### Bug #1: Mode Parameter Mismatch ✅
+
 - **Issue**: Code used deprecated `full-auto` value, but Codex CLI v0.57.0 expects `workspace-write`
 - **Symptom**: `invalid value 'full-auto' for '--sandbox <SANDBOX_MODE>'` errors
 - **Fix**: Replaced all occurrences of `full-auto` with `workspace-write` in 6 source files
@@ -673,12 +726,14 @@ Three critical bugs have been identified and fixed that prevented the MCP server
   - All documentation files (README.md, quickrefs/)
 
 #### Bug #2: Misleading Tool Count ✅
+
 - **Issue**: `codex_status` showed hardcoded list of 4 tools instead of all 13
 - **Symptom**: Users reported "Only 4 tools available" when all 13 were actually registered
 - **Fix**: Updated `src/tools/status.ts` to show categorized list of all 13 tools
 - **Impact**: Status reporting now accurate and complete
 
 #### Bug #3: SDK Tools Silent Failure ✅ (MOST CRITICAL)
+
 - **Issue**: `codex_local_exec` and `codex_local_resume` returned raw objects instead of MCP-compatible format
 - **Symptom**: "Tool ran without output or errors" - silent failures with no error messages
 - **Root Cause**: Tools didn't wrap responses in `{ content: [{ type: 'text', text: '...' }] }` format required by MCP protocol
@@ -691,6 +746,7 @@ Three critical bugs have been identified and fixed that prevented the MCP server
   - `src/tools/local_resume.ts`
 
 #### Bug #4: Process Tracking Visibility ✅
+
 - **Issue**: `codex_status` only showed ProcessManager-tracked processes, missing SDK-spawned processes
 - **Symptom**: System shows running `codex exec` processes but `codex_status` reports 0 active processes
 - **Root Cause**: SDK tools (`codex_local_exec`, `codex_local_resume`) spawn processes via `@openai/codex-sdk` which aren't registered with ProcessManager
@@ -703,6 +759,7 @@ Three critical bugs have been identified and fixed that prevented the MCP server
 - **Files Updated**:
   - `src/tools/status.ts` - Added `detectSystemProcesses()` method using `ps aux`
 - **Example Output**:
+
   ```
   **Total Codex Processes**: 1
     - CLI-tracked: 0
@@ -717,6 +774,7 @@ Three critical bugs have been identified and fixed that prevented the MCP server
   ```
 
 #### Bug #5: SDK Tools Async Streaming Returns Empty ✅ (CRITICAL - Production Testing)
+
 - **Issue**: `codex_local_exec` and `codex_local_resume` spawn processes successfully but return empty output to Claude Code
 - **Symptom**: "Tool ran without output or errors" - process visible in `codex_status` but no results returned via MCP
 - **Discovery**: Found during production testing (2025-11-12 5:00 PM)
@@ -744,6 +802,7 @@ Three critical bugs have been identified and fixed that prevented the MCP server
 ### Validated
 
 **Testing Results** (2025-11-12):
+
 - ✅ All 13 tools now discoverable via `codex_status`
 - ✅ `codex_local_exec` working perfectly - Full output with thread ID, events, usage stats
 - ✅ `codex_local_resume` working perfectly - 97% cache rate (11,008/11,365 tokens cached)
@@ -756,6 +815,7 @@ Three critical bugs have been identified and fixed that prevented the MCP server
 - ✅ Bug #5 fix validated in production (codex-control directory, 2025-11-12 5:30 PM)
 
 **Documentation Updated**:
+
 - README.md: All mode parameter references updated
 - quickrefs/tools.md: Tool examples updated
 - quickrefs/workflows.md: Workflow examples updated
@@ -782,6 +842,7 @@ Codex Control MCP now supports **dual execution modes**: local execution with re
 Execute Codex tasks locally with real-time event streaming, full status visibility, and thread management via `@openai/codex-sdk` TypeScript library.
 
 **Key Features:**
+
 - ✅ **Real-Time Event Streaming**: See exactly what Codex is doing as it happens
 - ✅ **Thread Management**: Get thread ID for resumption across sessions
 - ✅ **Token Tracking**: Monitor input/output/cached tokens in real-time
@@ -790,6 +851,7 @@ Execute Codex tasks locally with real-time event streaming, full status visibili
 - ✅ **Persistent Threads**: Threads stored in `~/.codex/sessions` for later resumption
 
 **Parameters:**
+
 - `task` (required): Task description for Codex
 - `workingDir` (optional): Working directory (defaults to current)
 - `mode` (optional): Execution mode (`read-only`, `workspace-write`, `danger-full-access`)
@@ -802,6 +864,7 @@ Execute Codex tasks locally with real-time event streaming, full status visibili
 Resume previous local thread with follow-up tasks and full conversation context preservation.
 
 **Key Features:**
+
 - ✅ **Context Preservation**: Full conversation history maintained across sessions
 - ✅ **Iterative Development**: Break large tasks into multiple steps
 - ✅ **Session Persistence**: Threads survive Claude Code restarts
@@ -809,12 +872,14 @@ Resume previous local thread with follow-up tasks and full conversation context 
 - ✅ **Follow-Up Questions**: Continue conversations without repeating context
 
 **Parameters:**
+
 - `threadId` (required): Thread ID from previous `codex_local_exec` execution
 - `task` (required): Follow-up task to execute
 - `mode` (optional): Execution mode (defaults to previous thread's mode)
 - `outputSchema` (optional): JSON Schema for structured output
 
 **Use Cases:**
+
 - Multi-step refactoring (analyze → plan → apply)
 - Iterative bug fixes (find → fix → test)
 - Code reviews with follow-ups (review → explain → suggest)
@@ -825,12 +890,14 @@ Resume previous local thread with follow-up tasks and full conversation context 
 Check for pending Codex Cloud tasks and get Web UI links for status checking. Addresses the limitation that Codex Cloud has no programmatic status polling API.
 
 **Key Features:**
+
 - ✅ **Organized Tracking**: See all pending tasks in one place
 - ✅ **Direct Links**: Click to check status without searching Web UI
 - ✅ **Time Context**: Know how long tasks have been running (minutes elapsed)
 - ✅ **Persistent Registry**: Survives Claude Code restarts
 
 **Use Cases:**
+
 - Periodic checks during development
 - Morning review of overnight tasks
 - Before submitting new tasks (check queue)
@@ -843,6 +910,7 @@ Check for pending Codex Cloud tasks and get Web UI links for status checking. Ad
 List available Codex Cloud environments from local configuration. Addresses the limitation that Codex Cloud has no programmatic API for environment discovery.
 
 **Key Features:**
+
 - ✅ **Local Registry**: Track all your Codex Cloud environments
 - ✅ **Quick Reference**: See environment IDs without Web UI
 - ✅ **Metadata**: Store descriptions, repo URLs, and tech stacks
@@ -851,6 +919,7 @@ List available Codex Cloud environments from local configuration. Addresses the 
 **Configuration:** User-maintained file at `~/.config/codex-control/environments.json`
 
 **Example:**
+
 ```json
 {
   "seo-ads-expert-online": {
@@ -866,20 +935,21 @@ List available Codex Cloud environments from local configuration. Addresses the 
 
 Codex Control MCP now provides **three execution approaches**:
 
-| Feature | Local CLI (Tools 1-4) | Local SDK (Tools 9-10) 🆕 | Cloud (Tools 5-8) |
-|---------|---------------------|----------------------|------------------|
-| **Real-Time Status** | ❌ Blocking | ✅ Event Streaming | ❌ Background |
-| **Thread Resumption** | ❌ No | ✅ Yes | ❌ No |
-| **Token Visibility** | ❌ No | ✅ Yes | ❌ No |
-| **Session Persistence** | ❌ No | ✅ Yes | ✅ Yes |
-| **Execution Location** | Local Mac | Local Mac | Cloud Containers |
-| **Best For** | Quick tasks | Iterative development | Long-running tasks |
-| **Max Duration** | ~5-10 minutes | No hard limit | Hours |
-| **Context Preservation** | ❌ No | ✅ Full thread history | ❌ No |
+| Feature                  | Local CLI (Tools 1-4) | Local SDK (Tools 9-10) 🆕 | Cloud (Tools 5-8)  |
+| ------------------------ | --------------------- | ------------------------- | ------------------ |
+| **Real-Time Status**     | ❌ Blocking           | ✅ Event Streaming        | ❌ Background      |
+| **Thread Resumption**    | ❌ No                 | ✅ Yes                    | ❌ No              |
+| **Token Visibility**     | ❌ No                 | ✅ Yes                    | ❌ No              |
+| **Session Persistence**  | ❌ No                 | ✅ Yes                    | ✅ Yes             |
+| **Execution Location**   | Local Mac             | Local Mac                 | Cloud Containers   |
+| **Best For**             | Quick tasks           | Iterative development     | Long-running tasks |
+| **Max Duration**         | ~5-10 minutes         | No hard limit             | Hours              |
+| **Context Preservation** | ❌ No                 | ✅ Full thread history    | ❌ No              |
 
 **Recommendations:**
 
 **Use Local SDK** when:
+
 - You want real-time progress visibility
 - You need to ask follow-up questions
 - You're doing iterative development (analyze → fix → test)
@@ -887,6 +957,7 @@ Codex Control MCP now provides **three execution approaches**:
 - Tasks take 5-30 minutes with multiple steps
 
 **Use Cloud** when:
+
 - Tasks will take hours (full test suites, comprehensive refactoring)
 - You want fire-and-forget execution
 - You need sandboxed environment with specific dependencies
@@ -907,12 +978,14 @@ Codex Control MCP now provides **three execution approaches**:
 ### Implementation
 
 **New Files:**
+
 - `src/tools/local_exec.ts` - Local execution with SDK
 - `src/tools/local_resume.ts` - Thread resumption
 - `src/tools/cloud_check_reminder.ts` - Pending task reminder
 - `src/tools/list_environments.ts` - Environment registry
 
 **Updated Files:**
+
 - `src/index.ts` - Register 4 new tools, update server version to 2.1.0
 - `package.json` - Add `@openai/codex-sdk` dependency, version 2.1.0
 - `README.md` - Comprehensive documentation update (300+ lines added)
@@ -921,6 +994,7 @@ Codex Control MCP now provides **three execution approaches**:
 ### Why Version 2.1.0?
 
 This is a **minor version bump** (not 3.0.0) because:
+
 - ✅ No breaking changes to existing tools
 - ✅ All v2.0.x functionality preserved
 - ✅ New tools are additive, not replacing anything
@@ -928,6 +1002,7 @@ This is a **minor version bump** (not 3.0.0) because:
 - ✅ Backward compatible with v2.0.0
 
 **Feature Significance:**
+
 - Major feature addition (dual execution modes)
 - Addresses two known limitations (Cloud status polling, environment discovery)
 - Enables new workflows (iterative development, thread resumption)
@@ -953,6 +1028,7 @@ Create this file to enable `codex_list_environments` tool:
 ### Migration
 
 **From v2.0.0 to v2.1.0:**
+
 - No migration required
 - New tools are immediately available after upgrade
 - Optionally create `~/.config/codex-control/environments.json` to use environment listing
@@ -961,14 +1037,17 @@ Create this file to enable `codex_list_environments` tool:
 ### Known Limitations
 
 **Addressed in this release:**
+
 - ✅ ~~No programmatic Cloud task status polling~~ - Now have `codex_cloud_check_reminder` with Web UI links
 - ✅ ~~No programmatic environment discovery~~ - Now have `codex_list_environments` with local registry
 
 **Still present:**
+
 - Codex Cloud TUI is interactive-only (not scriptable yet)
 - Environment configuration has NO programmatic API (web UI only)
 
 **Workarounds:**
+
 - Use Web UI links from `codex_cloud_check_reminder` to check Cloud task status
 - Maintain local registry in `~/.config/codex-control/environments.json` for environment discovery
 
@@ -989,6 +1068,7 @@ Create this file to enable `codex_list_environments` tool:
 New interactive tool `codex_github_setup_guide` enables Claude Code to autonomously guide users through complete GitHub integration setup without external documentation.
 
 **Tool Capabilities:**
+
 - **Custom Setup Guides**: Generate repository-specific configuration instructions
 - **Fine-Grained Token Instructions**: Step-by-step GitHub PAT creation with exact permissions
 - **Pre-filled Scripts**: Setup and maintenance scripts customized for repository and tech stack
@@ -998,12 +1078,14 @@ New interactive tool `codex_github_setup_guide` enables Claude Code to autonomou
 - **Git Configuration**: Customizable user name and email for commits
 
 **Interactive Workflow:**
+
 1. User provides: repository URL, technology stack, optional git config
 2. Tool generates: complete setup guide (8 sections, 400+ lines)
 3. User follows: token creation, environment configuration, test task
 4. Result: Fully configured autonomous GitHub PR workflow
 
 **Tool Schema:**
+
 ```json
 {
   "repoUrl": "https://github.com/user/my-project",
@@ -1014,6 +1096,7 @@ New interactive tool `codex_github_setup_guide` enables Claude Code to autonomou
 ```
 
 **Generated Guide Includes:**
+
 - **Step 1**: Create Fine-Grained GitHub Token (with exact permissions list)
 - **Step 2**: Configure Codex Cloud Environment
   - Basic configuration (name, repo URL, branch)
@@ -1026,12 +1109,14 @@ New interactive tool `codex_github_setup_guide` enables Claude Code to autonomou
 - **Next Steps**: Best practices and example workflows
 
 **Implementation:**
+
 - New file: `src/tools/github_setup.ts` (GitHubSetupTool class)
 - Updated: `src/index.ts` (tool registration and handler)
 - Tool name: `codex_github_setup_guide`
 - Error handling: Repository URL validation, stack validation, template lookup
 
 **Security:**
+
 - No hardcoded credentials
 - Token instructions emphasize fine-grained permissions
 - Secrets vs environment variables clearly distinguished
@@ -1040,6 +1125,7 @@ New interactive tool `codex_github_setup_guide` enables Claude Code to autonomou
 ### Why Version 2.0.0?
 
 This is a **major version bump** because:
+
 - ✅ Complete autonomous workflow capability achieved (no external docs required)
 - ✅ New tool adds significant user-facing functionality
 - ✅ Phase 3 (final phase) of v2.0 enhancement plan complete
@@ -1047,6 +1133,7 @@ This is a **major version bump** because:
 - ✅ All three phases delivered: Enhanced Schemas (1.4.0) + Templates (1.5.0) + Setup Tool (2.0.0)
 
 **Backward Compatibility:**
+
 - No breaking changes to existing tools
 - All v1.x functionality preserved
 - New tool is additive, not replacing anything
@@ -1055,11 +1142,13 @@ This is a **major version bump** because:
 ### Documentation
 
 **Updated:**
+
 - `CHANGELOG.md`: v2.0.0 release notes
 - `README.md`: Comprehensive usage guide with setup tool examples
 - `CONTRIBUTING.md`: Already includes setup tool contribution guidelines
 
 **See Also:**
+
 - Enhancement Plan: `/docs/sdks/CODEX-CONTROL-V2-ENHANCEMENT-PLAN.md`
 - Setup Tool: `src/tools/github_setup.ts`
 - Tool Schema: Listed in `codex_github_setup_guide` tool definition
@@ -1075,6 +1164,7 @@ This is a **major version bump** because:
 Five pre-configured environment templates now available via MCP resources for streamlined Codex Cloud GitHub integration:
 
 **Templates:**
+
 - **github-node-typescript**: Node.js/TypeScript projects with GitHub PR workflow
 - **github-python**: Python projects with GitHub PR workflow
 - **github-go**: Go projects with GitHub PR workflow
@@ -1082,6 +1172,7 @@ Five pre-configured environment templates now available via MCP resources for st
 - **basic-codex-cloud**: Basic environment without GitHub integration
 
 **Template Features:**
+
 - **4-Level Fallback Error Handling**: Graceful degradation when GitHub CLI installation fails
   - Level 1: Standard APT installation
   - Level 2: Direct binary download
@@ -1093,11 +1184,13 @@ Five pre-configured environment templates now available via MCP resources for st
 - **Security**: Fine-grained token permissions, no hardcoded credentials, secrets validation
 
 **MCP Resources:**
+
 - `ListResourcesRequestSchema`: Discover available templates
 - `ReadResourceRequestSchema`: Read full template configuration
 - Templates exposed via `codex://environment-template/{name}` URIs
 
 **Infrastructure:**
+
 - New TypeScript interfaces in `src/types/template_types.ts`
 - Template definitions in `src/resources/environment_templates.ts`
 - Python validation script: `scripts/validate_templates.py`
@@ -1105,6 +1198,7 @@ Five pre-configured environment templates now available via MCP resources for st
 - Comprehensive `CONTRIBUTING.md` with template development guidelines
 
 **Quality Assurance:**
+
 - Automated template validation (structure, secrets, scripts)
 - CI checks for hardcoded credentials
 - Required template verification
@@ -1113,6 +1207,7 @@ Five pre-configured environment templates now available via MCP resources for st
 ### Why Version 1.5.0?
 
 This is a minor version bump (not 2.0.0) because:
+
 - No breaking changes to existing tool interfaces
 - Adds new MCP resources capability (backward compatible)
 - No new tools added yet (Phase 3 will add github_setup_guide)
@@ -1137,17 +1232,20 @@ Version 2.0.0 will be released after Phase 3 (GitHub Setup Helper Tool) to signa
 All Codex Cloud tool schemas have been enhanced with comprehensive structured descriptions that enable Claude Code to understand complete workflows autonomously without external documentation.
 
 **Schema Enhancements:**
+
 - **codex_cloud_submit**: Added PREREQUISITES, WORKFLOW, TASK DESCRIPTION BEST PRACTICES, GITHUB CAPABILITIES, and SETUP GITHUB sections
 - **codex_cloud_status**: Added USAGE, WORKFLOW, STATUS VALUES, and WEB UI sections
 - **codex_cloud_results**: Added USAGE, RESULTS INCLUDE, GITHUB PR WORKFLOW, and WEB UI sections
 - **codex_cloud_list_tasks**: Added USAGE, FILTERING OPTIONS, TASK INFORMATION INCLUDES, USE CASES, and STATISTICS sections
 
 **Token Budget:**
+
 - Total schema descriptions: 1,051 tokens (35% of 3,000 token budget)
 - Remaining headroom: 1,949 tokens (65%)
 - Well under target for Phase 2 (Environment Templates) and Phase 3 (GitHub Setup Tool)
 
 **Validation:**
+
 - All schemas compile without errors
 - All schemas pass structural validation
 - Token count verified via automated script
@@ -1159,6 +1257,7 @@ This release is the first phase of the v2.0 enhancement plan (autonomous GitHub 
 **Why Version 1.4.0?**
 
 This is a minor version bump (not 2.0.0) because:
+
 - No breaking changes to existing tool interfaces
 - No new tools added (that comes in Phase 3)
 - Only enhanced documentation in tool schemas

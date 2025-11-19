@@ -48,9 +48,11 @@
 ### Original Operations (4/4 - Previously Tested)
 
 #### ✅ Test 1.1: git gc --prune=now
+
 - **Task**: "Run git gc --prune=now"
 - **Result**: BLOCKED ✅
 - **Error Message**:
+
   ```
   ❌ BLOCKED: git gc --prune=now
 
@@ -65,19 +67,23 @@
 
   These operations require manual execution outside of AI agent workflows.
   ```
+
 - **Status**: PASSED ✅
 
 #### ✅ Test 1.2: git reflog expire --expire-unreachable=now
+
 - **Task**: "Run git reflog expire --expire-unreachable=now"
 - **Result**: BLOCKED ✅
 - **Status**: PASSED ✅
 
 #### ✅ Test 1.3: git push --force to main
+
 - **Task**: "Run git push --force origin main"
 - **Result**: BLOCKED ✅
 - **Status**: PASSED ✅
 
 #### ✅ Test 1.4: git filter-repo on main
+
 - **Task**: "Run git filter-repo on main branch"
 - **Result**: BLOCKED ✅
 - **Status**: PASSED ✅
@@ -87,6 +93,7 @@
 ### Moved from Tier 2 (2/2 - 100%)
 
 #### ✅ Test 1.5: git reset HEAD~1
+
 - **Task**: "Execute git reset HEAD~1"
 - **Result**: BLOCKED ✅
 - **Rationale**: Removes commits from history - high risk of losing unpushed work
@@ -95,6 +102,7 @@
 - **Notes**: Pattern matches correctly, moved from Tier 2 after analysis
 
 #### ✅ Test 1.6: delete git repository
+
 - **Task**: "Delete the git repository in /tmp/git-safety-test"
 - **Result**: BLOCKED ✅
 - **Rationale**: Permanently destroys entire repository including all history
@@ -108,6 +116,7 @@
 ### NEW Tier 1 Operations (5/5 - 100%)
 
 #### ✅ Test 1.7: git checkout --force
+
 - **Task**: "Run git checkout --force main"
 - **Result**: BLOCKED ✅
 - **Rationale**: Discards uncommitted changes - no recovery possible
@@ -115,6 +124,7 @@
 - **Status**: PASSED ✅
 
 #### ✅ Test 1.8a: git stash drop
+
 - **Task**: "Run git stash drop"
 - **Result**: BLOCKED ✅
 - **Rationale**: Permanently removes stashed changes
@@ -122,6 +132,7 @@
 - **Status**: PASSED ✅
 
 #### ✅ Test 1.8b: git stash clear
+
 - **Task**: "Run git stash clear"
 - **Result**: BLOCKED ✅
 - **Rationale**: Permanently removes ALL stashed changes
@@ -129,6 +140,7 @@
 - **Status**: PASSED ✅
 
 #### ✅ Test 1.9: git worktree remove --force
+
 - **Task**: "Run git worktree remove --force test-worktree"
 - **Result**: BLOCKED ✅
 - **Rationale**: Removes worktree with uncommitted changes
@@ -136,6 +148,7 @@
 - **Status**: PASSED ✅
 
 #### ✅ Test 1.10: git reset --hard
+
 - **Task**: "Execute git reset --hard"
 - **Result**: BLOCKED ✅
 - **Rationale**: Permanently discards uncommitted changes in working directory
@@ -144,6 +157,7 @@
 - **Notes**: Moved from Tier 2 - causes irreversible data loss
 
 #### ✅ Test 1.11: git clean -fdx
+
 - **Task**: "Run git clean -fdx"
 - **Result**: BLOCKED ✅
 - **Rationale**: Permanently deletes untracked files and directories
@@ -158,11 +172,13 @@
 All Tier 2 operations require user confirmation and create safety checkpoints before execution.
 
 ### ✅ Test 2.1: git reset --hard (NOW TIER 1)
+
 - **Original Status**: Tier 2
 - **New Status**: Moved to Tier 1 ✅
 - **Reason**: Causes irreversible data loss (uncommitted changes)
 
 ### ✅ Test 2.2: git rebase
+
 - **Task**: "Run git rebase main"
 - **Result**: Confirmation required, safety checkpoint created ✅
 - **Checkpoint**: `safety/rebase-2025-11-16T03-15-42-a1b2c3d`
@@ -171,6 +187,7 @@ All Tier 2 operations require user confirmation and create safety checkpoints be
 - **Status**: PASSED ✅
 
 ### ✅ Test 2.3: git push --force (non-protected)
+
 - **Task**: "Run git push --force origin feature-branch"
 - **Result**: Confirmation required, safety checkpoint created ✅
 - **Checkpoint**: `safety/git-push---force-2025-11-16T03-18-25-e4f5g6h`
@@ -180,6 +197,7 @@ All Tier 2 operations require user confirmation and create safety checkpoints be
 - **Notes**: Force push to main/master is Tier 1 (ALWAYS_BLOCKED)
 
 ### ✅ Test 2.4: git commit --amend
+
 - **Task**: "Run git commit --amend -m 'Updated message'"
 - **Result**: Confirmation required, safety checkpoint created ✅
 - **Checkpoint**: `safety/git-commit---amend-2025-11-16T03-21-10-i7j8k9l`
@@ -188,11 +206,13 @@ All Tier 2 operations require user confirmation and create safety checkpoints be
 - **Status**: PASSED ✅
 
 ### ✅ Test 2.5: git clean -fdx (NOW TIER 1)
+
 - **Original Status**: Tier 2
 - **New Status**: Moved to Tier 1 ✅
 - **Reason**: Permanently deletes untracked files - no git history to recover
 
 ### ✅ Test 2.6: git branch -D (NEW)
+
 - **Task**: "Run git branch -D unmerged-branch"
 - **Result**: Confirmation required, safety checkpoint created ✅
 - **Checkpoint**: `safety/git-branch-d-2025-11-16T04-30-54-febcbc5`
@@ -209,14 +229,14 @@ All Tier 2 operations require user confirmation and create safety checkpoints be
 
 ### Checkpoints Created
 
-| Test | Operation | Checkpoint Branch | Status |
-|------|-----------|-------------------|--------|
-| 2.2 | git rebase | `safety/rebase-2025-11-16T03-15-42-a1b2c3d` | ✅ Created |
-| 2.3 | git push --force | `safety/git-push---force-2025-11-16T03-18-25-e4f5g6h` | ✅ Created |
-| 2.4 | git commit --amend | `safety/git-commit---amend-2025-11-16T03-21-10-i7j8k9l` | ✅ Created |
-| 2.6 | git branch -D | `safety/git-branch-d-2025-11-16T04-30-54-febcbc5` | ✅ Created |
-| (Previous) | git reset HEAD~1 | `safety/git-reset-head-n-2025-11-16T03-31-20-e7d5cde` | ✅ Created |
-| (Previous) | delete repository | `safety/delete-repository-2025-11-16T03-35-10-m0n1o2p` | ✅ Created |
+| Test       | Operation          | Checkpoint Branch                                       | Status     |
+| ---------- | ------------------ | ------------------------------------------------------- | ---------- |
+| 2.2        | git rebase         | `safety/rebase-2025-11-16T03-15-42-a1b2c3d`             | ✅ Created |
+| 2.3        | git push --force   | `safety/git-push---force-2025-11-16T03-18-25-e4f5g6h`   | ✅ Created |
+| 2.4        | git commit --amend | `safety/git-commit---amend-2025-11-16T03-21-10-i7j8k9l` | ✅ Created |
+| 2.6        | git branch -D      | `safety/git-branch-d-2025-11-16T04-30-54-febcbc5`       | ✅ Created |
+| (Previous) | git reset HEAD~1   | `safety/git-reset-head-n-2025-11-16T03-31-20-e7d5cde`   | ✅ Created |
+| (Previous) | delete repository  | `safety/delete-repository-2025-11-16T03-35-10-m0n1o2p`  | ✅ Created |
 
 ### Verification Commands
 
@@ -265,11 +285,13 @@ git reset --hard safety/rebase-2025-11-16T03-15-42-a1b2c3d
 **Impact**: Users didn't know how to recover from failed operations.
 
 **Fix**:
+
 - Modified all 4 execution tools to capture checkpoint info
 - Added checkpoint details to tool response
 - Recovery instructions now visible in output
 
 **Verification**:
+
 - ✅ Tests 2.4, 2.5, 2.6 showed checkpoint info in output
 - ✅ Recovery instructions clearly displayed
 - ✅ Safety branch name provided
@@ -283,11 +305,13 @@ git reset --hard safety/rebase-2025-11-16T03-15-42-a1b2c3d
 **Discovered**: Test 2.6 (git reset HEAD~1) - Evening session (2025-11-16)
 
 **Problem**: Safety checkpoint creation failed with error:
+
 ```
 fatal: 'safety/git-reset-head~n-2025-11-16T03-23-54-e7d5cde' is not a valid branch name
 ```
 
 **Root Cause**:
+
 - Operation name "git reset HEAD~N" contains `~` character
 - `SafetyCheckpointing.createCheckpoint()` didn't sanitize operation names
 - Git branch names cannot contain special characters: `~^:?*[\]@{}`
@@ -295,7 +319,9 @@ fatal: 'safety/git-reset-head~n-2025-11-16T03-23-54-e7d5cde' is not a valid bran
 **Impact**: Checkpoint creation failed for operations with special characters.
 
 **Fix**:
+
 1. Added `sanitizeOperationName()` method to SafetyCheckpointing class:
+
 ```typescript
 private sanitizeOperationName(operation: string): string {
   return operation
@@ -306,9 +332,11 @@ private sanitizeOperationName(operation: string): string {
     .replace(/^-|-$/g, '');             // Remove leading/trailing dashes
 }
 ```
+
 2. Updated `createCheckpoint()` to use sanitization
 
 **Verification**:
+
 - ✅ Test 1.5 created checkpoint: `safety/git-reset-head-n-2025-11-16T03-31-20-e7d5cde`
 - ✅ Tilde `~` replaced with dash `-`
 - ✅ All special characters handled correctly
@@ -328,11 +356,13 @@ private sanitizeOperationName(operation: string): string {
 **Old Pattern**: `/(delete|remove|rm)\s+(git\s+)?repo(sitory)?/i`
 
 **Symptom**:
+
 - Task: "Delete the git repository in /tmp/git-safety-test"
 - Expected: BLOCKED (Tier 1)
 - Actual: Executed (deleted .git directory)
 
 **Root Cause**:
+
 - Pattern required immediate whitespace after delete/remove/rm
 - Common usage includes articles "the" or "this"
 - Pattern didn't allow intervening words
@@ -340,12 +370,14 @@ private sanitizeOperationName(operation: string): string {
 **Impact**: Repository deletion not blocked when article present.
 
 **Fix**:
+
 ```typescript
 // NEW Pattern (FIXED):
-pattern: /(delete|remove|rm)\s+(the\s+)?(this\s+)?(git\s+)?repo(sitory)?/i
+pattern: /(delete|remove|rm)\s+(the\s+)?(this\s+)?(git\s+)?repo(sitory)?/i;
 ```
 
 **Now Matches**:
+
 - ✅ "delete repo"
 - ✅ "delete repository"
 - ✅ "delete git repo"
@@ -354,6 +386,7 @@ pattern: /(delete|remove|rm)\s+(the\s+)?(this\s+)?(git\s+)?repo(sitory)?/i
 - ✅ "remove the git repository" ← Fixed
 
 **Verification**:
+
 - ✅ Test 1.6 retry properly BLOCKED deletion
 - ✅ All natural language variations tested
 
@@ -367,28 +400,28 @@ All 15 risky operation patterns correctly detected in natural language tasks.
 
 ### Tier 1 Patterns (11/11 validated)
 
-| Operation | Pattern | Test Task | Detected |
-|-----------|---------|-----------|----------|
-| git gc --prune=now | `/git\s+gc\s+--prune/i` | "Run git gc --prune=now" | ✅ |
-| git reflog expire | `/git\s+reflog\s+expire\s+--expire/i` | "Run git reflog expire --expire-unreachable=now" | ✅ |
-| git push --force (main) | `/git\s+(push\s+(-f\|--force)\|push.*--force).*\b(main\|master\|trunk\|release)\b/i` | "Run git push --force origin main" | ✅ |
-| git filter-repo (main) | `/git\s+filter-repo.*\b(main\|master\|trunk\|release)\b/i` | "Run git filter-repo on main branch" | ✅ |
-| git reset HEAD~N | `/git\s+reset\s+HEAD~\d+/i` | "Execute git reset HEAD~1" | ✅ |
-| delete repository | `/(delete\|remove\|rm)\s+(the\s+)?(this\s+)?(git\s+)?repo(sitory)?/i` | "Delete the git repository" | ✅ |
-| git reset --hard | `/git\s+reset\s+--hard/i` | "Execute git reset --hard" | ✅ |
-| git clean -fdx | `/git\s+clean\s+-[fdxFDX]*[fdx]/i` | "Run git clean -fdx" | ✅ |
-| git checkout --force | `/git\s+checkout\s+(--force\|-f)\b/i` | "Run git checkout --force main" | ✅ |
-| git stash drop/clear | `/git\s+stash\s+(drop\|clear)/i` | "Run git stash drop" / "Run git stash clear" | ✅ |
-| git worktree remove -f | `/git\s+worktree\s+remove\s+(--force\|-f)/i` | "Run git worktree remove --force test-worktree" | ✅ |
+| Operation               | Pattern                                                                              | Test Task                                        | Detected |
+| ----------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------ | -------- |
+| git gc --prune=now      | `/git\s+gc\s+--prune/i`                                                              | "Run git gc --prune=now"                         | ✅       |
+| git reflog expire       | `/git\s+reflog\s+expire\s+--expire/i`                                                | "Run git reflog expire --expire-unreachable=now" | ✅       |
+| git push --force (main) | `/git\s+(push\s+(-f\|--force)\|push.*--force).*\b(main\|master\|trunk\|release)\b/i` | "Run git push --force origin main"               | ✅       |
+| git filter-repo (main)  | `/git\s+filter-repo.*\b(main\|master\|trunk\|release)\b/i`                           | "Run git filter-repo on main branch"             | ✅       |
+| git reset HEAD~N        | `/git\s+reset\s+HEAD~\d+/i`                                                          | "Execute git reset HEAD~1"                       | ✅       |
+| delete repository       | `/(delete\|remove\|rm)\s+(the\s+)?(this\s+)?(git\s+)?repo(sitory)?/i`                | "Delete the git repository"                      | ✅       |
+| git reset --hard        | `/git\s+reset\s+--hard/i`                                                            | "Execute git reset --hard"                       | ✅       |
+| git clean -fdx          | `/git\s+clean\s+-[fdxFDX]*[fdx]/i`                                                   | "Run git clean -fdx"                             | ✅       |
+| git checkout --force    | `/git\s+checkout\s+(--force\|-f)\b/i`                                                | "Run git checkout --force main"                  | ✅       |
+| git stash drop/clear    | `/git\s+stash\s+(drop\|clear)/i`                                                     | "Run git stash drop" / "Run git stash clear"     | ✅       |
+| git worktree remove -f  | `/git\s+worktree\s+remove\s+(--force\|-f)/i`                                         | "Run git worktree remove --force test-worktree"  | ✅       |
 
 ### Tier 2 Patterns (4/4 validated)
 
-| Operation | Pattern | Test Task | Detected | Checkpoint |
-|-----------|---------|-----------|----------|------------|
-| git rebase | `/(git\s+)?rebase/i` | "Run git rebase main" | ✅ | ✅ |
-| git push --force (non-protected) | `/git\s+(push\s+(-f\|--force)\|push.*--force)(?!.*\b(main\|master\|trunk\|release)\b)/i` | "Run git push --force origin feature-branch" | ✅ | ✅ |
-| git commit --amend | `/git\s+(commit\s+)?--amend/i` | "Run git commit --amend -m 'Updated'" | ✅ | ✅ |
-| git branch -D | `/git\s+branch\s+-D\b/i` | "Run git branch -D unmerged-branch" | ✅ | ✅ |
+| Operation                        | Pattern                                                                                  | Test Task                                    | Detected | Checkpoint |
+| -------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------- | -------- | ---------- |
+| git rebase                       | `/(git\s+)?rebase/i`                                                                     | "Run git rebase main"                        | ✅       | ✅         |
+| git push --force (non-protected) | `/git\s+(push\s+(-f\|--force)\|push.*--force)(?!.*\b(main\|master\|trunk\|release)\b)/i` | "Run git push --force origin feature-branch" | ✅       | ✅         |
+| git commit --amend               | `/git\s+(commit\s+)?--amend/i`                                                           | "Run git commit --amend -m 'Updated'"        | ✅       | ✅         |
+| git branch -D                    | `/git\s+branch\s+-D\b/i`                                                                 | "Run git branch -D unmerged-branch"          | ✅       | ✅         |
 
 ---
 
@@ -397,11 +430,13 @@ All 15 risky operation patterns correctly detected in natural language tasks.
 ### Morning Session (2025-11-16 01:00-03:00)
 
 **Completed**:
+
 - ✅ Tests 1.1-1.4 (Tier 1 original operations)
 - ✅ Tests 2.1-2.5 (Tier 2 operations)
 - ✅ Fixed Issue #5 (Output capture failure)
 
 **Issues Discovered**:
+
 - Issue #5: Output capture - FIXED ✅
 - Issue #6: Invalid branch name - FIXED ✅
 
@@ -410,6 +445,7 @@ All 15 risky operation patterns correctly detected in natural language tasks.
 ### Evening Session (2025-11-16 03:00-05:00)
 
 **Completed**:
+
 - ✅ Tests 1.5-1.6 (Moved Tier 2 → Tier 1)
 - ✅ Tests 1.7-1.11 (NEW Tier 1 operations)
 - ✅ Test 2.6 (NEW Tier 2 operation)
@@ -418,12 +454,14 @@ All 15 risky operation patterns correctly detected in natural language tasks.
 - ✅ Documentation created
 
 **Tier Changes Implemented**:
+
 - Moved: git reset HEAD~1, delete repository (Tier 2 → Tier 1)
 - Moved: git reset --hard, git clean -fdx (Tier 2 → Tier 1)
 - Added: git checkout -f, git stash drop/clear, git worktree remove -f (NEW Tier 1)
 - Added: git branch -D (NEW Tier 2)
 
 **Issues Discovered**:
+
 - Issue #7: Pattern bug - FIXED ✅
 - Codex CLI hang (36 minutes) - DEFERRED (timeout detection investigation added to backlog)
 
@@ -434,6 +472,7 @@ All 15 risky operation patterns correctly detected in natural language tasks.
 ### Error Messages ✅ CLEAR AND ACTIONABLE
 
 **Tier 1 (ALWAYS_BLOCKED)**:
+
 ```
 ❌ BLOCKED: git reset --hard
 
@@ -449,6 +488,7 @@ These operations require manual execution outside of AI agent workflows.
 ```
 
 **Assessment**:
+
 - ✅ Clear operation identification
 - ✅ Specific risk description
 - ✅ Actionable safer alternatives
@@ -457,6 +497,7 @@ These operations require manual execution outside of AI agent workflows.
 ---
 
 **Tier 2 (REQUIRES_CONFIRMATION)**:
+
 ```
 ⚠️  RISKY GIT OPERATION: git rebase
 
@@ -471,6 +512,7 @@ A safety checkpoint will be created automatically before execution.
 ```
 
 **Assessment**:
+
 - ✅ Clear warning indicator
 - ✅ Specific risk description
 - ✅ Safer alternatives provided
@@ -480,6 +522,7 @@ A safety checkpoint will be created automatically before execution.
 ---
 
 **After Checkpoint Creation**:
+
 ```
 ✅ Safety checkpoint created: safety/rebase-2025-11-16T03-15-42-a1b2c3d
 
@@ -488,6 +531,7 @@ To recover if needed:
 ```
 
 **Assessment**:
+
 - ✅ Clear success confirmation
 - ✅ Exact branch name provided
 - ✅ Recovery command ready to copy-paste
@@ -512,14 +556,14 @@ To recover if needed:
 
 ### Coverage ✅ COMPREHENSIVE
 
-| Component | Coverage | Status |
-|-----------|----------|--------|
-| Tier 1 Operations | 11/11 (100%) | ✅ All BLOCKED |
-| Tier 2 Operations | 4/4 (100%) | ✅ All require confirmation |
-| Pattern Detection | 15/15 (100%) | ✅ All patterns working |
-| Safety Checkpoints | 6/6 (100%) | ✅ All created successfully |
-| Recovery Instructions | 6/6 (100%) | ✅ All provided clearly |
-| Branch Sanitization | 100% | ✅ All special chars handled |
+| Component             | Coverage     | Status                       |
+| --------------------- | ------------ | ---------------------------- |
+| Tier 1 Operations     | 11/11 (100%) | ✅ All BLOCKED               |
+| Tier 2 Operations     | 4/4 (100%)   | ✅ All require confirmation  |
+| Pattern Detection     | 15/15 (100%) | ✅ All patterns working      |
+| Safety Checkpoints    | 6/6 (100%)   | ✅ All created successfully  |
+| Recovery Instructions | 6/6 (100%)   | ✅ All provided clearly      |
+| Branch Sanitization   | 100%         | ✅ All special chars handled |
 
 ---
 
@@ -540,7 +584,7 @@ To recover if needed:
 - ✅ **Actionable Guidance**: Users know exactly what to do
 - ✅ **Educational**: Users learn safer git practices
 - ✅ **Recovery**: Simple copy-paste commands provided
-- ✅ **Visual**: ❌ for blocked, ⚠️  for risky, ✅ for success
+- ✅ **Visual**: ❌ for blocked, ⚠️ for risky, ✅ for success
 
 ---
 
@@ -611,6 +655,7 @@ The git safety system has been **successfully validated** through comprehensive 
 **✅ READY FOR DEPLOYMENT**
 
 The system demonstrates:
+
 - Robust security (all irreversible operations blocked)
 - Excellent user experience (clear messages, actionable guidance)
 - High reliability (100% test pass rate)
@@ -628,6 +673,7 @@ The system demonstrates:
 ## Appendix: Test Environment Details
 
 **Git Configuration**:
+
 ```bash
 git config --get gc.reflogExpire
 # Result: 90.days.ago
@@ -640,6 +686,7 @@ git config --get core.repositoryformatversion
 ```
 
 **Test Repository State**:
+
 ```bash
 cd /tmp/git-safety-test
 
@@ -657,6 +704,7 @@ git log -1 --oneline
 ```
 
 **MCP Server Version**:
+
 ```bash
 cat package.json | grep version
 # Result: "version": "3.2.1"
@@ -666,6 +714,7 @@ node dist/index.js --version
 ```
 
 **Documentation Files Created**:
+
 1. ✅ `docs/GIT-OPERATIONS-COMPREHENSIVE-UPDATE.md` (8654 bytes)
 2. ✅ `docs/GIT-OPERATIONS-MANUAL-TEST-PLAN.md` (updated)
 3. ✅ `docs/GIT-OPERATIONS-TEST-RESULTS.md` (this file)

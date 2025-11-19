@@ -26,73 +26,209 @@ export interface IntentParseResult {
  */
 const PRIMITIVE_PATTERNS = {
   _codex_local_run: {
-    keywords: ['analyze', 'check', 'review', 'audit', 'scan', 'inspect', 'run', 'test', 'run test'],
-    contextKeywords: ['bug', 'error', 'issue', 'quality', 'security', 'performance', 'local', 'test suite', 'suite'],
+    keywords: [
+      "analyze",
+      "check",
+      "review",
+      "audit",
+      "scan",
+      "inspect",
+      "run",
+      "test",
+      "run test",
+    ],
+    contextKeywords: [
+      "bug",
+      "error",
+      "issue",
+      "quality",
+      "security",
+      "performance",
+      "local",
+      "test suite",
+      "suite",
+    ],
     confidence: 80,
   },
   _codex_local_status: {
-    keywords: ['status', 'running', 'queue', 'active', 'current', "what's running", 'show tasks'],
-    contextKeywords: ['local', 'now', 'currently', 'tasks', 'active tasks'],
+    keywords: [
+      "status",
+      "running",
+      "queue",
+      "active",
+      "current",
+      "what's running",
+      "show tasks",
+    ],
+    contextKeywords: ["local", "now", "currently", "tasks", "active tasks"],
     confidence: 85,
   },
   _codex_local_exec: {
-    keywords: ['start', 'begin', 'execute', 'launch', 'initiate'],
-    contextKeywords: ['progress', 'track', 'follow', 'thread', 'conversation', 'audit', 'comprehensive', 'security'],
+    keywords: ["start", "begin", "execute", "launch", "initiate"],
+    contextKeywords: [
+      "progress",
+      "track",
+      "follow",
+      "thread",
+      "conversation",
+      "audit",
+      "comprehensive",
+      "security",
+    ],
     confidence: 75,
   },
   _codex_local_resume: {
-    keywords: ['continue', 'resume', 'proceed', 'keep going', 'follow up', 'keep', 'keep working'],
-    contextKeywords: ['previous', 'last', 'earlier', 'thread', 'working', 'refactoring', 'that'],
+    keywords: [
+      "continue",
+      "resume",
+      "proceed",
+      "keep going",
+      "follow up",
+      "keep",
+      "keep working",
+    ],
+    contextKeywords: [
+      "previous",
+      "last",
+      "earlier",
+      "thread",
+      "working",
+      "refactoring",
+      "that",
+    ],
     confidence: 90,
   },
   _codex_local_results: {
-    keywords: ['results', 'output', 'get results', 'show results', 'completed', 'what completed', 'show what'],
-    contextKeywords: ['local', 'task', 'completed', 'finished', 'done'],
+    keywords: [
+      "results",
+      "output",
+      "get results",
+      "show results",
+      "completed",
+      "what completed",
+      "show what",
+    ],
+    contextKeywords: ["local", "task", "completed", "finished", "done"],
     confidence: 85,
   },
   _codex_local_wait: {
-    keywords: ['wait', 'poll', 'monitor', 'watch', 'track'],
-    contextKeywords: ['local', 'until', 'complete', 'finish'],
+    keywords: ["wait", "poll", "monitor", "watch", "track"],
+    contextKeywords: ["local", "until", "complete", "finish"],
     confidence: 90,
   },
   _codex_local_cancel: {
-    keywords: ['cancel', 'stop', 'abort', 'kill', 'terminate'],
-    contextKeywords: ['local', 'running', 'task'],
+    keywords: ["cancel", "stop", "abort", "kill", "terminate"],
+    contextKeywords: ["local", "running", "task"],
     confidence: 95,
   },
   _codex_cloud_submit: {
-    keywords: ['submit', 'run', 'execute', 'background', 'pr', 'pull request', 'create pr', 'run in background', 'run background'],
-    contextKeywords: ['cloud', 'test suite', 'refactor', 'github', 'remote', 'tests', 'passing', 'if'],
+    keywords: [
+      "submit",
+      "run",
+      "execute",
+      "background",
+      "pr",
+      "pull request",
+      "create pr",
+      "run in background",
+      "run background",
+    ],
+    contextKeywords: [
+      "cloud",
+      "test suite",
+      "refactor",
+      "github",
+      "remote",
+      "tests",
+      "passing",
+      "if",
+    ],
     confidence: 80,
   },
   _codex_cloud_status: {
-    keywords: ['status', 'running', 'queue', 'active', 'current', "what's running", 'show tasks', 'show', 'cloud tasks'],
-    contextKeywords: ['cloud', 'remote', 'pending', 'background', 'tasks'],
+    keywords: [
+      "status",
+      "running",
+      "queue",
+      "active",
+      "current",
+      "what's running",
+      "show tasks",
+      "show",
+      "cloud tasks",
+    ],
+    contextKeywords: ["cloud", "remote", "pending", "background", "tasks"],
     confidence: 85,
   },
   _codex_cloud_results: {
-    keywords: ['results', 'output', 'get results', 'show results', 'show pr', 'show me', 'created', 'was created', 'pr that'],
-    contextKeywords: ['cloud', 'pr', 'pull request', 'completed', 'finished', 'remote', 'that', 'the'],
+    keywords: [
+      "results",
+      "output",
+      "get results",
+      "show results",
+      "show pr",
+      "show me",
+      "created",
+      "was created",
+      "pr that",
+    ],
+    contextKeywords: [
+      "cloud",
+      "pr",
+      "pull request",
+      "completed",
+      "finished",
+      "remote",
+      "that",
+      "the",
+    ],
     confidence: 85,
   },
   _codex_cloud_wait: {
-    keywords: ['wait', 'poll', 'monitor', 'watch', 'track'],
-    contextKeywords: ['cloud', 'remote', 'until', 'complete', 'finish', 'pr', 'background'],
+    keywords: ["wait", "poll", "monitor", "watch", "track"],
+    contextKeywords: [
+      "cloud",
+      "remote",
+      "until",
+      "complete",
+      "finish",
+      "pr",
+      "background",
+    ],
     confidence: 90,
   },
   _codex_cloud_cancel: {
-    keywords: ['cancel', 'stop', 'abort', 'kill', 'terminate'],
-    contextKeywords: ['cloud', 'remote', 'running', 'task', 'background'],
+    keywords: ["cancel", "stop", "abort", "kill", "terminate"],
+    contextKeywords: ["cloud", "remote", "running", "task", "background"],
     confidence: 95,
   },
   _codex_cloud_list_environments: {
-    keywords: ['list environments', 'show environments', 'environments', 'envs'],
-    contextKeywords: ['cloud', 'available', 'configured'],
+    keywords: [
+      "list environments",
+      "show environments",
+      "environments",
+      "envs",
+    ],
+    contextKeywords: ["cloud", "available", "configured"],
     confidence: 90,
   },
   _codex_cloud_github_setup: {
-    keywords: ['setup github', 'set up github', 'github integration', 'configure github', 'github guide', 'github setup'],
-    contextKeywords: ['github', 'setup', 'integration', 'token', 'repo', 'repository'],
+    keywords: [
+      "setup github",
+      "set up github",
+      "github integration",
+      "configure github",
+      "github guide",
+      "github setup",
+    ],
+    contextKeywords: [
+      "github",
+      "setup",
+      "integration",
+      "token",
+      "repo",
+      "repository",
+    ],
     confidence: 95,
   },
 };
@@ -111,7 +247,7 @@ export class IntentParser {
         intent: null,
         alternatives: [],
         requiresDisambiguation: false,
-        error: 'Empty input',
+        error: "Empty input",
       };
     }
 
@@ -128,7 +264,11 @@ export class IntentParser {
           primitive,
           confidence: score,
           extractedParams: this.extractParameters(normalizedInput, primitive),
-          reasoning: this.generateReasoning(normalizedInput, primitive, pattern),
+          reasoning: this.generateReasoning(
+            normalizedInput,
+            primitive,
+            pattern,
+          ),
         });
       }
     }
@@ -147,7 +287,7 @@ export class IntentParser {
       topScore > 0 &&
       secondScore > 0 &&
       topScore < 70 &&
-      (topScore - secondScore) < 20;
+      topScore - secondScore < 20;
 
     // Minimum confidence threshold
     const MIN_CONFIDENCE = 30;
@@ -157,14 +297,18 @@ export class IntentParser {
       intent,
       alternatives: scores.slice(1, 4), // Top 3 alternatives
       requiresDisambiguation,
-      error: intent ? undefined : 'No confident match found',
+      error: intent ? undefined : "No confident match found",
     };
   }
 
   /**
    * Score how well a primitive matches the input
    */
-  private scorePrimitive(input: string, pattern: typeof PRIMITIVE_PATTERNS[keyof typeof PRIMITIVE_PATTERNS], primitiveN: string): number {
+  private scorePrimitive(
+    input: string,
+    pattern: (typeof PRIMITIVE_PATTERNS)[keyof typeof PRIMITIVE_PATTERNS],
+    primitiveN: string,
+  ): number {
     let score = 0;
 
     // Check primary keywords
@@ -183,13 +327,13 @@ export class IntentParser {
     }
 
     // Strong disambiguation hints (boost score significantly)
-    const isLocalPrimitive = primitiveN.includes('_local_');
-    const isCloudPrimitive = primitiveN.includes('_cloud_');
+    const isLocalPrimitive = primitiveN.includes("_local_");
+    const isCloudPrimitive = primitiveN.includes("_cloud_");
 
     // Task ID format hints (strong signal for disambiguation)
     // Note: input is already normalized to lowercase
-    const hasLocalTaskId = input.includes('t-local-');
-    const hasCloudTaskId = input.includes('t-cloud-');
+    const hasLocalTaskId = input.includes("t-local-");
+    const hasCloudTaskId = input.includes("t-cloud-");
 
     if (hasLocalTaskId) {
       if (isLocalPrimitive) score += 40; // Strong boost for local primitive
@@ -201,8 +345,14 @@ export class IntentParser {
     }
 
     // Explicit cloud/local context hints
-    const hasExplicitCloud = input.includes('in the cloud') || input.includes('in cloud') || input.includes('on cloud');
-    const hasExplicitLocal = input.includes('locally') || input.includes('on local') || input.includes('in local');
+    const hasExplicitCloud =
+      input.includes("in the cloud") ||
+      input.includes("in cloud") ||
+      input.includes("on cloud");
+    const hasExplicitLocal =
+      input.includes("locally") ||
+      input.includes("on local") ||
+      input.includes("in local");
 
     if (hasExplicitCloud) {
       if (isCloudPrimitive) score += 25; // Boost cloud primitives when "in the cloud" mentioned
@@ -224,7 +374,10 @@ export class IntentParser {
   /**
    * Extract parameters from natural language
    */
-  private extractParameters(input: string, primitive: string): Record<string, any> {
+  private extractParameters(
+    input: string,
+    primitive: string,
+  ): Record<string, any> {
     const params: Record<string, any> = {};
 
     // Extract task ID if present (T-local-xxx or T-cloud-xxx)
@@ -252,17 +405,23 @@ export class IntentParser {
     }
 
     // For execution primitives, extract task description
-    if (primitive.includes('run') || primitive.includes('exec') || primitive.includes('submit')) {
+    if (
+      primitive.includes("run") ||
+      primitive.includes("exec") ||
+      primitive.includes("submit")
+    ) {
       // Everything except extracted IDs is the task
       let task = input;
 
       // Remove extracted IDs from task description
       if (params.task_id) {
-        task = task.replace(params.task_id, '').trim();
+        task = task.replace(params.task_id, "").trim();
       }
 
       // Clean up common prefixes
-      task = task.replace(/^(please |can you |would you |could you )/i, '').trim();
+      task = task
+        .replace(/^(please |can you |would you |could you )/i, "")
+        .trim();
 
       if (task.length > 0) {
         params.task = task;
@@ -275,18 +434,24 @@ export class IntentParser {
   /**
    * Generate reasoning for why a primitive was selected
    */
-  private generateReasoning(input: string, primitive: string, pattern: typeof PRIMITIVE_PATTERNS[keyof typeof PRIMITIVE_PATTERNS]): string {
-    const matchedKeywords = pattern.keywords.filter(kw => input.includes(kw));
-    const matchedContext = pattern.contextKeywords.filter(kw => input.includes(kw));
+  private generateReasoning(
+    input: string,
+    primitive: string,
+    pattern: (typeof PRIMITIVE_PATTERNS)[keyof typeof PRIMITIVE_PATTERNS],
+  ): string {
+    const matchedKeywords = pattern.keywords.filter((kw) => input.includes(kw));
+    const matchedContext = pattern.contextKeywords.filter((kw) =>
+      input.includes(kw),
+    );
 
     let reasoning = `Matched "${primitive}" because input contains: `;
 
     if (matchedKeywords.length > 0) {
-      reasoning += `keywords [${matchedKeywords.join(', ')}]`;
+      reasoning += `keywords [${matchedKeywords.join(", ")}]`;
     }
 
     if (matchedContext.length > 0) {
-      reasoning += ` and context [${matchedContext.join(', ')}]`;
+      reasoning += ` and context [${matchedContext.join(", ")}]`;
     }
 
     return reasoning;
@@ -297,29 +462,31 @@ export class IntentParser {
    */
   suggestClarification(result: IntentParseResult): string {
     if (!result.requiresDisambiguation) {
-      return '';
+      return "";
     }
 
     const top = result.intent;
     const alt = result.alternatives[0];
 
     if (!top || !alt) {
-      return '';
+      return "";
     }
 
     // Check if it's local vs cloud ambiguity
-    if (top.primitive.includes('local') && alt.primitive.includes('cloud')) {
-      return 'Would you like to run this locally (faster, on your machine) or in the cloud (background, for long tasks)?';
+    if (top.primitive.includes("local") && alt.primitive.includes("cloud")) {
+      return "Would you like to run this locally (faster, on your machine) or in the cloud (background, for long tasks)?";
     }
 
-    if (top.primitive.includes('cloud') && alt.primitive.includes('local')) {
-      return 'Would you like to run this locally (faster, on your machine) or in the cloud (background, for long tasks)?';
+    if (top.primitive.includes("cloud") && alt.primitive.includes("local")) {
+      return "Would you like to run this locally (faster, on your machine) or in the cloud (background, for long tasks)?";
     }
 
     // Check if it's status vs results ambiguity
-    if ((top.primitive.includes('status') && alt.primitive.includes('results')) ||
-        (top.primitive.includes('results') && alt.primitive.includes('status'))) {
-      return 'Would you like to check the status (is it still running?) or get the results (what did it produce)?';
+    if (
+      (top.primitive.includes("status") && alt.primitive.includes("results")) ||
+      (top.primitive.includes("results") && alt.primitive.includes("status"))
+    ) {
+      return "Would you like to check the status (is it still running?) or get the results (what did it produce)?";
     }
 
     // Generic disambiguation

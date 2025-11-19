@@ -9,6 +9,7 @@
 ## Summary
 
 npm link setup is **fully functional** across all tests:
+
 - ✅ All 14 primitives accessible and working
 - ✅ Async functionality verified
 - ✅ Parameter bug fix verified (`_codex_local_results` now uses `task_id`)
@@ -21,6 +22,7 @@ npm link setup is **fully functional** across all tests:
 ### 1. Primitives Testing ✅
 
 **Tested primitives**:
+
 1. ✅ `_codex_cloud_list_environments` - Listed 2 test environments
 2. ✅ `_codex_local_status` - Showed task registry with 11 completed tasks
 3. ✅ `_codex_local_run` - Async execution started successfully
@@ -33,6 +35,7 @@ npm link setup is **fully functional** across all tests:
 ### 2. Async Workflow ✅
 
 **Test flow**:
+
 ```
 1. _codex_local_run(task, async=true)
    → Task ID: T-local-mhyil90e3rsv6g ✅
@@ -53,6 +56,7 @@ npm link setup is **fully functional** across all tests:
 **Fix**: Changed all occurrences to `task_id` for consistency
 
 **Verification**:
+
 ```typescript
 _codex_local_results(task_id: "T-local-mhyil90e3rsv6g")
 // ✅ Success! No more "Task ID: undefined" errors
@@ -65,7 +69,9 @@ _codex_local_results(task_id: "T-local-mhyil90e3rsv6g")
 **Test**: Verify changes propagate automatically via npm link
 
 **Steps**:
+
 1. Edit `src/index.ts`:
+
    ```typescript
    // BEFORE
    console.error(`[CodexControl] Server started successfully`);
@@ -75,6 +81,7 @@ _codex_local_results(task_id: "T-local-mhyil90e3rsv6g")
    ```
 
 2. Build:
+
    ```bash
    npm run build
    ```
@@ -106,6 +113,7 @@ Command: codex-control-mcp
 ### MCP Configs Updated ✅
 
 **Files updated**:
+
 - ✅ `~/claude-code-tools/.mcp.json` (root directory)
 - ✅ `~/claude-code-tools/lba/apps/mcp-servers/codex-control/.mcp.full.json`
 - ✅ `~/claude-code-tools/lba/apps/mcp-servers/codex-control/.mcp.lean.json`
@@ -116,6 +124,7 @@ Command: codex-control-mcp
 - ✅ `~/claude-code-tools/mcp/profiles/full.json` (template)
 
 **All use**:
+
 ```json
 {
   "codex-control": {
@@ -154,12 +163,12 @@ npm run build
 
 ### Before vs After
 
-| Step | Before (manual deployment) | After (npm link) |
-|------|---------------------------|------------------|
-| 1 | Edit `src/` | Edit `src/` |
-| 2 | `npm run build` | `npm run build` |
-| 3 | `cp -r dist/* ~/mcp/codex-control/dist/` | **Skip!** (automatic) |
-| 4 | Restart Claude Code | Restart Claude Code |
+| Step | Before (manual deployment)               | After (npm link)      |
+| ---- | ---------------------------------------- | --------------------- |
+| 1    | Edit `src/`                              | Edit `src/`           |
+| 2    | `npm run build`                          | `npm run build`       |
+| 3    | `cp -r dist/* ~/mcp/codex-control/dist/` | **Skip!** (automatic) |
+| 4    | Restart Claude Code                      | Restart Claude Code   |
 
 **Result**: 3 steps → 2 steps, zero manual copying!
 
@@ -170,12 +179,14 @@ npm run build
 ### Version Update ✅
 
 **Before**:
+
 ```
 [CodexControl] Version: 2.1.1
 [CodexControl] Tools: 15 total (1 unified 'codex' + 14 hidden primitives with _ prefix)
 ```
 
 **After**:
+
 ```
 [CodexControl] Version: 3.0.1  ✅
 [CodexControl] Tools: 14 hidden primitives (all with _ prefix)  ✅
@@ -184,6 +195,7 @@ npm run build
 ### Parameter Consistency ✅
 
 All 14 primitives now use **consistent snake_case parameters**:
+
 - ✅ `task_id` (not `taskId`)
 - ✅ `timeout_sec` (not `timeoutSec`)
 - ✅ `poll_interval_sec` (not `pollIntervalSec`)
@@ -199,16 +211,19 @@ All 14 primitives now use **consistent snake_case parameters**:
 ## Benefits Realized
 
 ### Development
+
 - ✅ **Instant propagation**: Build once, all projects updated
 - ✅ **No manual copying**: Forget about deployment scripts
 - ✅ **Single source of truth**: No version drift possible
 
 ### Portability
+
 - ✅ **Clean configs**: No hard-coded absolute paths
 - ✅ **Machine-independent**: Command works anywhere (after npm link)
 - ✅ **Team-ready**: Easy onboarding (`npm link` then done)
 
 ### Maintenance
+
 - ✅ **Standard tooling**: Uses npm conventions
 - ✅ **Prepares for publish**: Ready for `npm publish` when needed
 - ✅ **Version management**: Standard package versioning
@@ -263,6 +278,7 @@ npm publish
 ## Documentation
 
 **Created files**:
+
 - `NPM-LINK-SETUP.md` - Complete setup guide
 - `NPM-LINK-ROLLOUT-SUMMARY.md` - Implementation details
 - `NPM-LINK-PHASE-1-COMPLETE.md` - Phase 1 completion
@@ -270,6 +286,7 @@ npm publish
 - `setup-npm-link.sh` - Automated setup script
 
 **Updated files**:
+
 - `CLAUDE.md` - Production Deployment section
 - `package.json` - Version 3.0.1 + bin entry
 - `src/index.ts` - Version 3.0.1 + startup message

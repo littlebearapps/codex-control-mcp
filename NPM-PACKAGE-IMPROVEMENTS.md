@@ -16,21 +16,25 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ### 1. Scoped Package Name ✅
 
 **Before**:
+
 ```json
 "name": "codex-control-mcp"
 ```
 
 **After**:
+
 ```json
 "name": "@littlebearapps/codex-control-mcp"
 ```
 
 **Benefits**:
+
 - Professional namespacing under @littlebearapps organization
 - Avoids name conflicts on npm registry
 - Clear ownership and branding
 
 **Impact**:
+
 - Command name stays the same: `codex-control-mcp`
 - MCP configs don't need to change
 - npm link relinked with scoped name
@@ -40,6 +44,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ### 2. Files Whitelist ✅
 
 **Added**:
+
 ```json
 "files": [
   "dist/",
@@ -51,6 +56,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ```
 
 **Benefits**:
+
 - Only ships necessary files (no test files, source code, etc.)
 - Smaller package size
 - Prevents accidentally publishing development files
@@ -62,11 +68,13 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ### 3. prepublishOnly Script ✅
 
 **Added**:
+
 ```json
 "prepublishOnly": "npm run build"
 ```
 
 **Benefits**:
+
 - Safety check before publishing
 - Ensures package is built before publish
 - Prevents publishing broken/stale builds
@@ -78,6 +86,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ### 4. Enhanced Keywords ✅
 
 **Before**:
+
 ```json
 "keywords": [
   "mcp",
@@ -88,6 +97,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ```
 
 **After**:
+
 ```json
 "keywords": [
   "mcp",
@@ -106,6 +116,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ```
 
 **Benefits**:
+
 - Better npm search discoverability
 - More descriptive of functionality
 - Includes common search terms
@@ -115,6 +126,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ### 5. Repository Metadata ✅
 
 **Added**:
+
 ```json
 "repository": {
   "type": "git",
@@ -127,6 +139,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ```
 
 **Benefits**:
+
 - npm package page has working links
 - Issues tracked on GitHub
 - Better integration with GitHub
@@ -136,16 +149,19 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 ### 6. Author with Email ✅
 
 **Before**:
+
 ```json
 "author": "Nathan Schram"
 ```
 
 **After**:
+
 ```json
 "author": "Nathan Schram <nathan@littlebearapps.com>"
 ```
 
 **Benefits**:
+
 - Standard npm author format
 - Contact information available
 
@@ -156,6 +172,7 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 **Created**: MIT License file
 
 **Benefits**:
+
 - Legal clarity for users
 - Matches "license": "MIT" in package.json
 - Standard open source license
@@ -167,13 +184,15 @@ Enhanced codex-control-mcp package.json with production-ready npm publishing fea
 **Created**: Comprehensive exclusion list
 
 **Excludes**:
+
 - Source files (src/, test/, tests/)
-- Development docs (NPM-LINK-*.md, TEST-*.md, etc.)
-- Build artifacts (.tsbuildinfo, *.log)
+- Development docs (NPM-LINK-_.md, TEST-_.md, etc.)
+- Build artifacts (.tsbuildinfo, \*.log)
 - IDE files (.vscode/, .idea/)
 - Git files (.git/, .gitignore)
 
 **Benefits**:
+
 - Additional layer of protection beyond files whitelist
 - Prevents accidentally publishing development files
 
@@ -199,6 +218,7 @@ codex-control-mcp
 ```
 
 **Symlink Chain**:
+
 ```
 /opt/homebrew/bin/codex-control-mcp
   → ../lib/node_modules/@littlebearapps/codex-control-mcp/dist/index.js
@@ -214,6 +234,7 @@ npm publish --dry-run
 ```
 
 **Results**:
+
 - ✅ prepublishOnly runs automatically
 - ✅ Only intended files included (dist/, quickrefs/, README.md, CLAUDE.md, LICENSE)
 - ✅ Package size reasonable (~250KB tarball)
@@ -223,16 +244,16 @@ npm publish --dry-run
 
 ## Comparison with git-workflow-manager
 
-| Feature | git-workflow-manager | codex-control (before) | codex-control (after) |
-|---------|---------------------|------------------------|----------------------|
-| **Scoped name** | ✅ @littlebearapps/... | ❌ Plain name | ✅ @littlebearapps/... |
-| **files array** | ✅ Yes | ❌ No | ✅ Yes |
-| **prepublishOnly** | ✅ build + test | ❌ No | ✅ build only |
-| **Keywords** | ✅ 10 keywords | ❌ 4 keywords | ✅ 12 keywords |
-| **Repository URLs** | ✅ Yes | ❌ No | ✅ Yes |
-| **Author email** | ✅ Yes | ❌ No | ✅ Yes |
-| **LICENSE file** | ✅ Yes | ❌ No | ✅ Yes |
-| **postinstall** | ✅ Yes | ❌ No | ❌ Not yet |
+| Feature             | git-workflow-manager   | codex-control (before) | codex-control (after)  |
+| ------------------- | ---------------------- | ---------------------- | ---------------------- |
+| **Scoped name**     | ✅ @littlebearapps/... | ❌ Plain name          | ✅ @littlebearapps/... |
+| **files array**     | ✅ Yes                 | ❌ No                  | ✅ Yes                 |
+| **prepublishOnly**  | ✅ build + test        | ❌ No                  | ✅ build only          |
+| **Keywords**        | ✅ 10 keywords         | ❌ 4 keywords          | ✅ 12 keywords         |
+| **Repository URLs** | ✅ Yes                 | ❌ No                  | ✅ Yes                 |
+| **Author email**    | ✅ Yes                 | ❌ No                  | ✅ Yes                 |
+| **LICENSE file**    | ✅ Yes                 | ❌ No                  | ✅ Yes                 |
+| **postinstall**     | ✅ Yes                 | ❌ No                  | ❌ Not yet             |
 
 **Status**: 7/8 features implemented (postinstall optional for now)
 
@@ -243,12 +264,14 @@ npm publish --dry-run
 ### Optional Enhancement: postinstall Script
 
 Similar to git-workflow-manager, we could add a postinstall script that:
+
 - Checks if Codex CLI is installed
 - Checks if user is authenticated
 - Shows quick start guide for MCP setup
 - Links to documentation
 
 **Example**:
+
 ```json
 "scripts": {
   "postinstall": "node dist/scripts/postinstall.js"
@@ -296,6 +319,7 @@ npm publish --access public
 ## Status: Production Ready
 
 **All improvements complete**. Package is now:
+
 - ✅ Following npm best practices
 - ✅ Ready for publishing (when desired)
 - ✅ Properly namespaced under @littlebearapps

@@ -9,12 +9,14 @@
 ## Changes Committed
 
 ### Files Changed: 83
+
 - **Additions**: 3,871 lines
 - **Deletions**: 349 lines
 
 ### Key Changes
 
 #### Source Files (src/)
+
 - ✅ Renamed CLI tools: `run.ts` → `cli_run.ts`, `plan.ts` → `cli_plan.ts`, etc.
 - ✅ Updated SDK tools: `local_exec.ts`, `local_resume.ts` with async support
 - ✅ Added task registry: `local_task_registry.ts`
@@ -22,12 +24,14 @@
 - ✅ Updated server version to 2.1.1 in `index.ts`
 
 #### Compiled Files (dist/)
+
 - ✅ All TypeScript compiled to JavaScript
 - ✅ New CLI tool files: `cli_run.js`, `cli_plan.js`, etc.
 - ✅ New task registry: `local_task_registry.js`
 - ✅ New status/results tools compiled
 
 #### Documentation
+
 - ✅ Updated `CLAUDE.md` with async details and new tool names
 - ✅ Updated `CHANGELOG.md` with v2.1.1 release notes
 - ✅ Updated `README.md` (from previous commits)
@@ -36,6 +40,7 @@
 - ✅ Added `ASYNC-ROLLOUT-COMPLETION.md` - implementation summary
 
 #### Package Files
+
 - ✅ Updated `package.json` version to 2.1.1
 - ✅ Updated description to mention async support
 
@@ -48,6 +53,7 @@
 **Remote**: `origin/main` (pushed successfully)
 
 **Commit Message**:
+
 ```
 feat: v2.1.1 - async/non-blocking execution for all tools
 
@@ -62,26 +68,31 @@ freezes waiting for Codex!
 ## What's New in v2.1.1
 
 ### 1. Async/Non-Blocking Execution 🔥
+
 - All tools return task IDs immediately
 - Claude Code stays responsive during execution
 - Background task processing
 
 ### 2. CLI Tools Renamed
+
 - `codex_run` → `codex_cli_run`
 - `codex_plan` → `codex_cli_plan`
 - `codex_apply` → `codex_cli_apply`
 - `codex_status` → `codex_cli_status`
 
 ### 3. SDK Tools Fixed
+
 - Fixed thread ID null bug
 - Now generates proper task IDs (`sdk-{timestamp}-{random}`)
 - Integrated with LocalTaskRegistry
 
 ### 4. New Status/Results Tools
+
 - `codex_local_status` - Check async task status
 - `codex_local_results` - Get completed task results
 
 ### 5. Tool Count Updated
+
 - Was: 13 tools
 - Now: 15 tools
 
@@ -94,13 +105,17 @@ The MCP server is already deployed to this project's dist/ directory.
 For other projects to use the new version:
 
 ### Option 1: Automatic (Recommended)
+
 **All projects will automatically pick up the new tool names** after restarting Claude Code, since:
+
 - MCP config points to this project's `dist/index.js`
 - Tools are discovered dynamically at startup
 - No configuration changes needed
 
 ### Option 2: Manual Update (If Using Local Copies)
+
 If any projects have copied the MCP server code locally, they need to:
+
 1. Pull latest from git
 2. Run `npm install`
 3. Run `npm run build`
@@ -111,6 +126,7 @@ If any projects have copied the MCP server code locally, they need to:
 ## Testing Status
 
 ### This Project (codex-control)
+
 - ✅ All 15 tools tested in production
 - ✅ Async behavior verified
 - ✅ No blocking observed
@@ -118,6 +134,7 @@ If any projects have copied the MCP server code locally, they need to:
 - ✅ Results retrieval working
 
 ### Other Projects
+
 - ⏳ Need Claude Code restart to discover new tool names
 - ⏳ Ready for testing in auditor-toolkit and other projects
 
@@ -128,10 +145,12 @@ If any projects have copied the MCP server code locally, they need to:
 ### For All Projects (18 + Root)
 
 **Step 1**: Restart Claude Code
+
 - This allows MCP server to pick up renamed tools
 - No configuration changes needed
 
 **Step 2**: Test Async Tools (Optional)
+
 ```
 # Try in any project
 Use codex_cli_run with async: true
@@ -140,6 +159,7 @@ Use codex_local_status to check progress
 ```
 
 **Step 3**: Verify No Blocking
+
 - Claude Code should remain responsive
 - Tasks run in background
 - Can check status anytime
@@ -151,6 +171,7 @@ Use codex_local_status to check progress
 ### Current Setup (All Projects)
 
 All 18 projects + root should have MCP config pointing to:
+
 ```json
 {
   "mcpServers": {
@@ -173,17 +194,20 @@ All 18 projects + root should have MCP config pointing to:
 If issues arise:
 
 ### Step 1: Revert Commit
+
 ```bash
 git revert f338e8e
 git push origin main
 ```
 
 ### Step 2: Rebuild
+
 ```bash
 npm run build
 ```
 
 ### Step 3: Restart Claude Code
+
 - Projects will revert to previous tool names
 
 ---

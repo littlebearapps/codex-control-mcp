@@ -24,12 +24,14 @@
 **Result**: ✅ SUCCESS
 
 **Output**:
+
 - Exit code: 0
 - Events captured: 18
 - Result: **3,047 total lines** in TypeScript files
 - Full JSONL event stream captured correctly
 
 **Key Success Indicators**:
+
 1. ✅ Task started immediately (returned task ID in < 1 second)
 2. ✅ Ran in background without blocking Claude Code
 3. ✅ Status monitoring worked (showed "running" status)
@@ -45,12 +47,14 @@
 **Result**: ✅ SUCCESS
 
 **Output**:
+
 - Exit code: 0
 - Events captured: 6
 - Result: "Hello! Today is Thursday, November 13, 2025."
 - Reasoning steps captured
 
 **Key Success Indicators**:
+
 1. ✅ Fast task completed quickly
 2. ✅ All events captured (reasoning + message)
 3. ✅ Token usage tracked (11,155 input, 468 output)
@@ -63,24 +67,30 @@
 ### Why Earlier Tests Failed
 
 **Test 1 (CLI Apply in /tmp)**: ❌ Failed
+
 ```
 Error: "Not inside a trusted directory and --skip-git-repo-check was not specified"
 Exit code: 1
 ```
+
 **Cause**: `/tmp` is not a git repository (expected Codex behavior)
 **Fix**: Test in git repositories OR use `--skip-git-repo-check` flag
 
 **Test 2 (CLI Run)**: ❌ Failed
+
 ```
 Error: "Reconnecting... 1/5"
 ```
+
 **Cause**: Transient network/API connectivity issues (not code issue)
 **Fix**: Retry when network is stable
 
 **Test 3 (SDK Exec)**: ❌ Failed
+
 ```
 Error: "Codex Exec exited with code 1: Reading prompt from stdin..."
 ```
+
 **Cause**: SDK-specific issue (requires further investigation)
 **Fix**: TBD (SDK uses @openai/codex-sdk which manages its own subprocess spawning)
 
@@ -91,17 +101,18 @@ Error: "Codex Exec exited with code 1: Reading prompt from stdin..."
 ### stdio Configuration (process_manager.ts:158)
 
 ```typescript
-const proc = spawn('codex', args, {
+const proc = spawn("codex", args, {
   cwd: workingDir || process.cwd(),
   env: {
     ...process.env,
     // Inherit CODEX_API_KEY if set, otherwise use ChatGPT Pro
   },
-  stdio: ['ignore', 'pipe', 'pipe'],  // ✅ CORRECT
+  stdio: ["ignore", "pipe", "pipe"], // ✅ CORRECT
 });
 ```
 
 **Analysis**:
+
 - ✅ stdin: 'ignore' - Prevents blocking on stdin
 - ✅ stdout: 'pipe' - Captures JSONL events
 - ✅ stderr: 'pipe' - Captures errors/warnings
@@ -141,6 +152,7 @@ $ codex exec --json "Say hello" 2>&1
 **After async implementation**: Claude Code returns immediately with task ID
 
 **Test Evidence**:
+
 1. Task ID returned in < 1 second
 2. Can chat with user while task runs
 3. Can check status anytime
@@ -154,6 +166,7 @@ $ codex exec --json "Say hello" 2>&1
 **Registry Location**: `~/.config/codex-control/local-tasks.json`
 
 **Task Entry Example**:
+
 ```json
 {
   "taskId": "local-1762996317521-0dhjed9",
@@ -180,6 +193,7 @@ $ codex exec --json "Say hello" 2>&1
 **Tool**: `codex_local_status`
 
 **Running Task Output**:
+
 ```
 ## Async Local Tasks
 
@@ -201,6 +215,7 @@ $ codex exec --json "Say hello" 2>&1
 **Tool**: `codex_local_results`
 
 **Completed Task Output**:
+
 ```
 ✅ Codex Task Completed
 
@@ -221,20 +236,22 @@ $ codex exec --json "Say hello" 2>&1
 
 ### Task Execution Times
 
-| Task Type | Example | Duration | Exit Code |
-|-----------|---------|----------|-----------|
-| **Simple** | "Say hello" | ~5-10s | 0 |
-| **Complex** | "Count lines in files" | ~1 minute | 0 |
-| **File operations** | (not tested yet) | TBD | TBD |
+| Task Type           | Example                | Duration  | Exit Code |
+| ------------------- | ---------------------- | --------- | --------- |
+| **Simple**          | "Say hello"            | ~5-10s    | 0         |
+| **Complex**         | "Count lines in files" | ~1 minute | 0         |
+| **File operations** | (not tested yet)       | TBD       | TBD       |
 
 ### Token Usage
 
 **Simple Task** (Say hello):
+
 - Input tokens: 11,155 (0 cached)
 - Output tokens: 468
 - Total: 11,623 tokens
 
 **Complex Task** (Count lines):
+
 - Input tokens: 39,302 (26,624 cached = 67.7% cache rate)
 - Output tokens: 3,258
 - Total: 42,560 tokens (with significant caching)
@@ -254,6 +271,7 @@ $ codex exec --json "Say hello" 2>&1
 **Cause**: The @openai/codex-sdk manages its own subprocess spawning and we don't have direct control over stdio configuration
 
 **Next Steps**:
+
 1. Review @openai/codex-sdk source code
 2. Check if SDK has configuration options for stdio
 3. Consider alternative approaches (use CLI tools instead of SDK)
@@ -266,6 +284,7 @@ $ codex exec --json "Say hello" 2>&1
 **Blockers**: Need to set up cloud environment configuration
 
 **Next Steps**:
+
 1. Create `~/.config/codex-control/environments.json`
 2. Configure test environment
 3. Test `codex_cloud_submit`
@@ -308,6 +327,7 @@ $ codex exec --json "Say hello" 2>&1
 **Async CLI Execution**: ✅ PRODUCTION READY
 
 **Evidence**:
+
 - Multiple successful test runs
 - Fast tasks complete in seconds
 - Complex tasks complete in minutes
@@ -317,6 +337,7 @@ $ codex exec --json "Say hello" 2>&1
 - Task tracking persists across restarts
 
 **User Impact**:
+
 - Claude Code never freezes waiting for Codex
 - Can monitor long-running tasks
 - Can retrieve results anytime

@@ -9,11 +9,11 @@ export interface CleanupRegistryToolInput {
     stuckTaskMaxAgeSeconds?: number;
     oldTaskMaxAgeHours?: number;
     dryRun?: boolean;
-    format?: 'json' | 'markdown';
+    format?: "json" | "markdown";
 }
 export interface CleanupRegistryToolResult {
     content: Array<{
-        type: 'text';
+        type: "text";
         text: string;
     }>;
 }

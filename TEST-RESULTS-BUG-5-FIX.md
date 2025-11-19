@@ -11,6 +11,7 @@
 **Bug #5 FIXED**: SDK tools (`codex_local_exec`, `codex_local_resume`) now return complete output through MCP.
 
 **Test Results**: ✅ **100% SUCCESS**
+
 - ✅ `codex_local_exec`: Full output with thread persistence
 - ✅ `codex_local_resume`: 97% cache rate achieved
 - ✅ Thread persistence verified across sessions
@@ -23,37 +24,44 @@
 ### Discovery Timeline
 
 **5:00 PM** - Initial test of `codex_local_exec` via MCP
+
 - Result: Tool returned empty (no output)
 - Process spawned successfully (PID visible in `codex_status`)
 - Symptom: "Tool ran without output or errors"
 
 **5:04 PM** - Test mode investigation
+
 - Added `LOCAL_EXEC_TEST_MODE` environment variable
 - Test mode returned immediately with success
 - **Key Finding**: MCP CAN handle SDK tool responses
 - **Conclusion**: Issue is with async streaming, not MCP response format
 
 **5:10 PM** - Research phase
+
 - Used brave-search MCP to research MCP timeout issues
 - Found GitHub issue #245: MCP has 60-second timeout
 - Identified root cause: `for await (const event of events)` loop blocking MCP
 
 **5:15 PM** - Fix implementation
+
 - Added comprehensive logging throughout `local_exec.ts`
 - Added try-catch around event streaming loop
 - Added event-by-event logging to track consumption
 - Explicit logging before return
 
 **5:20 PM** - Testing and validation
+
 - `codex_local_exec`: ✅ WORKING - Full output returned
 - Thread ID: `019a76bf-955e-7d03-bf7a-b578441bef43`
 - 11 events captured, final response received
 
 **5:25 PM** - Resume tool fix
+
 - Applied same fix to `codex_local_resume.ts`
 - Rebuilt TypeScript
 
 **5:30 PM** - Resume tool validation
+
 - `codex_local_resume`: ✅ WORKING - Full output returned
 - **97% cache rate** (11,008/11,365 tokens cached)
 - Thread persistence confirmed
@@ -84,6 +92,7 @@ User: "Tool ran without output or errors"
 ### The Fix
 
 **Before**:
+
 ```typescript
 // Stream and collect events
 for await (const event of events) {
@@ -94,9 +103,10 @@ return { content: [...] };  // May not reach here
 ```
 
 **After**:
+
 ```typescript
 // Stream and collect events - ENSURE this completes
-console.error('[LocalExec] Processing event stream...');
+console.error("[LocalExec] Processing event stream...");
 try {
   for await (const event of events) {
     eventCount++;
@@ -104,17 +114,18 @@ try {
     eventLog.push(event);
     // ... process event
   }
-  console.error('[LocalExec] ✅ Event stream fully consumed');
+  console.error("[LocalExec] ✅ Event stream fully consumed");
 } catch (streamError) {
-  console.error('[LocalExec] ❌ Error during event streaming:', streamError);
+  console.error("[LocalExec] ❌ Error during event streaming:", streamError);
   throw streamError;
 }
 
-console.error('[LocalExec] ✅ MCP response created, returning now');
-return mcpResponse;  // Guaranteed to reach here
+console.error("[LocalExec] ✅ MCP response created, returning now");
+return mcpResponse; // Guaranteed to reach here
 ```
 
 **Key Improvements**:
+
 - ✅ Comprehensive logging (20+ log statements per tool)
 - ✅ Try-catch around event loop with error handling
 - ✅ Event-by-event logging for visibility
@@ -132,11 +143,14 @@ return mcpResponse;  // Guaranteed to reach here
 **Result**: ✅ **SUCCESS**
 
 **Output**:
+
 ```json
 {
   "success": true,
   "threadId": "019a76bf-955e-7d03-bf7a-b578441bef43",
-  "events": [ /* 11 events */ ],
+  "events": [
+    /* 11 events */
+  ],
   "finalResponse": "`src/tools/cloud_check_reminder.ts:1`\n`src/tools/run.ts:1`",
   "usage": {
     "input_tokens": 23190,
@@ -147,6 +161,7 @@ return mcpResponse;  // Guaranteed to reach here
 ```
 
 **Validation**:
+
 - ✅ Thread ID returned for resumption
 - ✅ All 11 events captured
 - ✅ Final response extracted correctly
@@ -163,11 +178,14 @@ return mcpResponse;  // Guaranteed to reach here
 **Result**: ✅ **SUCCESS**
 
 **Output**:
+
 ```json
 {
   "success": true,
   "threadId": "019a76bf-955e-7d03-bf7a-b578441bef43",
-  "events": [ /* 5 events */ ],
+  "events": [
+    /* 5 events */
+  ],
   "finalResponse": "`src/tools/github_setup.ts:1`\n`src/tools/local_resume.ts:1`",
   "usage": {
     "input_tokens": 11365,
@@ -178,6 +196,7 @@ return mcpResponse;  // Guaranteed to reach here
 ```
 
 **Validation**:
+
 - ✅ Thread ID preserved (same as Test 1)
 - ✅ All 5 events captured
 - ✅ Final response extracted correctly
@@ -185,6 +204,7 @@ return mcpResponse;  // Guaranteed to reach here
 - ✅ Thread persistence working - follow-up task leveraged cached context
 
 **Cache Rate Achievement**:
+
 - Initial execution: 23,190 input tokens (95% cached)
 - Resume execution: 11,365 input tokens (97% cached)
 - **Total savings**: 33,024 cached / 34,555 total = 95.6% overall cache rate
@@ -196,6 +216,7 @@ return mcpResponse;  // Guaranteed to reach here
 During testing, `codex_status` correctly detected SDK-spawned processes:
 
 **Status Output**:
+
 ```
 📊 Codex Control Status
 
@@ -212,6 +233,7 @@ During testing, `codex_status` correctly detected SDK-spawned processes:
 ```
 
 **Validation**:
+
 - ✅ Process detected correctly (PID 1037)
 - ✅ CLI-tracked vs SDK-spawned breakdown shown
 - ✅ Process details displayed (PID, CPU, memory, start time)
@@ -240,14 +262,15 @@ During testing, `codex_status` correctly detected SDK-spawned processes:
 Created test mode to isolate the issue:
 
 ```typescript
-if (process.env.LOCAL_EXEC_TEST_MODE === 'true') {
+if (process.env.LOCAL_EXEC_TEST_MODE === "true") {
   return {
-    content: [{ type: 'text', text: 'Test response' }],
+    content: [{ type: "text", text: "Test response" }],
   };
 }
 ```
 
 **Result**: Test mode worked immediately, proving:
+
 - ✅ MCP server can handle SDK tool responses
 - ✅ Response format is correct
 - ❌ Issue is with async streaming loop
@@ -293,22 +316,22 @@ if (process.env.LOCAL_EXEC_TEST_MODE === 'true') {
 
 ### Critical Bugs Status
 
-| Bug | Status | Impact | Verified |
-|-----|--------|--------|----------|
-| Bug #1: Mode Parameter | ✅ Fixed (v2.1.0) | CLI tools | Yes |
-| Bug #2: Tool Count | ✅ Fixed (v2.1.0) | Status reporting | Yes |
-| Bug #3: MCP Response Format | ✅ Fixed (v2.1.0) | SDK tools | Yes |
-| Bug #4: Process Tracking | ✅ Fixed (v2.1.1) | Visibility | Yes |
-| Bug #5: Async Streaming | ✅ Fixed (v2.1.1) | SDK tools | **Yes** |
+| Bug                         | Status            | Impact           | Verified |
+| --------------------------- | ----------------- | ---------------- | -------- |
+| Bug #1: Mode Parameter      | ✅ Fixed (v2.1.0) | CLI tools        | Yes      |
+| Bug #2: Tool Count          | ✅ Fixed (v2.1.0) | Status reporting | Yes      |
+| Bug #3: MCP Response Format | ✅ Fixed (v2.1.0) | SDK tools        | Yes      |
+| Bug #4: Process Tracking    | ✅ Fixed (v2.1.1) | Visibility       | Yes      |
+| Bug #5: Async Streaming     | ✅ Fixed (v2.1.1) | SDK tools        | **Yes**  |
 
 ### Tool Functionality Status
 
-| Category | Tools | Status |
-|----------|-------|--------|
-| Local CLI | codex_run, codex_plan, codex_apply, codex_status | ✅ Working |
-| Local SDK | codex_local_exec, codex_local_resume | ✅ **FIXED** |
-| Cloud | codex_cloud_submit, codex_cloud_status, etc. | ✅ Working |
-| Config | codex_list_environments, codex_github_setup_guide | ✅ Working |
+| Category  | Tools                                             | Status       |
+| --------- | ------------------------------------------------- | ------------ |
+| Local CLI | codex_run, codex_plan, codex_apply, codex_status  | ✅ Working   |
+| Local SDK | codex_local_exec, codex_local_resume              | ✅ **FIXED** |
+| Cloud     | codex_cloud_submit, codex_cloud_status, etc.      | ✅ Working   |
+| Config    | codex_list_environments, codex_github_setup_guide | ✅ Working   |
 
 **Total**: 13/13 tools functional (100%)
 
@@ -319,11 +342,13 @@ if (process.env.LOCAL_EXEC_TEST_MODE === 'true') {
 ### Token Efficiency (Thread Persistence)
 
 **Initial Execution** (`codex_local_exec`):
+
 - Input tokens: 23,190
 - Cached tokens: 22,016 (95%)
 - Output tokens: 1,758
 
 **Resume Execution** (`codex_local_resume`):
+
 - Input tokens: 11,365
 - Cached tokens: 11,008 (97%)
 - Output tokens: 664
@@ -339,6 +364,7 @@ if (process.env.LOCAL_EXEC_TEST_MODE === 'true') {
 Bug #5 has been successfully identified, fixed, and validated in production.
 
 **Key Achievements**:
+
 - ✅ SDK tools fully functional via MCP
 - ✅ Thread persistence working with 97% cache rates
 - ✅ Comprehensive logging added for future debugging
@@ -346,6 +372,7 @@ Bug #5 has been successfully identified, fixed, and validated in production.
 - ✅ Production-ready for deployment to all 18 projects + root
 
 **Next Steps**:
+
 1. Deploy to all projects (update MCP profiles)
 2. Monitor production usage in auditor-toolkit
 3. Consider reducing logging verbosity in future release

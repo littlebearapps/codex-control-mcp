@@ -11,11 +11,13 @@ Complete guide to MCP Delegator's 15 hidden primitives with JSON format support.
 ### Architecture
 
 **15 Hidden Primitives** (all prefixed with `_`):
+
 - Not directly exposed to users
 - Claude Code's native NLP selects the right one
 - Similar to zen MCP pattern
 
 **User Experience**:
+
 ```
 User: "Use codex control to run tests"
   ↓
@@ -27,6 +29,7 @@ Executes and returns results
 ```
 
 **No Need to Choose**:
+
 - ❌ Don't manually select from 15 primitives
 - ✅ Just describe what you want naturally
 
@@ -115,6 +118,7 @@ User: "Use codex control to preview cleanup of old tasks"
 ### Overview
 
 All 15 tools now support structured JSON output for AI agent consumption. This provides:
+
 - **97% token reduction**: 18,000 → 500 tokens per response
 - **Structured parsing**: No markdown parsing needed
 - **Metadata extraction**: Test results, file changes, errors extracted automatically
@@ -140,6 +144,7 @@ Add `format: "json"` parameter to any tool call:
 All tools return one of 5 envelope types:
 
 #### 1. **execution_ack** (Task Started)
+
 Tools: `_codex_local_run`, `_codex_local_exec`, `_codex_local_resume`, `_codex_cloud_submit`
 
 ```json
@@ -166,6 +171,7 @@ Tools: `_codex_local_run`, `_codex_local_exec`, `_codex_local_resume`, `_codex_c
 **Tokens**: ~150 (vs 2,500 markdown)
 
 #### 2. **result_set** (Task Completed)
+
 Tools: `_codex_local_results`, `_codex_cloud_results`
 
 ```json
@@ -213,6 +219,7 @@ Tools: `_codex_local_results`, `_codex_cloud_results`
 **Note**: `output.included: false` when task succeeds - output omitted to save tokens. Set to `true` on errors for debugging.
 
 #### 3. **status_snapshot** (Current State)
+
 Tools: `_codex_local_status`, `_codex_cloud_status`
 
 ```json
@@ -250,6 +257,7 @@ Tools: `_codex_local_status`, `_codex_cloud_status`
 **Note**: Empty arrays omitted when no tasks in that state.
 
 #### 4. **wait_result** (Polling Complete)
+
 Tools: `_codex_local_wait`, `_codex_cloud_wait`
 
 ```json
@@ -283,6 +291,7 @@ Tools: `_codex_local_wait`, `_codex_cloud_wait`
 **Tokens**: ~180 (vs 2,800 markdown)
 
 #### 5. **registry_info** (System Info)
+
 Tools: `_codex_cloud_list_environments`, `_codex_cleanup_registry`, `_codex_local_cancel`, `_codex_cloud_cancel`, `_codex_cloud_github_setup`
 
 ```json
@@ -343,6 +352,7 @@ When errors occur, all tools return consistent error envelopes:
 ```
 
 **Error Codes**:
+
 - `TIMEOUT`: Task exceeded time limits (includes partial results)
 - `VALIDATION`: Invalid parameters (returned for Zod validation failures)
 - `TOOL_ERROR`: Codex execution failed
@@ -353,6 +363,7 @@ When errors occur, all tools return consistent error envelopes:
 ### When to Use JSON Format
 
 **✅ Use JSON when**:
+
 - Building AI agent workflows
 - Need structured data extraction (test results, file changes)
 - Want minimal token usage
@@ -360,6 +371,7 @@ When errors occur, all tools return consistent error envelopes:
 - Need type-safe responses
 
 **❌ Use Markdown when**:
+
 - Presenting to human users
 - Need detailed explanations
 - Debugging/troubleshooting interactively
@@ -367,13 +379,13 @@ When errors occur, all tools return consistent error envelopes:
 
 ### Token Savings Examples
 
-| Scenario | Markdown Tokens | JSON Tokens | Savings |
-|----------|----------------|-------------|---------|
-| Task started | 2,500 | 150 | 94% |
-| Tests passed (no output) | 18,000 | 300 | 98% |
-| Status check | 3,500 | 200 | 94% |
-| Error with partial results | 8,000 | 400 | 95% |
-| **Average** | **8,000** | **260** | **97%** |
+| Scenario                   | Markdown Tokens | JSON Tokens | Savings |
+| -------------------------- | --------------- | ----------- | ------- |
+| Task started               | 2,500           | 150         | 94%     |
+| Tests passed (no output)   | 18,000          | 300         | 98%     |
+| Status check               | 3,500           | 200         | 94%     |
+| Error with partial results | 8,000           | 400         | 95%     |
+| **Average**                | **8,000**       | **260**     | **97%** |
 
 ### Metadata Extraction
 
@@ -429,39 +441,51 @@ All `result_set` and `wait_result` responses include extracted metadata:
 ## When to Use Each Pattern
 
 ### Quick Analysis (1-5 minutes)
+
 **Pattern**: Simple action verbs
+
 ```
 "run tests"
 "analyze code"
 "check for bugs"
 ```
+
 **Routes to**: Local execution (one-shot)
 
 ### Iterative Development (5-30 minutes)
+
 **Pattern**: Include progress/threading keywords
+
 ```
 "analyze with progress"
 "debug step by step"
 "investigate with real-time updates"
 ```
+
 **Routes to**: Local SDK (threaded)
 
 ### Long-Running Tasks (30+ minutes)
+
 **Pattern**: Include cloud context
+
 ```
 "run tests in the cloud"
 "comprehensive refactoring on cloud"
 "create PR via cloud"
 ```
+
 **Routes to**: Cloud submission
 
 ### Task Operations
+
 **Pattern**: Action + Task ID
+
 ```
 "check status of T-local-abc123"
 "wait for T-cloud-xyz789"
 "cancel T-local-def456"
 ```
+
 **Routes to**: Appropriate task operation
 
 ---
@@ -471,6 +495,7 @@ All `result_set` and `wait_result` responses include extracted metadata:
 These primitives are automatically selected by Claude Code's NLP. Users don't call them directly.
 
 ### Local Execution (7 tools)
+
 - `_codex_local_run` - Simple one-shot execution
 - `_codex_local_exec` - SDK execution with threading
 - `_codex_local_resume` - Resume threaded conversations
@@ -480,6 +505,7 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 - `_codex_local_cancel` - Cancel running tasks
 
 ### Cloud Execution (5 tools)
+
 - `_codex_cloud_submit` - Background task submission
 - `_codex_cloud_status` - Cloud task status
 - `_codex_cloud_results` - Retrieve cloud results
@@ -487,6 +513,7 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 - `_codex_cloud_cancel` - Cancel cloud tasks
 
 ### Configuration & Maintenance (3 tools)
+
 - `_codex_cloud_list_environments` - List environments
 - `_codex_cloud_github_setup` - GitHub integration guide
 - `_codex_cleanup_registry` - Clean up stuck and old tasks
@@ -496,12 +523,14 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 ## Common Workflows
 
 ### Workflow 1: Quick Analysis
+
 ```typescript
 // Single request, automatic routing
 { "request": "run tests" }
 ```
 
 ### Workflow 2: Iterative Development
+
 ```typescript
 // Step 1: Start with progress
 { "request": "analyze code with progress" }
@@ -512,6 +541,7 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 ```
 
 ### Workflow 3: Cloud Task
+
 ```typescript
 // Step 1: Submit
 { "request": "run comprehensive tests in the cloud" }
@@ -529,18 +559,21 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 ## Best Practices
 
 ### Natural Language Tips
+
 - ✅ Be specific: "run unit tests" vs "run tests"
 - ✅ Include context: "in the cloud", "with progress"
 - ✅ Use task IDs when available: "check T-local-abc123"
 
 ### Execution Mode Selection
+
 - ✅ Quick tasks (< 5 min): Default (no keywords)
 - ✅ Iterative work: Add "with progress" or "step by step"
 - ✅ Long tasks (> 30 min): Add "in the cloud"
 
 ### Error Handling
+
 - ✅ Be specific in your natural language requests
-- ✅ Task IDs must be valid format (T-local-* or T-cloud-*)
+- ✅ Task IDs must be valid format (T-local-_ or T-cloud-_)
 - ✅ Include enough context for Claude Code to select the right primitive
 
 ---
@@ -548,13 +581,15 @@ These primitives are automatically selected by Claude Code's NLP. Users don't ca
 ## Testing & Validation
 
 **v3.0.1 Status**:
+
 - ✅ All 15 primitives working and verified
 - ✅ npm package published (@littlebearapps/mcp-delegator)
 - ✅ Async workflow validated
-- ✅ Parameter bug fix confirmed (_codex_local_results)
+- ✅ Parameter bug fix confirmed (\_codex_local_results)
 - ✅ Production deployment verified
 
 **v3.0.0 (Unified Tool - Removed)**:
+
 - Core E2E: 14/14 tests (100%)
 - Natural Language: 51/51 tests (100%)
 - Error Cases: 26/26 tests (100%)
@@ -567,6 +602,7 @@ See `ASYNC-COMPREHENSIVE-TEST-RESULTS.md` for latest validation.
 ## Evolution
 
 ### v3.0.1 (Current)
+
 ```
 User: "Use codex control to run tests"
   ↓
@@ -578,6 +614,7 @@ _codex_local_run executes
 **Pattern**: Natural language → Claude Code selects → Primitive executes
 
 ### v3.0.0 (Removed)
+
 ```
 { "request": "run tests" }
   ↓
@@ -589,10 +626,11 @@ Primitive executes
 **Issue**: Intermittent hanging, removed unified tool in v3.0.1
 
 ### v2.x (Legacy)
+
 ```typescript
-codex_run({ task: "run tests", mode: "read-only" })
-codex_local_exec({ task: "analyze" })
-codex_cloud_submit({ task: "run tests", envId: "env_123" })
+codex_run({ task: "run tests", mode: "read-only" });
+codex_local_exec({ task: "analyze" });
+codex_cloud_submit({ task: "run tests", envId: "env_123" });
 ```
 
 **Issue**: Had to manually select from 13 tools

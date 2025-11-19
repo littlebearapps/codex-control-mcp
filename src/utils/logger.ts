@@ -5,12 +5,12 @@
  * Logs are written to .codex-errors.log in the working directory (or configured path).
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 export interface LogEntry {
   timestamp: string;
-  level: 'debug' | 'info' | 'warn' | 'error';
+  level: "debug" | "info" | "warn" | "error";
   message: string;
   meta?: any;
   pid: number;
@@ -18,12 +18,12 @@ export interface LogEntry {
 
 export class CodexLogger {
   private logFile: string | null;
-  private logLevel: 'debug' | 'info' | 'warn' | 'error';
+  private logLevel: "debug" | "info" | "warn" | "error";
 
   constructor() {
     // Support ${PWD} variable in log file path
     this.logFile = process.env.CODEX_LOG_FILE || null;
-    this.logLevel = (process.env.CODEX_LOG_LEVEL as any) || 'info';
+    this.logLevel = (process.env.CODEX_LOG_LEVEL as any) || "info";
   }
 
   private resolveLogPath(workingDir?: string): string | null {
@@ -31,10 +31,15 @@ export class CodexLogger {
 
     // Replace ${PWD} with actual working directory
     const cwd = workingDir || process.cwd();
-    return this.logFile.replace('${PWD}', cwd);
+    return this.logFile.replace("${PWD}", cwd);
   }
 
-  private write(level: LogEntry['level'], message: string, meta?: any, workingDir?: string) {
+  private write(
+    level: LogEntry["level"],
+    message: string,
+    meta?: any,
+    workingDir?: string,
+  ) {
     const resolvedPath = this.resolveLogPath(workingDir);
     if (!resolvedPath) return;
 
@@ -46,7 +51,7 @@ export class CodexLogger {
       pid: process.pid,
     };
 
-    const logLine = JSON.stringify(entry) + '\n';
+    const logLine = JSON.stringify(entry) + "\n";
 
     try {
       // Ensure directory exists
@@ -60,12 +65,12 @@ export class CodexLogger {
     } catch (err) {
       // Silent failure - can't log if logging fails
       // Write to stderr as fallback
-      console.error('[Logger] Failed to write log:', err);
+      console.error("[Logger] Failed to write log:", err);
     }
   }
 
-  private shouldLog(level: LogEntry['level']): boolean {
-    const levels = ['debug', 'info', 'warn', 'error'];
+  private shouldLog(level: LogEntry["level"]): boolean {
+    const levels = ["debug", "info", "warn", "error"];
     const currentLevelIndex = levels.indexOf(this.logLevel);
     const messageLevelIndex = levels.indexOf(level);
     return messageLevelIndex >= currentLevelIndex;
@@ -76,7 +81,7 @@ export class CodexLogger {
    * Use this for failures that Claude Code needs to detect
    */
   error(message: string, meta?: any, workingDir?: string) {
-    this.write('error', message, meta, workingDir);
+    this.write("error", message, meta, workingDir);
     console.error(`[ERROR] ${message}`, meta);
   }
 
@@ -85,8 +90,8 @@ export class CodexLogger {
    * Use this for non-fatal issues
    */
   warn(message: string, meta?: any, workingDir?: string) {
-    if (this.shouldLog('warn')) {
-      this.write('warn', message, meta, workingDir);
+    if (this.shouldLog("warn")) {
+      this.write("warn", message, meta, workingDir);
       console.warn(`[WARN] ${message}`);
     }
   }
@@ -96,8 +101,8 @@ export class CodexLogger {
    * Use this for normal operations
    */
   info(message: string, meta?: any, workingDir?: string) {
-    if (this.shouldLog('info')) {
-      this.write('info', message, meta, workingDir);
+    if (this.shouldLog("info")) {
+      this.write("info", message, meta, workingDir);
     }
   }
 
@@ -106,8 +111,8 @@ export class CodexLogger {
    * Use this for detailed troubleshooting
    */
   debug(message: string, meta?: any, workingDir?: string) {
-    if (this.shouldLog('debug')) {
-      this.write('debug', message, meta, workingDir);
+    if (this.shouldLog("debug")) {
+      this.write("debug", message, meta, workingDir);
     }
   }
 
@@ -124,25 +129,38 @@ export class CodexLogger {
    * Confirms tool completed successfully
    */
   toolSuccess(toolName: string, result: any, workingDir?: string) {
-    this.info(`Tool completed: ${toolName}`, {
-      success: true,
-      hasOutput: !!result,
-    }, workingDir);
+    this.info(
+      `Tool completed: ${toolName}`,
+      {
+        success: true,
+        hasOutput: !!result,
+      },
+      workingDir,
+    );
   }
 
   /**
    * Log tool failure
    * CRITICAL: Claude Code uses this to detect failures
    */
-  toolFailure(toolName: string, error: Error | string, input: any, workingDir?: string) {
+  toolFailure(
+    toolName: string,
+    error: Error | string,
+    input: any,
+    workingDir?: string,
+  ) {
     const errorMessage = error instanceof Error ? error.message : error;
     const errorStack = error instanceof Error ? error.stack : undefined;
 
-    this.error(`Tool failed: ${toolName}`, {
-      error: errorMessage,
-      stack: errorStack,
-      input,
-    }, workingDir);
+    this.error(
+      `Tool failed: ${toolName}`,
+      {
+        error: errorMessage,
+        stack: errorStack,
+        input,
+      },
+      workingDir,
+    );
   }
 
   /**
@@ -150,10 +168,14 @@ export class CodexLogger {
    * CRITICAL: Claude Code uses this to stop waiting
    */
   toolTimeout(toolName: string, timeoutMs: number, workingDir?: string) {
-    this.error(`Tool timeout: ${toolName}`, {
-      timeoutMs,
-      message: 'Task exceeded time limit',
-    }, workingDir);
+    this.error(
+      `Tool timeout: ${toolName}`,
+      {
+        timeoutMs,
+        message: "Task exceeded time limit",
+      },
+      workingDir,
+    );
   }
 }
 

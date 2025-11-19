@@ -123,7 +123,7 @@ Test that each primitive is correctly identified from natural language:
 8. **Contradictory**: `"wait but don't wait"`
 9. **Incomplete**: `"analyze"`
 10. **Non-English**: `"analyser le code"` (French)
-11-20. Additional edge cases
+    11-20. Additional edge cases
 
 #### Disambiguation Scenarios (10 tests)
 
@@ -208,6 +208,7 @@ Test that confidence scores are accurate:
 End-to-end workflows that real users would execute:
 
 ### Test 1: "Analyze then Fix" Workflow
+
 ```
 User: "Analyze main.ts for bugs"
 System: [Executes _codex_local_exec]
@@ -221,6 +222,7 @@ System: "All tests passing!"
 ```
 
 ### Test 2: "Run Tests and Create PR if Passing"
+
 ```
 User: "Run full test suite and create PR if all pass"
 System: [Executes _codex_cloud_submit]
@@ -234,6 +236,7 @@ System: [Returns PR link, test results, file changes]
 ```
 
 ### Test 3: "Check What's Running"
+
 ```
 User: "What's currently running?"
 System: [Executes _codex_local_status]
@@ -244,6 +247,7 @@ System: "Task T-local-abc123 canceled"
 ```
 
 ### Test 4: "Resume Previous Work"
+
 ```
 User: "Continue my previous analysis"
 System: [Looks up recent threads, finds thread_abc123]
@@ -252,6 +256,7 @@ System: "Resumed analysis. Found 5 more issues..."
 ```
 
 ### Test 5: "Setup New Project"
+
 ```
 User: "Set up GitHub integration for https://github.com/myorg/myrepo"
 System: [Executes _codex_cloud_github_setup]
@@ -268,7 +273,7 @@ System: "You have 3 environments: env1, env2, env3"
 8. Concurrent operations (local + cloud at same time)
 9. Long-running cloud task with periodic status checks
 10. Thread persistence across Claude Code restarts
-11-15. Additional real-world scenarios
+    11-15. Additional real-world scenarios
 
 ---
 
@@ -376,15 +381,19 @@ npm test -- --watch
 Bugs found during testing will be tracked here:
 
 ### Critical (Blocks launch)
+
 - [ ] TBD
 
 ### High (Should fix before launch)
+
 - [ ] TBD
 
 ### Medium (Nice to have)
+
 - [ ] TBD
 
 ### Low (Future improvement)
+
 - [ ] TBD
 
 ---
@@ -392,11 +401,13 @@ Bugs found during testing will be tracked here:
 ## 📅 Timeline
 
 **Day 1 (Nov 13)**:
+
 - Morning: Test infrastructure setup
 - Afternoon: Intent parser tests (25/50)
 - Evening: Intent parser tests (50/50 complete)
 
 **Day 2 (Nov 14)**:
+
 - Morning: Router tests (30/30 complete)
 - Afternoon: E2E golden conversations (10-15 complete)
 - Evening: Integration tests + coverage report

@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { ToolExecuteExtra } from '../types/progress.js';
+import { z } from "zod";
+import { ToolExecuteExtra } from "../types/progress.js";
 declare const LocalResumeInputSchema: z.ZodObject<{
     threadId: z.ZodString;
     task: z.ZodString;

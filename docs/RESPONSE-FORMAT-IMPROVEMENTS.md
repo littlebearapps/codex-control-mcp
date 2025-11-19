@@ -1,4 +1,5 @@
 # Response Format Improvements for MCP Delegator
+
 ## Inspired by chrome-devtools MCP
 
 **Date:** 2025-11-17
@@ -11,12 +12,15 @@
 ### What They Do Right
 
 **1. Clean Headers (No Emoji, Simple Text)**
+
 ```markdown
 # evaluate_script response
+
 Script ran on page and returned:
 ```
 
 **2. Structured JSON Output**
+
 ```json
 {
   "summary": {
@@ -28,6 +32,7 @@ Script ran on page and returned:
 ```
 
 **3. Summary-First Approach**
+
 - Top-level summary object
 - Details nested below
 - AI can parse easily
@@ -39,12 +44,14 @@ Script ran on page and returned:
 ### Issue 1: Verbose Headers with Emoji
 
 **Current:**
+
 ```markdown
 ## 📊 Codex Execution Status
 
 ### Active Processes (MCP Server)
 
 **Process 1:**
+
 - **Process ID (PID):** 12345
 - **Task ID:** T-local-xyz
 - **Started:** 97 seconds ago
@@ -55,6 +62,7 @@ Script ran on page and returned:
 ```
 
 **Problems:**
+
 - Emoji adds noise for AI parsing
 - Headers take up visual space
 - Buried information (takes 7 lines to show simple data)
@@ -64,14 +72,17 @@ Script ran on page and returned:
 ### Issue 2: Unstructured Text Output
 
 **Current:**
+
 ```markdown
 **Process 1:**
+
 - **Process ID (PID):** 12345
 - **Task ID:** T-local-xyz
-...
+  ...
 ```
 
 **Problems:**
+
 - Not JSON parseable
 - AI has to parse markdown
 - Harder to extract specific fields
@@ -83,12 +94,14 @@ Script ran on page and returned:
 ### Change 1: JSON-First Responses
 
 **Before:**
+
 ```markdown
 ## 📊 Codex Execution Status
 
 ### Active Processes (MCP Server)
 
 **Process 1:**
+
 - **Process ID (PID):** 12345
 - **Task ID:** T-local-xyz
 - **Started:** 97 seconds ago
@@ -96,7 +109,8 @@ Script ran on page and returned:
 ```
 
 **After:**
-```markdown
+
+````markdown
 # Status Check Result
 
 Active processes: 1
@@ -123,8 +137,10 @@ Active processes: 1
   ]
 }
 ```
+````
 
 **Benefits:**
+
 - AI can parse JSON directly
 - Consistent structure
 - Less visual noise
@@ -135,6 +151,7 @@ Active processes: 1
 ### Change 2: Summary-First Structure
 
 **Before (Data-First):**
+
 ```json
 {
   "processes": [...],  // 50 lines
@@ -147,6 +164,7 @@ Active processes: 1
 ```
 
 **After (Summary-First):**
+
 ```json
 {
   "summary": {
@@ -160,6 +178,7 @@ Active processes: 1
 ```
 
 **Benefits:**
+
 - AI sees summary immediately
 - Can skip details if not needed
 - Matches chrome-devtools pattern
@@ -169,7 +188,8 @@ Active processes: 1
 ### Change 3: Conditional Detailed Output
 
 **Before (Always Show Everything):**
-```markdown
+
+````markdown
 # Status Check Result
 
 ```json
@@ -180,9 +200,11 @@ Active processes: 1
   "recently_completed": [...]  // Always included
 }
 ```
+````
 
 **After (Conditional Details):**
-```markdown
+
+````markdown
 # Status Check Result
 
 ```json
@@ -197,8 +219,10 @@ Active processes: 1
   // "recently_completed": [...] // Only if completed > 0
 }
 ```
+````
 
 **Benefits:**
+
 - Cleaner output when nothing to show
 - Reduces noise
 - AI can request details if needed
@@ -208,20 +232,27 @@ Active processes: 1
 ### Change 4: Plain Text Headers (No Emoji)
 
 **Before:**
+
 ```markdown
 ## 📊 Codex Execution Status
+
 ### ✅ Recently Completed Tasks (Last 5 in this directory)
+
 ### 📋 Task Queue Status
 ```
 
 **After:**
+
 ```markdown
 # Status Check Result
+
 ## Recently Completed (5)
+
 ## Task Queue
 ```
 
 **Benefits:**
+
 - Cleaner parsing for AI
 - Less visual noise
 - More professional
@@ -244,6 +275,7 @@ Add `format` parameter to all tools:
 ```
 
 **Returns:**
+
 ```json
 {
   "summary": {
@@ -264,8 +296,10 @@ Add `format` parameter to all tools:
 ```
 
 **Returns:**
+
 ```markdown
 ## 📊 Codex Execution Status
+
 ...
 ```
 
@@ -274,6 +308,7 @@ Add `format` parameter to all tools:
 ### Phase 2: Change Default to JSON (v4.0.0)
 
 **Breaking change:**
+
 - Default `format` becomes `"json"`
 - Markdown available via `format: "markdown"`
 - Update all tools to return JSON-first
@@ -283,6 +318,7 @@ Add `format` parameter to all tools:
 ### Phase 3: Simplify Markdown Format
 
 **Even when using markdown:**
+
 - Remove emoji from headers
 - Use simpler structure
 - Summary-first approach
@@ -294,17 +330,20 @@ Add `format` parameter to all tools:
 ### BEFORE (Current)
 
 **Request:**
+
 ```typescript
-_codex_local_status({ task_id: "T-local-xyz" })
+_codex_local_status({ task_id: "T-local-xyz" });
 ```
 
 **Response:**
+
 ```markdown
 ## 📊 Codex Execution Status
 
 ### Active Processes (MCP Server)
 
 **Process 1:**
+
 - **Process ID (PID):** 12345
 - **Task ID:** T-local-xyz
 - **Started:** 97 seconds ago
@@ -324,7 +363,7 @@ _codex_local_status({ task_id: "T-local-xyz" })
 
 ### ✅ Recently Completed Tasks (Last 5 in this directory)
 
-*No recently completed tasks in this directory*
+_No recently completed tasks in this directory_
 ```
 
 **Token count:** ~500 tokens
@@ -334,12 +373,14 @@ _codex_local_status({ task_id: "T-local-xyz" })
 ### AFTER (Proposed)
 
 **Request:**
+
 ```typescript
-_codex_local_status({ task_id: "T-local-xyz", format: "json" })
+_codex_local_status({ task_id: "T-local-xyz", format: "json" });
 ```
 
 **Response:**
-```markdown
+
+````markdown
 # Status Check Result
 
 ```json
@@ -369,6 +410,7 @@ _codex_local_status({ task_id: "T-local-xyz", format: "json" })
   ]
 }
 ```
+````
 
 **Token count:** ~200 tokens (60% reduction)
 
@@ -376,19 +418,20 @@ _codex_local_status({ task_id: "T-local-xyz", format: "json" })
 
 ## Benefits Summary
 
-| Aspect | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Parseability** | Markdown parsing | JSON native | Much easier |
-| **Token usage** | 500 | 200 | 60% reduction |
-| **Visual noise** | High (emoji, headers) | Low (plain text) | Cleaner |
-| **Structure** | Flat | Summary-first | Better hierarchy |
-| **Conditional** | Always show all | Only non-empty | Less clutter |
+| Aspect           | Before                | After            | Improvement      |
+| ---------------- | --------------------- | ---------------- | ---------------- |
+| **Parseability** | Markdown parsing      | JSON native      | Much easier      |
+| **Token usage**  | 500                   | 200              | 60% reduction    |
+| **Visual noise** | High (emoji, headers) | Low (plain text) | Cleaner          |
+| **Structure**    | Flat                  | Summary-first    | Better hierarchy |
+| **Conditional**  | Always show all       | Only non-empty   | Less clutter     |
 
 ---
 
 ## Decision: Implement or Not?
 
 ### Arguments FOR:
+
 - ✅ 60% token reduction
 - ✅ Easier AI parsing (JSON vs markdown)
 - ✅ Matches industry patterns (chrome-devtools)
@@ -396,12 +439,15 @@ _codex_local_status({ task_id: "T-local-xyz", format: "json" })
 - ✅ Better structure (summary-first)
 
 ### Arguments AGAINST:
+
 - ❌ Breaking change for v4.0.0 (when default changes)
 - ❌ More complex implementation
 - ❌ Current markdown format works
 
 ### Recommendation:
+
 **Implement Phase 1 (JSON option) in v3.6.0**, then evaluate:
+
 - If AI agents prefer JSON, make it default in v4.0.0
 - If markdown still preferred, keep as option
 
@@ -410,6 +456,7 @@ _codex_local_status({ task_id: "T-local-xyz", format: "json" })
 ## Implementation Checklist
 
 ### Phase 1: Add JSON Format Option (v3.6.0)
+
 - [ ] Add `format` parameter to all 15 tools
 - [ ] Implement JSON serialization
 - [ ] Ensure summary-first structure
@@ -418,12 +465,14 @@ _codex_local_status({ task_id: "T-local-xyz", format: "json" })
 - [ ] Update quickrefs with examples
 
 ### Phase 2: Evaluate (v3.6.1)
+
 - [ ] Collect feedback from AI usage
 - [ ] Measure token savings
 - [ ] Assess parsing ease
 - [ ] Decide on v4.0.0 default
 
 ### Phase 3: Change Default (v4.0.0)
+
 - [ ] Make JSON default format
 - [ ] Keep markdown as `format: "markdown"`
 - [ ] Update all documentation

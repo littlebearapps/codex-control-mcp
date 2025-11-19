@@ -5,9 +5,9 @@
  * Enables multi-instance tracking by filtering tasks per working directory.
  * Survives Claude Code restarts by storing to filesystem.
  */
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 export class CloudTaskRegistry {
     storePath;
     tasks = new Map();
@@ -15,8 +15,8 @@ export class CloudTaskRegistry {
     constructor() {
         // Store in user config directory: ~/.config/mcp-delegator/cloud-tasks.json
         // Note: Directory migration handled by TaskRegistry constructor
-        const configDir = path.join(os.homedir(), '.config', 'mcp-delegator');
-        this.storePath = path.join(configDir, 'cloud-tasks.json');
+        const configDir = path.join(os.homedir(), ".config", "mcp-delegator");
+        this.storePath = path.join(configDir, "cloud-tasks.json");
     }
     /**
      * Initialize registry by loading from disk
@@ -30,22 +30,22 @@ export class CloudTaskRegistry {
             await fs.mkdir(configDir, { recursive: true });
             // Load existing tasks if file exists
             try {
-                const data = await fs.readFile(this.storePath, 'utf-8');
+                const data = await fs.readFile(this.storePath, "utf-8");
                 const tasksArray = JSON.parse(data);
                 // Convert array to Map
-                this.tasks = new Map(tasksArray.map(task => [task.taskId, task]));
+                this.tasks = new Map(tasksArray.map((task) => [task.taskId, task]));
                 console.error(`[CloudTaskRegistry] Loaded ${this.tasks.size} tasks from ${this.storePath}`);
             }
             catch (error) {
-                if (error.code !== 'ENOENT') {
-                    console.error('[CloudTaskRegistry] Error loading tasks:', error);
+                if (error.code !== "ENOENT") {
+                    console.error("[CloudTaskRegistry] Error loading tasks:", error);
                 }
                 // File doesn't exist yet - that's okay
             }
             this.initialized = true;
         }
         catch (error) {
-            console.error('[CloudTaskRegistry] Failed to initialize:', error);
+            console.error("[CloudTaskRegistry] Failed to initialize:", error);
             throw error;
         }
     }
@@ -55,10 +55,10 @@ export class CloudTaskRegistry {
     async save() {
         try {
             const tasksArray = Array.from(this.tasks.values());
-            await fs.writeFile(this.storePath, JSON.stringify(tasksArray, null, 2), 'utf-8');
+            await fs.writeFile(this.storePath, JSON.stringify(tasksArray, null, 2), "utf-8");
         }
         catch (error) {
-            console.error('[CloudTaskRegistry] Failed to save tasks:', error);
+            console.error("[CloudTaskRegistry] Failed to save tasks:", error);
             throw error;
         }
     }
@@ -70,7 +70,7 @@ export class CloudTaskRegistry {
         const cloudTask = {
             ...task,
             timestamp: new Date().toISOString(),
-            status: 'submitted',
+            status: "submitted",
         };
         this.tasks.set(cloudTask.taskId, cloudTask);
         await this.save();
@@ -118,21 +118,21 @@ export class CloudTaskRegistry {
         // Apply filters
         if (filter) {
             if (filter.workingDir) {
-                results = results.filter(task => task.workingDir === filter.workingDir);
+                results = results.filter((task) => task.workingDir === filter.workingDir);
             }
             if (filter.envId) {
-                results = results.filter(task => task.envId === filter.envId);
+                results = results.filter((task) => task.envId === filter.envId);
             }
             if (filter.status) {
-                results = results.filter(task => task.status === filter.status);
+                results = results.filter((task) => task.status === filter.status);
             }
             if (filter.after) {
                 const afterDate = new Date(filter.after);
-                results = results.filter(task => new Date(task.timestamp) >= afterDate);
+                results = results.filter((task) => new Date(task.timestamp) >= afterDate);
             }
             if (filter.before) {
                 const beforeDate = new Date(filter.before);
-                results = results.filter(task => new Date(task.timestamp) <= beforeDate);
+                results = results.filter((task) => new Date(task.timestamp) <= beforeDate);
             }
         }
         // Sort by timestamp descending (newest first)

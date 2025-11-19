@@ -4,7 +4,7 @@
  * Extracts meaningful progress information from Codex execution events.
  * Tracks turns, items, file changes, and commands to provide real-time status.
  */
-import { getItemType } from './jsonl_parser.js';
+import { getItemType } from "./jsonl_parser.js";
 /**
  * Infer progress from a stream of JSONL events
  */
@@ -21,22 +21,22 @@ export class ProgressInferenceEngine {
      */
     processEvent(event) {
         switch (event.type) {
-            case 'turn.started':
+            case "turn.started":
                 this.handleTurnStarted(event);
                 break;
-            case 'turn.completed':
+            case "turn.completed":
                 this.handleTurnCompleted(event);
                 break;
-            case 'turn.failed':
+            case "turn.failed":
                 this.handleTurnFailed(event);
                 break;
-            case 'item.started':
+            case "item.started":
                 this.handleItemStarted(event);
                 break;
-            case 'item.completed':
+            case "item.completed":
                 this.handleItemCompleted(event);
                 break;
-            case 'item.updated':
+            case "item.updated":
                 this.handleItemUpdated(event);
                 break;
             default:
@@ -53,11 +53,11 @@ export class ProgressInferenceEngine {
             ...Array.from(this.items.values()),
         ];
         // Count completed steps as 1.0, in-progress steps as 0.5
-        const completedSteps = allSteps.filter((s) => s.status === 'completed').length;
-        const inProgressSteps = allSteps.filter((s) => s.status === 'started').length;
+        const completedSteps = allSteps.filter((s) => s.status === "completed").length;
+        const inProgressSteps = allSteps.filter((s) => s.status === "started").length;
         const totalSteps = allSteps.length || 1; // Avoid division by zero
         // Calculate progress: completed items = 100%, in-progress = 50%
-        const weightedProgress = completedSteps + (inProgressSteps * 0.5);
+        const weightedProgress = completedSteps + inProgressSteps * 0.5;
         let progressPercentage = Math.round((weightedProgress / totalSteps) * 100);
         // Force 100% when task is complete (v3.4.2 fix for Issue: progress stuck at intermediate value)
         if (this.isComplete) {
@@ -66,7 +66,7 @@ export class ProgressInferenceEngine {
         // Find current action (last started item or turn)
         let currentAction = null;
         const startedSteps = allSteps
-            .filter((s) => s.status === 'started')
+            .filter((s) => s.status === "started")
             .sort((a, b) => {
             const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
             const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
@@ -101,12 +101,12 @@ export class ProgressInferenceEngine {
     }
     // Private handlers
     handleTurnStarted(event) {
-        const turnId = event.turnId || event.data?.turnId || 'unknown';
+        const turnId = event.turnId || event.data?.turnId || "unknown";
         this.currentTurnId = turnId;
         this.turns.set(turnId, {
-            type: 'turn',
+            type: "turn",
             description: `Processing turn ${turnId}`,
-            status: 'started',
+            status: "started",
             timestamp: event.timestamp,
             details: event.data,
         });
@@ -117,7 +117,7 @@ export class ProgressInferenceEngine {
             return;
         const existing = this.turns.get(turnId);
         if (existing) {
-            existing.status = 'completed';
+            existing.status = "completed";
             existing.timestamp = event.timestamp;
         }
         this.isComplete = true;
@@ -128,7 +128,7 @@ export class ProgressInferenceEngine {
             return;
         const existing = this.turns.get(turnId);
         if (existing) {
-            existing.status = 'failed';
+            existing.status = "failed";
             existing.timestamp = event.timestamp;
             existing.details = {
                 ...existing.details,
@@ -139,30 +139,30 @@ export class ProgressInferenceEngine {
         this.isComplete = true; // Failed is also a terminal state
     }
     handleItemStarted(event) {
-        const itemId = event.itemId || event.data?.itemId || 'unknown';
-        const itemType = getItemType(event) || 'unknown';
+        const itemId = event.itemId || event.data?.itemId || "unknown";
+        const itemType = getItemType(event) || "unknown";
         let description = `Started ${itemType}`;
         // Enhance description based on item type
-        if (itemType === 'file_change' && event.data?.path) {
+        if (itemType === "file_change" && event.data?.path) {
             description = `Editing ${event.data.path}`;
         }
-        else if (itemType === 'command_execution' && event.data?.command) {
+        else if (itemType === "command_execution" && event.data?.command) {
             description = `Running command: ${event.data.command}`;
         }
         else if (event.data?.description) {
             description = event.data.description;
         }
         // Increment counters immediately when work starts (not just when it completes)
-        if (itemType === 'file_change') {
+        if (itemType === "file_change") {
             this.fileChanges++;
         }
-        else if (itemType === 'command_execution') {
+        else if (itemType === "command_execution") {
             this.commandsExecuted++;
         }
         this.items.set(itemId, {
-            type: 'item',
+            type: "item",
             description,
-            status: 'started',
+            status: "started",
             timestamp: event.timestamp,
             details: event.data,
         });
@@ -173,7 +173,7 @@ export class ProgressInferenceEngine {
             return;
         const existing = this.items.get(itemId);
         if (existing) {
-            existing.status = 'completed';
+            existing.status = "completed";
             existing.timestamp = event.timestamp;
             // Counters are now incremented in handleItemStarted for real-time updates
         }

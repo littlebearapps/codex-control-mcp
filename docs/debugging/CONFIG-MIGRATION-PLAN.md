@@ -11,11 +11,13 @@
 The MCP Delegator package was renamed from `codex-control` to `mcp-delegator`, but the config directory still uses the old name:
 
 **Current State**:
+
 - ✅ Package: `@littlebearapps/mcp-delegator`
 - ✅ Command: `mcp-delegator`
 - ❌ Config Dir: `~/.config/codex-control/` ← **INCONSISTENT**
 
 **Target State**:
+
 - ✅ Package: `@littlebearapps/mcp-delegator`
 - ✅ Command: `mcp-delegator`
 - ✅ Config Dir: `~/.config/mcp-delegator/` ← **CONSISTENT**
@@ -41,15 +43,18 @@ The MCP Delegator package was renamed from `codex-control` to `mcp-delegator`, b
 ### User Impact
 
 **Existing Users** (have v3.2.1 or earlier):
+
 - Config directory: `~/.config/codex-control/`
 - Task history: 60 tasks (in our case)
 - Environments: Custom Codex Cloud environments
 
 **New Users** (install v3.4.1+):
+
 - Config directory: `~/.config/mcp-delegator/`
 - Clean slate
 
 **Upgrade Scenario**:
+
 - Automatic migration on first run of v3.4.1
 - No data loss
 - No user action required
@@ -63,26 +68,33 @@ The MCP Delegator package was renamed from `codex-control` to `mcp-delegator`, b
 **File**: `src/state/task_registry.ts`
 
 **Current** (line 93):
+
 ```typescript
-const configDir = path.join(os.homedir(), '.config', 'codex-control');
+const configDir = path.join(os.homedir(), ".config", "codex-control");
 ```
 
 **New** (with migration logic):
+
 ```typescript
 // Migration from old directory name
-const oldConfigDir = path.join(os.homedir(), '.config', 'codex-control');
-const newConfigDir = path.join(os.homedir(), '.config', 'mcp-delegator');
+const oldConfigDir = path.join(os.homedir(), ".config", "codex-control");
+const newConfigDir = path.join(os.homedir(), ".config", "mcp-delegator");
 
 // Auto-migrate if old exists and new doesn't
 let configDir = newConfigDir;
 if (fs.existsSync(oldConfigDir) && !fs.existsSync(newConfigDir)) {
   try {
-    console.error('[TaskRegistry] Migrating config from codex-control to mcp-delegator...');
+    console.error(
+      "[TaskRegistry] Migrating config from codex-control to mcp-delegator...",
+    );
     fs.renameSync(oldConfigDir, newConfigDir);
-    console.error('[TaskRegistry] Migration complete! Config now at:', newConfigDir);
+    console.error(
+      "[TaskRegistry] Migration complete! Config now at:",
+      newConfigDir,
+    );
   } catch (error) {
-    console.error('[TaskRegistry] Migration failed:', error);
-    console.error('[TaskRegistry] Falling back to old directory for safety');
+    console.error("[TaskRegistry] Migration failed:", error);
+    console.error("[TaskRegistry] Falling back to old directory for safety");
     configDir = oldConfigDir; // Fallback to old directory
   }
 }
@@ -92,16 +104,18 @@ if (!fs.existsSync(configDir)) {
   fs.mkdirSync(configDir, { recursive: true });
 }
 
-this.dbPath = dbPath || path.join(configDir, 'tasks.db');
+this.dbPath = dbPath || path.join(configDir, "tasks.db");
 ```
 
 **Similar Changes**:
+
 - Check `src/state/cloud_task_registry.ts` for hardcoded paths
 - Check any other files with `'codex-control'` references
 
 ### Phase 2: Search and Replace (15 min)
 
 **Find all references**:
+
 ```bash
 cd /Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/mcp-delegator
 grep -r "codex-control" src/
@@ -111,6 +125,7 @@ grep -r "codex-control" README.md
 ```
 
 **Expected Files**:
+
 - `src/state/task_registry.ts` - Config path
 - `src/state/cloud_task_registry.ts` - Environment path (if any)
 - Documentation files - Path references
@@ -120,29 +135,38 @@ grep -r "codex-control" README.md
 **Files to Update**:
 
 1. **CHANGELOG.md** - Add breaking change notice:
-   ```markdown
+
+   ````markdown
    ## [3.5.0] - 2025-11-XX
 
    ### BREAKING CHANGE: Config Directory Migration
 
    Config directory renamed for consistency with package name:
+
    - **Old**: `~/.config/codex-control/`
    - **New**: `~/.config/mcp-delegator/`
 
    **Automatic Migration**:
+
    - First run of v3.4.1+ automatically migrates old directory
    - All task history, environments, and config preserved
    - No user action required
 
    **Manual Migration** (if automatic migration fails):
+
    ```bash
    mv ~/.config/codex-control ~/.config/mcp-delegator
    ```
+   ````
 
    **Verification**:
+
    ```bash
    ls -la ~/.config/mcp-delegator/  # Should show tasks.db, environments.json
    ```
+
+   ```
+
    ```
 
 2. **README.md** - Update all path references:
@@ -150,7 +174,7 @@ grep -r "codex-control" README.md
    - Replace with `mcp-delegator`
    - Update registry location examples
 
-3. **quickrefs/*.md** - Update references:
+3. **quickrefs/\*.md** - Update references:
    - `quickrefs/troubleshooting.md` - Registry location
    - `quickrefs/architecture.md` - Config paths
    - Any other files with hardcoded paths
@@ -162,6 +186,7 @@ grep -r "codex-control" README.md
 **Test Cases**:
 
 1. **Fresh Install** (no existing config):
+
    ```bash
    # Simulate fresh install
    rm -rf ~/.config/mcp-delegator ~/.config/codex-control
@@ -171,6 +196,7 @@ grep -r "codex-control" README.md
    ```
 
 2. **Migration from Old Directory**:
+
    ```bash
    # Create old directory with dummy data
    mkdir -p ~/.config/codex-control
@@ -185,6 +211,7 @@ grep -r "codex-control" README.md
    ```
 
 3. **Both Directories Exist** (edge case):
+
    ```bash
    # Create both directories
    mkdir -p ~/.config/codex-control ~/.config/mcp-delegator
@@ -194,6 +221,7 @@ grep -r "codex-control" README.md
    ```
 
 4. **Permission Issues**:
+
    ```bash
    # Make old directory read-only
    chmod 555 ~/.config/codex-control
@@ -251,26 +279,32 @@ If migration causes issues:
 ### Pre-Release (GitHub Discussions)
 
 Post migration announcement:
-```markdown
+
+````markdown
 **Upcoming Change in v3.4.1: Config Directory Migration**
 
 We're renaming the config directory for consistency:
+
 - **Old**: `~/.config/codex-control/`
 - **New**: `~/.config/mcp-delegator/`
 
 **What You Need to Know**:
+
 - ✅ Automatic migration on first run of v3.4.1
 - ✅ All your task history and environments preserved
 - ✅ No action required from you
 - ✅ Fallback to old directory if migration fails
 
 **Manual Migration** (optional, for early adopters):
+
 ```bash
 mv ~/.config/codex-control ~/.config/mcp-delegator
 ```
+````
 
 **Questions?** Reply to this thread!
-```
+
+````
 
 ### Post-Release (npm Package Description)
 
@@ -287,7 +321,7 @@ Update package.json:
     "config-migration"
   ]
 }
-```
+````
 
 ---
 
@@ -305,26 +339,28 @@ Update package.json:
 
 ## Estimated Timeline
 
-| Phase | Duration | Owner |
-|-------|----------|-------|
-| Phase 1: Code Changes | 30 min | Claude/Nathan |
-| Phase 2: Search & Replace | 15 min | Claude/Nathan |
-| Phase 3: Documentation | 30 min | Claude/Nathan |
-| Phase 4: Testing | 30 min | Nathan |
-| Phase 5: Build & Publish | 15 min | Nathan |
-| **TOTAL** | **2 hours** | |
+| Phase                     | Duration    | Owner         |
+| ------------------------- | ----------- | ------------- |
+| Phase 1: Code Changes     | 30 min      | Claude/Nathan |
+| Phase 2: Search & Replace | 15 min      | Claude/Nathan |
+| Phase 3: Documentation    | 30 min      | Claude/Nathan |
+| Phase 4: Testing          | 30 min      | Nathan        |
+| Phase 5: Build & Publish  | 15 min      | Nathan        |
+| **TOTAL**                 | **2 hours** |               |
 
 ---
 
 ## Current Machine Status
 
 **Your MacBook** (as of 2025-11-17):
+
 - **Installed Version**: v3.2.1 (needs update!)
 - **Current Config**: `~/.config/codex-control/` (will migrate)
 - **Tasks in Registry**: 60 tasks (will preserve)
 - **Environments**: `environments.json` (will preserve)
 
 **After Migration**:
+
 - **Version**: v3.4.1
 - **Config**: `~/.config/mcp-delegator/`
 - **Tasks**: 60 tasks (preserved)

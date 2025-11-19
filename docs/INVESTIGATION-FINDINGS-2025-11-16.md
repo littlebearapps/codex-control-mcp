@@ -56,10 +56,12 @@ TOTAL                      60
 ### Evidence
 
 **Bug Report Claims**:
+
 - Task `T-local-mi1h3c6tric3yw` created but never appeared in registry
 - Task `T-local-mi1jtztvbxgcxy` created but never appeared in registry
 
 **Investigation Results**:
+
 ```sql
 sqlite3 tasks.db "SELECT id, status FROM tasks WHERE id LIKE '%mi1h3c%' OR id LIKE '%mi1jt%';"
 
@@ -72,18 +74,20 @@ T-local-mi1jtztvbxgcxy | completed | 2025-11-16 08:36:06
 ### Root Cause
 
 **Code Analysis** (`src/state/task_registry.ts`):
+
 ```typescript
 // TaskRegistry uses SQLite
-this.db = new Database(this.dbPath);  // ~/.config/codex-control/tasks.db
+this.db = new Database(this.dbPath); // ~/.config/codex-control/tasks.db
 
 // local_status.ts uses globalTaskRegistry
 const tasks = globalTaskRegistry.queryTasks({
-  origin: 'local',
-  workingDir: showAll ? undefined : workingDir
+  origin: "local",
+  workingDir: showAll ? undefined : workingDir,
 });
 ```
 
 **Problem**:
+
 - Old code may still reference JSON registry (`local-tasks.json`)
 - SQLite migration incomplete - some tools not updated
 - `codex_local_status` might be querying wrong registry
@@ -95,11 +99,13 @@ const tasks = globalTaskRegistry.queryTasks({
 ### Evidence
 
 **Bug Report Claims**:
+
 - Task `T-local-mi1gob5gxgdvar` reported "✅ Success" but created no files
 - Git status showed clean working tree
 - Expected files missing (oauth_manager.py, mutate_writer.py, etc.)
 
 **Investigation Results**:
+
 ```sql
 sqlite3 tasks.db "SELECT status, length(result) FROM tasks
 WHERE id = 'T-local-mi1gob5gxgdvar';"
@@ -108,6 +114,7 @@ completed | 493144  # 493KB result!
 ```
 
 **Result Contents**:
+
 ```json
 {
   "success": true,
@@ -124,12 +131,14 @@ completed | 493144  # 493KB result!
 **Hypothesis**: Task executed in `read-only` mode when it should have been `workspace-write`
 
 **Evidence**:
+
 - Task shows successful execution (103 events)
 - Thread ID present (SDK execution)
 - Final output shows "scanning the repo" (read-only operation)
 - No file write operations visible in output
 
 **Need to verify**:
+
 - What mode was specified in original request?
 - Did Codex CLI honor the mode?
 - Were there permission errors (suppressed in output)?
@@ -141,11 +150,13 @@ completed | 493144  # 493KB result!
 ### Evidence
 
 **Bug Report Claims**:
+
 - 9 tasks stuck in "working" status for 8+ hours
 - All from `/tmp/git-safety-test` directory
 - Different from current working directory (`auditor-toolkit/main`)
 
 **Investigation Results**:
+
 ```sql
 sqlite3 tasks.db "SELECT id, status,
   (strftime('%s','now') - created_at/1000) as age_seconds,
@@ -167,6 +178,7 @@ T-local-mi127ad04c1cnm | working | 31705 | /tmp/git-safety-test  # "Show git log
 **Elapsed Time**: 31,705 - 32,054 seconds = **8.8 - 8.9 hours** (EXACTLY matches bug report!)
 
 **Task Details**:
+
 - `T-local-mi127ad04c1cnm`: "Show git log --oneline"
 - `T-local-mi126umnoks0g4`: "Rebase current branch onto main"
 - All 9 tasks are git-related operations
@@ -176,12 +188,14 @@ T-local-mi127ad04c1cnm | working | 31705 | /tmp/git-safety-test  # "Show git log
 ### Root Cause
 
 **No Automatic Cleanup**: Tasks stuck in "working" status indefinitely
+
 - No timeout mechanism
 - No heartbeat/liveness check
 - No automatic status update when process dies
 - Registry doesn't detect zombie tasks
 
 **Evidence**:
+
 ```typescript
 // src/state/task_registry.ts - NO cleanup logic found
 // No TTL enforcement
@@ -196,11 +210,13 @@ T-local-mi127ad04c1cnm | working | 31705 | /tmp/git-safety-test  # "Show git log
 ### Evidence
 
 **Bug Report** (`codex-git-workflow-issue.md`):
+
 - Task `T-local-mi1ciy9snzl1fs` marked as "Failed"
 - Implementation: ✅ 100% complete (9 files, 714 lines, 10 tests passing)
 - Git workflow: ❌ Failed (dirty working directory detected)
 
 **Investigation Results**:
+
 ```sql
 sqlite3 tasks.db "SELECT id, status FROM tasks
 WHERE id = 'T-local-mi1ciy9snzl1fs';"
@@ -215,6 +231,7 @@ T-local-mi1ciy9snzl1fs | completed_with_errors | 2025-11-16 06:39:57
 ### Root Cause
 
 **Git Verification Logic** (in Codex SDK):
+
 ```
 1. Check: git status clean?
 2. If NO: Reject branch creation
@@ -222,12 +239,14 @@ T-local-mi1ciy9snzl1fs | completed_with_errors | 2025-11-16 06:39:57
 ```
 
 **Problems**:
+
 - No `--allow-dirty` flag option
 - No auto-stash support
 - Can't distinguish related vs unrelated dirty files
 - No "Partial Success" status (implementation succeeded, workflow failed)
 
 **Impact**:
+
 - Manual intervention required even when task succeeds
 - Confusing status ("failed" when work is done)
 
@@ -238,6 +257,7 @@ T-local-mi1ciy9snzl1fs | completed_with_errors | 2025-11-16 06:39:57
 ### Evidence
 
 **Current Status Values**:
+
 ```sql
 SELECT DISTINCT status FROM tasks;
 
@@ -256,12 +276,14 @@ unknown
 **Missing**: No "Partial Success" concept where implementation succeeds but ancillary tasks fail
 
 **Example**: Task `T-local-mi1ciy9snzl1fs`
+
 - Implementation: ✅ 100% (9 files, 714 lines, 10 tests)
 - Git workflow: ❌ Failed (dirty directory)
 - Status: `completed_with_errors`
 - **User Experience**: Confusing - work is done but shows errors
 
 **Recommendation**:
+
 - Keep current statuses
 - Better error messaging to clarify "work succeeded, workflow had issues"
 - Documentation for when to use each status
@@ -273,15 +295,18 @@ unknown
 ### Evidence
 
 **Bug Report Claims**:
+
 - `codex_local_results` returned file listing instead of implementation output
 - Output was truncated
 
 **Investigation Required**:
+
 - Check `codex_local_results` tool implementation
 - Verify result field size limits
 - Test with 493KB result (task `T-local-mi1gob5gxgdvar`)
 
 **Current Evidence**:
+
 - Task result is 493KB (large!)
 - Result stored in SQLite database
 - May be too large to display in full
@@ -297,6 +322,7 @@ unknown
 **Confirmed**: 9 tasks stuck for 8.9 hours with no cleanup
 
 **No Cleanup Mechanisms Found**:
+
 1. ❌ No TTL enforcement
 2. ❌ No automatic "working" → "failed" timeout
 3. ❌ No zombie task detection
@@ -304,11 +330,13 @@ unknown
 5. ❌ No "completed" task purging after N days
 
 **Current State**:
+
 - 60 total tasks in registry
 - 9 stuck in "working" (15% of registry!)
 - Oldest: 8.9 hours
 
 **Impact**:
+
 - Registry bloat
 - Misleading status reports
 - No automatic recovery from process crashes
@@ -322,17 +350,20 @@ unknown
 **Symptom**: Tasks in SQLite DB but not visible via tools
 
 **Root Cause**:
+
 - Migration from JSON to SQLite incomplete
 - Some tools still reference `local-tasks.json`
 - `globalTaskRegistry` may not be initialized correctly
 
 **Files to Check**:
+
 - `src/state/local_task_registry.ts` (old JSON registry)
 - `src/state/task_registry.ts` (new SQLite registry)
 - `src/tools/local_status.ts` (which registry does it use?)
 - `src/tools/local_results.ts` (which registry does it use?)
 
 **Evidence**:
+
 ```
 ~/.config/codex-control/
 ├── local-tasks.json   (1217 lines, last updated Nov 14)
@@ -347,6 +378,7 @@ unknown
 **Root Cause**: No cleanup mechanisms in `TaskRegistry` class
 
 **Recommendation**:
+
 ```typescript
 // Add to TaskRegistry
 cleanupStuckTasks(maxAgeSeconds: number = 3600) {
@@ -367,11 +399,13 @@ cleanupStuckTasks(maxAgeSeconds: number = 3600) {
 **Symptom**: Task reports success but creates no files
 
 **Root Cause Hypothesis**:
+
 - Task executed in wrong mode (read-only vs workspace-write)
 - OR: File writes succeeded in Codex but not committed to git
 - OR: Files written to wrong directory
 
 **Need to verify**:
+
 1. What mode was specified in original request?
 2. Check Codex SDK logs for actual file writes
 3. Verify working directory was correct
@@ -383,6 +417,7 @@ cleanupStuckTasks(maxAgeSeconds: number = 3600) {
 **Not a bug**: This is intentional safety measure
 
 **Improvement Needed**:
+
 - Add `--allow-dirty` flag option
 - Add auto-stash support
 - Better status messaging ("work complete, git workflow needs attention")
@@ -468,16 +503,19 @@ cleanupStuckTasks(maxAgeSeconds: number = 3600) {
 ## Files Analyzed
 
 ### Bug Reports
+
 - `/Users/nathanschram/claude-code-tools/lba/tools/auditor-toolkit/main/docs/codex-git-workflow-issue.md`
 - `/Users/nathanschram/claude-code-tools/lba/tools/auditor-toolkit/main/docs/codex-control-mcp-debugging.md`
 
 ### MCP Delegator Source
+
 - `src/state/task_registry.ts` - SQLite registry (current)
 - `src/state/local_task_registry.ts` - JSON registry (legacy?)
 - `src/tools/local_status.ts` - Status tool (which registry?)
 - `src/tools/local_results.ts` - Results tool (need to check)
 
 ### Registry Databases
+
 - `~/.config/codex-control/tasks.db` - SQLite (60 tasks, 5.4 MB)
 - `~/.config/codex-control/local-tasks.json` - JSON (1217 lines, 110 KB)
 - `~/.config/codex-control/task-registry.db` - Empty (0 bytes)
@@ -488,15 +526,15 @@ cleanupStuckTasks(maxAgeSeconds: number = 3600) {
 
 ### Bug Report Accuracy
 
-| Issue | Bug Report | Investigation | Status |
-|-------|-----------|--------------|---------|
-| Tasks missing from registry | Reported | ✅ Confirmed | REAL |
-| False positive success | Reported | ⚠️ Partial confirm | LIKELY REAL |
-| 9 stuck tasks (8+ hours) | Reported | ✅ Exact match | REAL |
-| Git verification too strict | Reported | ✅ Confirmed | REAL (by design) |
-| No partial success status | Reported | ⚠️ Has completed_with_errors | DOCUMENTED |
-| Truncated output | Reported | 📋 Need to test | PENDING |
-| No automatic cleanup | Inferred | ✅ Confirmed | REAL |
+| Issue                       | Bug Report | Investigation                | Status           |
+| --------------------------- | ---------- | ---------------------------- | ---------------- |
+| Tasks missing from registry | Reported   | ✅ Confirmed                 | REAL             |
+| False positive success      | Reported   | ⚠️ Partial confirm           | LIKELY REAL      |
+| 9 stuck tasks (8+ hours)    | Reported   | ✅ Exact match               | REAL             |
+| Git verification too strict | Reported   | ✅ Confirmed                 | REAL (by design) |
+| No partial success status   | Reported   | ⚠️ Has completed_with_errors | DOCUMENTED       |
+| Truncated output            | Reported   | 📋 Need to test              | PENDING          |
+| No automatic cleanup        | Inferred   | ✅ Confirmed                 | REAL             |
 
 **Conclusion**: 🎯 Bug reports are ACCURATE and reproducible!
 

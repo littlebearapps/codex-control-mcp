@@ -13,6 +13,7 @@
 **File**: `~/claude-code-tools/.mcp.json`
 
 **Change**:
+
 ```json
 // BEFORE (hard-coded path)
 {
@@ -39,6 +40,7 @@
 **Removed**: `~/claude-code-tools/mcp/codex-control/`
 
 **Contents** (deleted):
+
 - `dist/` - Compiled JavaScript (now uses development dist via symlink)
 - `node_modules/` - Dependencies (not needed)
 - `package.json` - Package definition (exists in development dir)
@@ -47,6 +49,7 @@
 **Reason**: With npm link, we have a single source of truth in the development directory. The old production copy is no longer needed and would cause confusion.
 
 **Verification**:
+
 ```bash
 ls -la ~/claude-code-tools/mcp/ | grep codex
 # (no output - directory gone) ✅
@@ -59,6 +62,7 @@ ls -la ~/claude-code-tools/mcp/ | grep codex
 ### npm link Configuration
 
 **Global symlink active**:
+
 ```
 /opt/homebrew/bin/codex-control-mcp
   ↓ (symlink)
@@ -68,6 +72,7 @@ ls -la ~/claude-code-tools/mcp/ | grep codex
 ```
 
 **Root .mcp.json uses**:
+
 ```json
 "command": "codex-control-mcp"
 ```
@@ -83,6 +88,7 @@ ls -la ~/claude-code-tools/mcp/ | grep codex
 **User must restart Claude Code** to pick up the new MCP configuration.
 
 When Claude Code restarts:
+
 1. Reads `~/.mcp.json` (now uses `codex-control-mcp` command)
 2. Executes `/opt/homebrew/bin/codex-control-mcp`
 3. Follows symlink to development `dist/index.js`
@@ -93,6 +99,7 @@ When Claude Code restarts:
 After restart, verify all 14 primitives work:
 
 **Local execution** (7 tools):
+
 - `_codex_local_run` - Simple one-shot execution
 - `_codex_local_exec` - SDK execution with threading
 - `_codex_local_resume` - Resume threaded conversations
@@ -102,6 +109,7 @@ After restart, verify all 14 primitives work:
 - `_codex_local_cancel` - Cancel running tasks
 
 **Cloud execution** (5 tools):
+
 - `_codex_cloud_submit` - Background task submission
 - `_codex_cloud_status` - Cloud task status
 - `_codex_cloud_results` - Retrieve cloud results
@@ -109,12 +117,14 @@ After restart, verify all 14 primitives work:
 - `_codex_cloud_cancel` - Cancel cloud tasks
 
 **Configuration** (2 tools):
+
 - `_codex_cloud_list_environments` - List environments
 - `_codex_cloud_github_setup` - GitHub integration guide
 
 ### Step 3: Verify Change Propagation ⏳
 
 **Test workflow**:
+
 1. Make small change to source code (e.g., add comment)
 2. Build: `npm run build`
 3. Restart Claude Code
@@ -129,6 +139,7 @@ After restart, verify all 14 primitives work:
 ### ⏳ After Restart (Pending)
 
 **Basic functionality**:
+
 - [ ] All 14 primitives accessible via MCP
 - [ ] `_codex_local_run` works with async
 - [ ] `_codex_local_status` shows correct registry
@@ -136,12 +147,14 @@ After restart, verify all 14 primitives work:
 - [ ] `_codex_cloud_list_environments` returns environments
 
 **npm link verification**:
+
 - [ ] Make small code change (add comment)
 - [ ] `npm run build`
 - [ ] Restart Claude Code
 - [ ] Verify change appears in tool behavior
 
 **No errors**:
+
 - [ ] MCP server starts without errors
 - [ ] No "command not found" errors
 - [ ] No symlink resolution errors
@@ -167,7 +180,9 @@ cp -r dist/* ~/claude-code-tools/mcp/codex-control/dist/
 {
   "codex-control": {
     "command": "node",
-    "args": ["/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js"],
+    "args": [
+      "/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/dist/index.js"
+    ],
     "env": { "CODEX_MAX_CONCURRENCY": "2" }
   }
 }

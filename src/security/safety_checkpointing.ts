@@ -7,10 +7,10 @@
  * - Extended reflog retention
  */
 
-import { spawn } from 'child_process';
-import * as path from 'path';
-import * as os from 'os';
-import * as fs from 'fs';
+import { spawn } from "child_process";
+import * as path from "path";
+import * as os from "os";
+import * as fs from "fs";
 
 export interface CheckpointResult {
   safety_branch: string;
@@ -28,10 +28,10 @@ export class SafetyCheckpointing {
   private sanitizeOperationName(operation: string): string {
     return operation
       .toLowerCase()
-      .replace(/[~^:?*[\\\s@{}]/g, '-')  // Replace invalid chars with dash
-      .replace(/\.{2,}/g, '-')            // Replace .. with dash
-      .replace(/-+/g, '-')                // Collapse multiple dashes
-      .replace(/^-|-$/g, '');             // Remove leading/trailing dashes
+      .replace(/[~^:?*[\\\s@{}]/g, "-") // Replace invalid chars with dash
+      .replace(/\.{2,}/g, "-") // Replace .. with dash
+      .replace(/-+/g, "-") // Collapse multiple dashes
+      .replace(/^-|-$/g, ""); // Remove leading/trailing dashes
   }
 
   /**
@@ -39,9 +39,9 @@ export class SafetyCheckpointing {
    */
   async createCheckpoint(
     operation: string,
-    workingDir: string
+    workingDir: string,
   ): Promise<CheckpointResult> {
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
     const headOid = await this.getHeadOid(workingDir);
     const shortSha = headOid.slice(0, 7);
 
@@ -52,30 +52,40 @@ export class SafetyCheckpointing {
     const safetyBranch = `safety/${sanitizedOperation}-${timestamp}-${shortSha}`;
 
     // Create safety branch pointing to current HEAD
-    await this.execGit(workingDir, ['branch', safetyBranch, 'HEAD']);
+    await this.execGit(workingDir, ["branch", safetyBranch, "HEAD"]);
 
     // Check if working tree is dirty
-    const status = await this.execGit(workingDir, ['status', '--porcelain']);
+    const status = await this.execGit(workingDir, ["status", "--porcelain"]);
     const isDirty = status.stdout.trim().length > 0;
 
     let stashRef: string | undefined;
     if (isDirty) {
       // Stash uncommitted changes including untracked files
       const stashMessage = `auto-checkpoint: ${operation} at ${timestamp}`;
-      await this.execGit(workingDir, ['stash', 'push', '-u', '-m', stashMessage]);
-      stashRef = 'stash@{0}';
+      await this.execGit(workingDir, [
+        "stash",
+        "push",
+        "-u",
+        "-m",
+        stashMessage,
+      ]);
+      stashRef = "stash@{0}";
     }
 
     // Extend reflog retention to 90 days
-    await this.execGit(workingDir, ['config', 'gc.reflogExpire', '90.days']);
-    await this.execGit(workingDir, ['config', 'gc.reflogExpireUnreachable', '90.days']);
+    await this.execGit(workingDir, ["config", "gc.reflogExpire", "90.days"]);
+    await this.execGit(workingDir, [
+      "config",
+      "gc.reflogExpireUnreachable",
+      "90.days",
+    ]);
 
     const result: CheckpointResult = {
       safety_branch: safetyBranch,
       stash_ref: stashRef,
       head_oid: headOid,
       created_at: new Date().toISOString(),
-      working_tree_was_dirty: isDirty
+      working_tree_was_dirty: isDirty,
     };
 
     // Log checkpoint for audit trail
@@ -88,7 +98,7 @@ export class SafetyCheckpointing {
    * Get current HEAD commit OID
    */
   private async getHeadOid(workingDir: string): Promise<string> {
-    const result = await this.execGit(workingDir, ['rev-parse', 'HEAD']);
+    const result = await this.execGit(workingDir, ["rev-parse", "HEAD"]);
     return result.stdout.trim();
   }
 
@@ -97,29 +107,29 @@ export class SafetyCheckpointing {
    */
   private async execGit(
     workingDir: string,
-    args: string[]
+    args: string[],
   ): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
-      const proc = spawn('git', args, {
+      const proc = spawn("git", args, {
         cwd: workingDir,
         env: {
           ...process.env,
-          GIT_TERMINAL_PROMPT: '0' // Disable git prompts
-        }
+          GIT_TERMINAL_PROMPT: "0", // Disable git prompts
+        },
       });
 
-      let stdout = '';
-      let stderr = '';
+      let stdout = "";
+      let stderr = "";
 
-      proc.stdout.on('data', (data) => {
+      proc.stdout.on("data", (data) => {
         stdout += data.toString();
       });
 
-      proc.stderr.on('data', (data) => {
+      proc.stderr.on("data", (data) => {
         stderr += data.toString();
       });
 
-      proc.on('close', (code) => {
+      proc.on("close", (code) => {
         if (code === 0) {
           resolve({ stdout, stderr });
         } else {
@@ -135,11 +145,11 @@ export class SafetyCheckpointing {
   private logCheckpoint(
     checkpoint: CheckpointResult,
     operation: string,
-    workingDir: string
+    workingDir: string,
   ): void {
     try {
-      const logDir = path.join(os.homedir(), '.config', 'mcp-delegator');
-      const logFile = path.join(logDir, 'checkpoints.log');
+      const logDir = path.join(os.homedir(), ".config", "mcp-delegator");
+      const logFile = path.join(logDir, "checkpoints.log");
 
       // Create directory if it doesn't exist
       if (!fs.existsSync(logDir)) {
@@ -153,14 +163,14 @@ export class SafetyCheckpointing {
         safety_branch: checkpoint.safety_branch,
         stash_ref: checkpoint.stash_ref,
         head_oid: checkpoint.head_oid,
-        working_tree_was_dirty: checkpoint.working_tree_was_dirty
+        working_tree_was_dirty: checkpoint.working_tree_was_dirty,
       };
 
       // Append to log file
-      fs.appendFileSync(logFile, JSON.stringify(logEntry) + '\n');
+      fs.appendFileSync(logFile, JSON.stringify(logEntry) + "\n");
     } catch (error) {
       // Log error but don't fail checkpoint creation
-      console.error('Failed to write checkpoint log:', error);
+      console.error("Failed to write checkpoint log:", error);
     }
   }
 
@@ -187,36 +197,42 @@ export class SafetyCheckpointing {
   /**
    * Cleanup old safety branches (older than 30 days)
    */
-  async cleanupOldCheckpoints(workingDir: string, daysToKeep: number = 30): Promise<number> {
+  async cleanupOldCheckpoints(
+    workingDir: string,
+    daysToKeep: number = 30,
+  ): Promise<number> {
     try {
       // List all safety branches
       const result = await this.execGit(workingDir, [
-        'for-each-ref',
-        '--format=%(refname:short) %(creatordate:unix)',
-        'refs/heads/safety/'
+        "for-each-ref",
+        "--format=%(refname:short) %(creatordate:unix)",
+        "refs/heads/safety/",
       ]);
 
-      const lines = result.stdout.trim().split('\n').filter(Boolean);
-      const cutoffTime = Date.now() / 1000 - (daysToKeep * 24 * 60 * 60);
+      const lines = result.stdout.trim().split("\n").filter(Boolean);
+      const cutoffTime = Date.now() / 1000 - daysToKeep * 24 * 60 * 60;
       let deletedCount = 0;
 
       for (const line of lines) {
-        const [branchName, timestampStr] = line.split(' ');
+        const [branchName, timestampStr] = line.split(" ");
         const timestamp = parseInt(timestampStr, 10);
 
         if (timestamp < cutoffTime) {
           try {
-            await this.execGit(workingDir, ['branch', '-D', branchName]);
+            await this.execGit(workingDir, ["branch", "-D", branchName]);
             deletedCount++;
           } catch (error) {
-            console.error(`Failed to delete old safety branch ${branchName}:`, error);
+            console.error(
+              `Failed to delete old safety branch ${branchName}:`,
+              error,
+            );
           }
         }
       }
 
       return deletedCount;
     } catch (error) {
-      console.error('Failed to cleanup old checkpoints:', error);
+      console.error("Failed to cleanup old checkpoints:", error);
       return 0;
     }
   }

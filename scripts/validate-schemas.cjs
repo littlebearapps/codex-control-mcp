@@ -4,15 +4,20 @@
  * Validate that all enhanced schemas are correctly structured
  */
 
-const { CloudSubmitTool, CloudStatusTool, CloudResultsTool, CloudListTasksTool } = require('../dist/tools/cloud');
+const {
+  CloudSubmitTool,
+  CloudStatusTool,
+  CloudResultsTool,
+  CloudListTasksTool,
+} = require("../dist/tools/cloud");
 
-console.log('=== Schema Validation ===\n');
+console.log("=== Schema Validation ===\n");
 
 const schemas = [
-  { name: 'CloudSubmitTool', schema: CloudSubmitTool.getSchema() },
-  { name: 'CloudStatusTool', schema: CloudStatusTool.getSchema() },
-  { name: 'CloudResultsTool', schema: CloudResultsTool.getSchema() },
-  { name: 'CloudListTasksTool', schema: CloudListTasksTool.getSchema() },
+  { name: "CloudSubmitTool", schema: CloudSubmitTool.getSchema() },
+  { name: "CloudStatusTool", schema: CloudStatusTool.getSchema() },
+  { name: "CloudResultsTool", schema: CloudResultsTool.getSchema() },
+  { name: "CloudListTasksTool", schema: CloudListTasksTool.getSchema() },
 ];
 
 let allValid = true;
@@ -47,20 +52,25 @@ schemas.forEach(({ name, schema }) => {
 
   // Check description structure
   const desc = schema.description;
-  const hasPrerequisites = desc.includes('PREREQUISITES') || desc.includes('USAGE');
-  const hasWorkflow = desc.includes('WORKFLOW');
+  const hasPrerequisites =
+    desc.includes("PREREQUISITES") || desc.includes("USAGE");
+  const hasWorkflow = desc.includes("WORKFLOW");
 
   console.log(`  ✅ name: ${schema.name}`);
   console.log(`  ✅ description: ${desc.substring(0, 60)}...`);
-  console.log(`  ✅ inputSchema: ${Object.keys(schema.inputSchema.properties).length} properties`);
-  console.log(`  ✅ structured sections: ${hasPrerequisites || hasWorkflow ? 'Yes' : 'No'}`);
-  console.log('');
+  console.log(
+    `  ✅ inputSchema: ${Object.keys(schema.inputSchema.properties).length} properties`,
+  );
+  console.log(
+    `  ✅ structured sections: ${hasPrerequisites || hasWorkflow ? "Yes" : "No"}`,
+  );
+  console.log("");
 });
 
 if (allValid) {
-  console.log('✅ All schemas valid!\n');
+  console.log("✅ All schemas valid!\n");
   process.exit(0);
 } else {
-  console.log('❌ Some schemas invalid\n');
+  console.log("❌ Some schemas invalid\n");
   process.exit(1);
 }
