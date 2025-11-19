@@ -358,6 +358,116 @@ npm audit fix --force
 - Upgrade when non-breaking fix available
 - Document risk acceptance in this file
 
+### Fix Attempt Results (2025-11-19)
+
+**Action Taken**: User requested investigation and fix of all 5 vulnerabilities
+
+**Steps Performed**:
+1. ✅ Investigated semantic-release v24 vs v25 changelog
+2. ✅ Attempted `npm audit fix --force`
+   - Result: Downgraded to semantic-release@24.2.9
+   - Result: Downgraded to @semantic-release/npm@12.0.2
+   - Result: Reduced from 5 → 4 vulnerabilities (tar fixed)
+   - Problem: glob still vulnerable in bundled npm@10.9.4
+3. ✅ Attempted upgrade back to latest
+   - Upgraded to semantic-release@25.0.2
+   - Upgraded to @semantic-release/npm@13.1.2
+   - Result: Back to 5 vulnerabilities
+   - Problem: npm@11.6.2 bundles glob@11.0.3 and tar@7.5.1 (both vulnerable)
+4. ❌ Attempted npm overrides for glob and tar
+   - Added: `"glob": "^11.1.0", "tar": "^7.6.0"` to overrides
+   - Result: Increased to 10 vulnerabilities (made it worse!)
+   - Problem: Overrides apply globally, not to bundled deps
+   - Reverted: Back to original overrides
+5. ✅ Reran gpm security scan
+   - Result: Still 5 vulnerabilities (4 high, 1 moderate)
+
+**Root Cause Analysis**:
+
+The vulnerabilities are in **bundled dependencies** that cannot be overridden:
+
+```
+semantic-release@25.0.2
+  └── @semantic-release/npm@13.1.2
+      └── npm@11.6.2 (bundled)
+          ├── glob@11.0.3 (bundled) ← VULNERABLE
+          │   └── CVE: GHSA-5j98-mcp5-4vw2 (command injection)
+          └── tar@7.5.1 (bundled) ← VULNERABLE
+              └── CVE: GHSA-29xp-372q-xqph (race condition)
+```
+
+**Why Can't We Fix These?**
+
+1. **Bundled Dependencies**: npm@11.6.2 is bundled inside @semantic-release/npm
+   - npm overrides don't work on bundled dependencies
+   - Can only be fixed by @semantic-release/npm updating their bundled npm
+
+2. **Latest npm Also Vulnerable**: npm@11.6.2 is the latest version
+   - npm package hasn't released a version with fixed glob/tar yet
+   - Waiting for npm@11.7.0+ with updated dependencies
+
+3. **Supply Chain Issue**: Multi-level bundling prevents fixes
+   - We control: package.json
+   - We don't control: @semantic-release/npm's bundled npm
+   - We don't control: npm's bundled glob and tar
+
+**Current State After Investigation**:
+
+```bash
+npm audit
+```
+
+**Results**:
+- ❌ glob@11.0.3 (high) - Command injection via -c/--cmd
+- ❌ glob@10.4.5 (high) - Command injection via -c/--cmd
+- ❌ tar@7.5.1 (moderate) - Race condition
+- ❌ npm@11.6.2 (high) - Via glob/tar
+- ❌ @semantic-release/npm@13.1.2 (high) - Via npm
+- ❌ semantic-release@25.0.2 (high) - Via @semantic-release/npm
+
+**Risk Assessment After Investigation**:
+
+✅ **Safe to Accept** for mcp-delegator:
+
+1. **Dev Dependencies Only**:
+   - Not shipped in published npm package
+   - Only used during CI/CD build process
+
+2. **Trusted Environment**:
+   - Runs in GitHub Actions (controlled environment)
+   - Not exposed to untrusted input
+
+3. **Low Exploit Probability**:
+   - **glob vulnerability**: Requires CLI usage with `-c/--cmd` flag
+     - We don't use glob CLI directly
+     - semantic-release doesn't use this flag
+   - **tar vulnerability**: Race condition in specific scenarios
+     - Requires concurrent access to same archive
+     - semantic-release uses tar programmatically, not CLI
+
+4. **Provenance Enabled**:
+   - Package has npm provenance attestations (v3.4.0+)
+   - Supply chain integrity is verified
+
+5. **No Direct Attack Surface**:
+   - Users installing @littlebearapps/mcp-delegator don't get these deps
+   - Published package doesn't include semantic-release
+
+**Final Recommendation**: ✅ **Accept Risk**
+
+- ✅ Document in SECURITY.md (if created)
+- ✅ Monitor for upstream fixes:
+  - npm package updates (watch for 11.7.0+)
+  - @semantic-release/npm updates
+- ✅ Re-audit after dependency updates
+- ✅ Consider alternative: Remove semantic-release (manual releases)
+  - ⚠️ Trade-off: Lose automation for security
+  - ❌ Not recommended for this project
+
+**Upstream Issues to Monitor**:
+- npm/npm: https://github.com/npm/npm (check for glob/tar updates)
+- semantic-release/npm: https://github.com/semantic-release/npm (check for npm bundle updates)
+
 ---
 
 ## Summary of Findings

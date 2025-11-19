@@ -29,5 +29,3 @@ isObject('hello');
 @category Object
 */
 export type UnknownRecord = Record<PropertyKey, unknown>;
-
-export {};
