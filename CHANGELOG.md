@@ -1,3 +1,17 @@
+# [3.6.0](https://github.com/littlebearapps/mcp-delegator/compare/v3.5.0...v3.6.0) (2025-11-19)
+
+
+### Bug Fixes
+
+* **ci:** lower coverage threshold to 4% and fix template validation grep pattern ([8da4068](https://github.com/littlebearapps/mcp-delegator/commit/8da406851b58b926668943ec6b21bfc606f9347e)), closes [#14](https://github.com/littlebearapps/mcp-delegator/issues/14)
+* regenerate package-lock.json to fix corrupted dependency URLs ([6117b3c](https://github.com/littlebearapps/mcp-delegator/commit/6117b3cb81a4b81d9cbd504b0e4c25cb4613b2e4))
+* **v3.6:** add format parameter to local_results schema and improve test infrastructure ([2292161](https://github.com/littlebearapps/mcp-delegator/commit/229216142adcc8ec988a463bb952e6dddfdf50ef))
+
+
+### Features
+
+* add JSON format support for all tools (v3.6.0 - in progress) ([e4502c1](https://github.com/littlebearapps/mcp-delegator/commit/e4502c18d47f54711d91b5fb4f4b21fc39438347))
+
 # [3.6.0] - 2025-11-18
 
 ## JSON Format Support - 97% Token Reduction 🚀
