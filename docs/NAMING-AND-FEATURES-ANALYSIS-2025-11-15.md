@@ -12,6 +12,7 @@
 ### Naming Recommendation: **`mcp-delegator`** ✅
 
 **Rationale**:
+
 - User's primary workflow: Claude Code delegates tasks to Codex (and future agents)
 - Async execution allows Claude Code + user to continue working while agents process delegated tasks
 - "Delegator" pattern perfectly describes this multi-agent coordination model
@@ -20,6 +21,7 @@
 ### Missing Codex Features: **6 Critical Capabilities**
 
 Currently unexposed in MCP:
+
 1. **Multimodal (Images)** - `--image` flag
 2. **Model Selection** - gpt-5-codex vs gpt-5 vs gpt-5.1-codex
 3. **Reasoning Levels** - GPT-5 thinking (low/medium/high)
@@ -49,19 +51,20 @@ User ←→ Claude Code (PRIMARY AI agent)
 
 ### Why "Delegator" Over "Conductor"
 
-| Aspect | Conductor | Delegator |
-|--------|-----------|-----------|
-| **Metaphor** | MCP leads the orchestra | MCP facilitates delegation |
-| **Hierarchy** | MCP is the boss ❌ | Claude Code is the boss ✅ |
-| **User workflow** | Doesn't match | Perfect match ✅ |
-| **Async pattern** | Implied coordination | Explicit delegation ✅ |
-| **Scalability** | Multiple equal agents | Primary + delegated agents ✅ |
+| Aspect            | Conductor               | Delegator                     |
+| ----------------- | ----------------------- | ----------------------------- |
+| **Metaphor**      | MCP leads the orchestra | MCP facilitates delegation    |
+| **Hierarchy**     | MCP is the boss ❌      | Claude Code is the boss ✅    |
+| **User workflow** | Doesn't match           | Perfect match ✅              |
+| **Async pattern** | Implied coordination    | Explicit delegation ✅        |
+| **Scalability**   | Multiple equal agents   | Primary + delegated agents ✅ |
 
 ### Recommended Names (In Order)
 
 #### 1. **`mcp-delegator`** ⭐⭐⭐⭐⭐ (RECOMMENDED)
 
 **Pros**:
+
 - ✅ Follows MCP ecosystem convention (`mcp-<function>`)
 - ✅ Discoverable (sorts with other MCP servers)
 - ✅ Clear delegation pattern
@@ -70,15 +73,25 @@ User ←→ Claude Code (PRIMARY AI agent)
 - ✅ Available on npm/GitHub (verified - no conflicts)
 
 **Package Structure**:
+
 ```json
 {
   "name": "@littlebearapps/mcp-delegator",
   "description": "Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution",
-  "keywords": ["mcp", "delegator", "multi-agent", "codex", "claude", "async", "orchestration"]
+  "keywords": [
+    "mcp",
+    "delegator",
+    "multi-agent",
+    "codex",
+    "claude",
+    "async",
+    "orchestration"
+  ]
 }
 ```
 
 **Branding**:
+
 - Package: `mcp-delegator`
 - Product: "Delegator (MCP)" or "MCP Delegator"
 - CLI command: `mcp-delegator`
@@ -87,31 +100,37 @@ User ←→ Claude Code (PRIMARY AI agent)
 #### 2. **`agent-delegator-mcp`** ⭐⭐⭐⭐
 
 **Pros**:
+
 - ✅ Very descriptive ("agent" + "delegator")
 - ✅ User's original suggestion
 - ✅ Available (verified - no conflicts)
 
 **Cons**:
+
 - ⚠️ Doesn't follow `mcp-<function>` convention
 - ⚠️ Less discoverable in MCP ecosystem
 
 #### 3. **`delegator-mcp`** ⭐⭐⭐
 
 **Pros**:
+
 - ✅ Simple, clean
 - ✅ Available (verified - no conflicts)
 
 **Cons**:
+
 - ⚠️ Doesn't start with "mcp-" (less discoverable)
 
 ### Final Recommendation
 
 **Use `mcp-delegator`** for:
+
 - Better ecosystem discoverability
 - Consistent with MCP naming conventions
 - Professional and scalable
 
 **Migration Path** (from codex-control-mcp):
+
 1. Create new package `@littlebearapps/mcp-delegator`
 2. Deprecate `codex-control-mcp` with migration notice
 3. Or use npm "alias" to maintain backward compatibility
@@ -132,6 +151,7 @@ User ←→ Claude Code (PRIMARY AI agent)
 #### 1. **Multimodal Support (Images)** - HIGH PRIORITY 🔴
 
 **Codex CLI Capability**:
+
 ```bash
 codex --image file.png "Analyze this UI mockup and suggest improvements"
 codex -i diagram.jpg,screenshot.png "Compare these two designs"
@@ -140,12 +160,14 @@ codex -i diagram.jpg,screenshot.png "Compare these two designs"
 **Current MCP Status**: ❌ NOT EXPOSED
 
 **Impact**:
+
 - Cannot analyze UI mockups, diagrams, screenshots
 - Cannot do visual code review
 - Cannot debug visual issues
 - Critical for modern development workflows
 
 **Recommended New Tool**:
+
 ```typescript
 {
   name: '_codex_local_run_with_images',
@@ -160,6 +182,7 @@ codex -i diagram.jpg,screenshot.png "Compare these two designs"
 ```
 
 **Implementation Notes**:
+
 - Validate image paths exist
 - Support local files, URLs, and base64 data URIs
 - Ensure model supports vision (gpt-4o, gpt-5, claude-3.5-sonnet)
@@ -170,6 +193,7 @@ codex -i diagram.jpg,screenshot.png "Compare these two designs"
 #### 2. **Model Selection** - HIGH PRIORITY 🔴
 
 **Codex CLI Capability**:
+
 ```bash
 # Interactive session
 /model  # Opens model selector
@@ -180,6 +204,7 @@ codex --model gpt-5 "Deep analysis of architecture"
 ```
 
 **Available Models**:
+
 - `gpt-5-codex` (default) - Optimized for coding tasks
 - `gpt-5` - General purpose with deeper reasoning
 - `gpt-5.1-codex` - Latest version
@@ -187,15 +212,18 @@ codex --model gpt-5 "Deep analysis of architecture"
 - `o3-mini` - Cloud-only reasoning model
 
 **Current MCP Status**: ⚠️ PARTIALLY EXPOSED
+
 - We have `model` parameter in tools
 - But no dedicated model selection/listing tool
 
 **Impact**:
+
 - Users can't discover available models
 - Can't optimize cost/performance by choosing right model
 - Can't switch models mid-workflow
 
 **Recommended New Tools**:
+
 ```typescript
 {
   name: '_codex_list_models',
@@ -228,6 +256,7 @@ codex --model gpt-5 "Deep analysis of architecture"
 #### 3. **Reasoning Levels (GPT-5 Thinking)** - HIGH PRIORITY 🔴
 
 **Codex CLI Capability**:
+
 ```bash
 # Interactive session
 /model  # Select GPT-5, then choose reasoning level
@@ -237,6 +266,7 @@ codex "Think deeply about the security implications..."
 ```
 
 **Reasoning Levels**:
+
 - **Low**: Fast, simple tasks (~0.5% of model max thinking budget)
 - **Medium**: Balanced (default) (~33% of model max)
 - **High**: Deep analysis (~67% of model max)
@@ -245,11 +275,13 @@ codex "Think deeply about the security implications..."
 **Current MCP Status**: ❌ NOT EXPOSED
 
 **Impact**:
+
 - Can't optimize cost/latency for simple tasks (should use low reasoning)
 - Can't request deep analysis for complex problems (should use high reasoning)
 - Missing 50-90% cost optimization opportunity!
 
 **Recommended New Tool**:
+
 ```typescript
 {
   name: '_codex_set_reasoning_level',
@@ -262,6 +294,7 @@ codex "Think deeply about the security implications..."
 ```
 
 **Implementation Notes**:
+
 - Only applies to GPT-5 models (gpt-5, gpt-5.1)
 - Map to OpenAI reasoning API parameters
 - For non-reasoning models, approximate with temperature/top_p
@@ -272,6 +305,7 @@ codex "Think deeply about the security implications..."
 #### 4. **Web Search** - MEDIUM PRIORITY 🟡
 
 **Codex CLI Capability**:
+
 ```bash
 codex --search "Research latest React best practices and update our components"
 codex exec --search "Find security vulnerabilities in dependencies and fix"
@@ -280,12 +314,14 @@ codex exec --search "Find security vulnerabilities in dependencies and fix"
 **Current MCP Status**: ❌ NOT EXPOSED
 
 **Impact**:
+
 - Can't access current documentation during execution
 - Can't research latest best practices
 - Can't check for known vulnerabilities
 - Limited to training data cutoff
 
 **Recommended New Tool**:
+
 ```typescript
 {
   name: '_codex_local_run_with_search',
@@ -299,6 +335,7 @@ codex exec --search "Find security vulnerabilities in dependencies and fix"
 ```
 
 **Implementation Notes**:
+
 - Maps to `--search` flag in Codex CLI
 - Search results are cached and referenced in execution
 - Consider rate limiting and domain allowlists for safety
@@ -308,6 +345,7 @@ codex exec --search "Find security vulnerabilities in dependencies and fix"
 #### 5. **Session Commands (/init, /review, /status)** - MEDIUM PRIORITY 🟡
 
 **Codex CLI Interactive Commands**:
+
 ```bash
 /init       # Create AGENTS.md file with instructions
 /review     # Review changes and find issues
@@ -319,12 +357,14 @@ codex exec --search "Find security vulnerabilities in dependencies and fix"
 **Current MCP Status**: ❌ NOT EXPOSED
 
 **Impact**:
+
 - Can't initialize project context automatically
 - Can't trigger automated code review
 - Can't check session status programmatically
 - Missing quality assurance workflows
 
 **Recommended New Tools**:
+
 ```typescript
 {
   name: '_codex_session_init',
@@ -363,6 +403,7 @@ codex exec --search "Find security vulnerabilities in dependencies and fix"
 #### 6. **Configuration Profiles** - MEDIUM PRIORITY 🟡
 
 **Codex CLI Capability**:
+
 ```bash
 codex --profile security "Audit codebase for vulnerabilities"
 codex --profile fast "Quick syntax check"
@@ -370,6 +411,7 @@ codex -p production "Deploy to production"
 ```
 
 **Profile Examples**:
+
 - `security`: Strict sandbox, high reasoning, security-focused prompts
 - `fast`: Low reasoning, read-only, quick tasks
 - `production`: Full access, high reasoning, deployment workflows
@@ -377,11 +419,13 @@ codex -p production "Deploy to production"
 **Current MCP Status**: ❌ NOT EXPOSED
 
 **Impact**:
+
 - Can't switch between different security/performance modes
 - Can't save preferred configurations
 - Can't enforce organization-wide policies
 
 **Recommended New Tools**:
+
 ```typescript
 {
   name: '_codex_list_profiles',
@@ -430,6 +474,7 @@ codex -p production "Deploy to production"
 ### Priority Roadmap
 
 #### Phase 1: Foundation (v3.2.0)
+
 **Timeline**: 1-2 weeks
 **Focus**: Rename + Model Selection + Reasoning Levels
 
@@ -450,12 +495,14 @@ codex -p production "Deploy to production"
    - Document cost optimization strategies
 
 **Deliverables**:
+
 - ✅ New package name active
 - ✅ 2 new tools (model selection, reasoning)
 - ✅ Documentation updated
 - ✅ Backward compatibility maintained
 
 #### Phase 2: Multimodal + Search (v3.3.0)
+
 **Timeline**: 2-3 weeks
 **Focus**: Images + Web Search
 
@@ -471,11 +518,13 @@ codex -p production "Deploy to production"
    - Search result caching
 
 **Deliverables**:
+
 - ✅ 3 new tools (images + search)
 - ✅ Image handling infrastructure
 - ✅ Search safety guardrails
 
 #### Phase 3: Session Management (v3.4.0)
+
 **Timeline**: 1-2 weeks
 **Focus**: Session commands + Profiles
 
@@ -492,11 +541,13 @@ codex -p production "Deploy to production"
    - Profile persistence (YAML/JSON)
 
 **Deliverables**:
+
 - ✅ 6 new tools (3 session + 3 profile)
 - ✅ Profile system architecture
 - ✅ Session management infrastructure
 
 #### Phase 4: Claude Code Agent (v4.0.0)
+
 **Timeline**: 3-4 weeks
 **Focus**: Add second agent via Anthropic Agent SDK
 
@@ -507,6 +558,7 @@ codex -p production "Deploy to production"
    - Test multi-agent workflows
 
 **Deliverables**:
+
 - ✅ Claude Code agent support
 - ✅ Multi-agent delegation working
 - ✅ "Delegator" pattern fully realized
@@ -518,36 +570,36 @@ codex -p production "Deploy to production"
 ```typescript
 interface ModelCapability {
   id: string;
-  provider: 'openai' | 'anthropic' | 'vertex' | 'azure';
-  capabilities: ('text' | 'vision' | 'reasoning' | 'audio')[];
+  provider: "openai" | "anthropic" | "vertex" | "azure";
+  capabilities: ("text" | "vision" | "reasoning" | "audio")[];
   maxTokens: number;
   costPer1kTokens: { input: number; output: number };
   description: string;
   reasoningSupport?: {
-    levels: ('low' | 'medium' | 'high' | 'max')[];
+    levels: ("low" | "medium" | "high" | "max")[];
     default: string;
   };
 }
 
 const MODEL_REGISTRY: ModelCapability[] = [
   {
-    id: 'gpt-5-codex',
-    provider: 'openai',
-    capabilities: ['text', 'vision', 'code'],
+    id: "gpt-5-codex",
+    provider: "openai",
+    capabilities: ["text", "vision", "code"],
     maxTokens: 200000,
     costPer1kTokens: { input: 0.003, output: 0.012 },
-    description: 'Optimized for coding tasks',
+    description: "Optimized for coding tasks",
   },
   {
-    id: 'gpt-5',
-    provider: 'openai',
-    capabilities: ['text', 'vision', 'reasoning'],
+    id: "gpt-5",
+    provider: "openai",
+    capabilities: ["text", "vision", "reasoning"],
     maxTokens: 200000,
     costPer1kTokens: { input: 0.003, output: 0.012 },
-    description: 'General purpose with deep reasoning',
+    description: "General purpose with deep reasoning",
     reasoningSupport: {
-      levels: ['low', 'medium', 'high', 'max'],
-      default: 'medium',
+      levels: ["low", "medium", "high", "max"],
+      default: "medium",
     },
   },
   // Add more models as they become available
@@ -560,9 +612,9 @@ const MODEL_REGISTRY: ModelCapability[] = [
 interface Profile {
   name: string;
   model: string;
-  reasoning?: 'low' | 'medium' | 'high' | 'max';
-  sandbox: 'read-only' | 'workspace-write' | 'danger-full-access';
-  approvals: 'untrusted' | 'on-failure' | 'on-request' | 'never';
+  reasoning?: "low" | "medium" | "high" | "max";
+  sandbox: "read-only" | "workspace-write" | "danger-full-access";
+  approvals: "untrusted" | "on-failure" | "on-request" | "never";
   tools?: {
     webSearch?: boolean;
     images?: boolean;
@@ -576,25 +628,25 @@ interface Profile {
 // Example profiles
 const DEFAULT_PROFILES: Profile[] = [
   {
-    name: 'security',
-    model: 'gpt-5',
-    reasoning: 'high',
-    sandbox: 'read-only',
-    approvals: 'untrusted',
+    name: "security",
+    model: "gpt-5",
+    reasoning: "high",
+    sandbox: "read-only",
+    approvals: "untrusted",
   },
   {
-    name: 'fast',
-    model: 'gpt-5-codex',
-    reasoning: 'low',
-    sandbox: 'read-only',
-    approvals: 'on-failure',
+    name: "fast",
+    model: "gpt-5-codex",
+    reasoning: "low",
+    sandbox: "read-only",
+    approvals: "on-failure",
   },
   {
-    name: 'production',
-    model: 'gpt-5',
-    reasoning: 'high',
-    sandbox: 'workspace-write',
-    approvals: 'on-request',
+    name: "production",
+    model: "gpt-5",
+    reasoning: "high",
+    sandbox: "workspace-write",
+    approvals: "on-request",
   },
 ];
 ```
@@ -602,6 +654,7 @@ const DEFAULT_PROFILES: Profile[] = [
 ### Testing Strategy
 
 #### Unit Tests
+
 - ✅ Model capability validation
 - ✅ Reasoning level mapping
 - ✅ Profile loading/merging
@@ -609,12 +662,14 @@ const DEFAULT_PROFILES: Profile[] = [
 - ✅ Search domain allowlist
 
 #### Integration Tests
+
 - ✅ Model switching mid-session
 - ✅ Profile application end-to-end
 - ✅ Multimodal with vision models
 - ✅ Web search with rate limiting
 
 #### Production Validation
+
 - ✅ Test each new tool in Auditor Toolkit
 - ✅ Verify cost optimization with reasoning levels
 - ✅ Validate multimodal with real UI mockups
@@ -671,6 +726,7 @@ const DEFAULT_PROFILES: Profile[] = [
 #### Package.json Updates
 
 **Before**:
+
 ```json
 {
   "name": "@littlebearapps/codex-control-mcp",
@@ -680,6 +736,7 @@ const DEFAULT_PROFILES: Profile[] = [
 ```
 
 **After**:
+
 ```json
 {
   "name": "@littlebearapps/mcp-delegator",
@@ -710,6 +767,7 @@ which mcp-delegator
 **All projects** (Auditor Toolkit, Root, etc.):
 
 **Before** (`.mcp.json`):
+
 ```json
 {
   "mcpServers": {
@@ -721,6 +779,7 @@ which mcp-delegator
 ```
 
 **After** (`.mcp.json`):
+
 ```json
 {
   "mcpServers": {
@@ -737,6 +796,7 @@ which mcp-delegator
 #### Backward Compatibility
 
 **Option 1**: npm package alias (recommended)
+
 ```bash
 # Publish deprecated package that forwards to new one
 # codex-control-mcp/package.json
@@ -751,6 +811,7 @@ which mcp-delegator
 ```
 
 **Option 2**: Maintain both names temporarily
+
 ```bash
 # Create symlink
 ln -s mcp-delegator codex-control-mcp
@@ -812,6 +873,7 @@ ln -s mcp-delegator codex-control-mcp
 ## Appendix: Research References
 
 ### External Documentation
+
 - Codex CLI: https://developers.openai.com/codex/cli/
 - Codex CLI Reference: https://developers.openai.com/codex/cli/reference/
 - MCP Specification: https://modelcontextprotocol.io/specification
@@ -819,11 +881,13 @@ ln -s mcp-delegator codex-control-mcp
 - Anthropic Agent SDK: https://docs.anthropic.com/agent-sdk (future)
 
 ### GitHub Issues Referenced
+
 - openai/codex#3641: Support slash commands in codex exec mode
 - openai/codex#4311: Auto invocation of slash commands
 - openai/codex#1367: Non-zero exit code output suppression (Issue #1 root cause)
 
 ### Community Resources
+
 - Multi-Agent Orchestration Patterns: https://collabnix.com/multi-agent-orchestration-patterns-and-best-practices-for-2024/
 - MCP Agent Workflows: https://github.com/lastmile-ai/mcp-agent
 - Codex CLI Approval Modes: https://vladimirsiedykh.com/blog/codex-cli-approval-modes-2025

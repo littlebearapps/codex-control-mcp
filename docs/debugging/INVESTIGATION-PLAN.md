@@ -24,6 +24,7 @@ We'll tackle issues in priority order, starting with the foundation (registry lo
 **Issue**: 1.4 - Registry database location unknown
 
 **Investigation Steps**:
+
 ```bash
 # 1. Check common locations
 ls -la ~/.codex/
@@ -49,12 +50,14 @@ grep -r "\.db\|\.sqlite" src/
 ```
 
 **Expected Outcomes**:
+
 1. Find registry file location
 2. Identify registry format (SQLite vs JSON)
 3. Document schema/structure
 4. Check file permissions
 
 **Success Criteria**:
+
 - [ ] Registry file located
 - [ ] Format identified
 - [ ] Schema documented
@@ -65,6 +68,7 @@ grep -r "\.db\|\.sqlite" src/
 ### Task 1.2: Document Registry Structure (30 min)
 
 **Investigation Steps**:
+
 ```bash
 # If SQLite:
 sqlite3 <registry-path> ".schema"
@@ -77,6 +81,7 @@ cat <registry-path> | jq '.tasks | length'
 ```
 
 **Document**:
+
 1. Table/object structure
 2. Key fields (task_id, status, working_dir, etc.)
 3. Indexes (if SQLite)
@@ -84,6 +89,7 @@ cat <registry-path> | jq '.tasks | length'
 5. Example records
 
 **Success Criteria**:
+
 - [ ] Schema fully documented
 - [ ] Example records captured
 - [ ] Field meanings understood
@@ -95,6 +101,7 @@ cat <registry-path> | jq '.tasks | length'
 **Issue**: 1.5 - No execution logs or diagnostics
 
 **Investigation**:
+
 ```typescript
 // Check current logging in src/
 // Identify where to add logs:
@@ -105,12 +112,14 @@ cat <registry-path> | jq '.tasks | length'
 ```
 
 **Implementation Plan**:
+
 1. Add debug logging to process_manager.ts
 2. Log task state transitions in task_registry.ts
 3. Log stdout/stderr from Codex processes
 4. Add log file output (optional stderr for now)
 
 **Log Format**:
+
 ```
 [YYYY-MM-DD HH:MM:SS] [LEVEL] [COMPONENT] Message
 [2025-11-17 14:30:00] [INFO] [ProcessManager] Starting task T-local-abc123
@@ -119,6 +128,7 @@ cat <registry-path> | jq '.tasks | length'
 ```
 
 **Success Criteria**:
+
 - [ ] Logging added to all critical paths
 - [ ] Log level configurable (env var)
 - [ ] Logs include task ID, timestamps, state
@@ -159,6 +169,7 @@ cat <registry-path> | jq '.tasks | length'
 ```
 
 **Diagnostic Commands**:
+
 ```bash
 # 1. Check for running processes
 ps aux | grep codex | grep -v grep
@@ -175,12 +186,14 @@ log show --predicate 'process == "codex"' --info --last 5m
 ```
 
 **Root Cause Hypotheses**:
+
 1. **Process not spawning**: spawn() fails silently
 2. **Process exits immediately**: Codex CLI auth or config issue
 3. **Registry not updating**: Task created but registry write fails
 4. **Working directory mismatch**: Task runs but in wrong directory
 
 **Success Criteria**:
+
 - [ ] Root cause identified
 - [ ] Reproduction case created
 - [ ] Fix implemented
@@ -215,6 +228,7 @@ log show --predicate 'process == "codex"' --info --last 5m
 ```
 
 **Diagnostic Queries**:
+
 ```sql
 -- If SQLite registry
 SELECT task_id, status, output, error
@@ -229,12 +243,14 @@ LIMIT 10;
 ```
 
 **Root Cause Hypotheses**:
+
 1. **Output truncation**: Large output truncated, missing file info
 2. **Metadata extraction bug**: File operations not detected
 3. **Dry-run mode**: Task runs in preview mode instead of write
 4. **Sandbox blocking**: Files written but outside working directory
 
 **Success Criteria**:
+
 - [ ] Root cause identified
 - [ ] File creation verified in tests
 - [ ] Success reporting accurate
@@ -266,6 +282,7 @@ LIMIT 10;
 ```
 
 **Manual Cleanup Test**:
+
 ```typescript
 // Use cleanup_registry tool
 {
@@ -281,6 +298,7 @@ LIMIT 10;
 ```
 
 **Automatic Cleanup Implementation**:
+
 ```typescript
 // Option 1: Automatic cleanup on status check
 // - When codex_local_status is called
@@ -299,6 +317,7 @@ LIMIT 10;
 ```
 
 **Success Criteria**:
+
 - [ ] Stuck tasks identified in registry
 - [ ] Cleanup logic fixed/implemented
 - [ ] Manual cleanup works
@@ -314,6 +333,7 @@ LIMIT 10;
 **Issue**: 3.1 - codex_local_results returns truncated output
 
 **Investigation**:
+
 ```typescript
 // Check output limits in src/tools/local_results.ts
 // - Is there a max length?
@@ -327,12 +347,14 @@ LIMIT 10;
 ```
 
 **Fix Approaches**:
+
 1. **Increase output limit**: Allow larger output (with configurable max)
 2. **Prioritize metadata**: Show structured metadata first, full output later
 3. **Streaming output**: Return output in chunks
 4. **Summary + details**: Show summary first, full output on request
 
 **Success Criteria**:
+
 - [ ] Output not truncated for normal tasks
 - [ ] Large outputs handled gracefully
 - [ ] File operations clearly listed
@@ -345,6 +367,7 @@ LIMIT 10;
 **Issue**: 3.2 - Tasks from different directories mixed in registry
 
 **Investigation**:
+
 ```typescript
 // Check filtering in src/tools/local_status.ts
 // - How is workingDir filter applied?
@@ -358,21 +381,23 @@ LIMIT 10;
 ```
 
 **Test Cases**:
+
 ```typescript
 // In /project-a/
-codex_local_status({ showAll: false })
+codex_local_status({ showAll: false });
 // Should show ONLY /project-a/ tasks
 
 // In /project-b/
-codex_local_status({ showAll: false })
+codex_local_status({ showAll: false });
 // Should show ONLY /project-b/ tasks
 
 // In /project-a/
-codex_local_status({ showAll: true })
+codex_local_status({ showAll: true });
 // Should show ALL tasks from ALL directories
 ```
 
 **Success Criteria**:
+
 - [ ] showAll: false filters correctly
 - [ ] Path normalization works (absolute vs relative)
 - [ ] No cross-contamination between projects
@@ -385,6 +410,7 @@ codex_local_status({ showAll: true })
 **Issue**: 3.3 - Silent execution failures with no error messages
 
 **Investigation**:
+
 ```typescript
 // Check error handling in:
 // 1. src/executor/process_manager.ts - process spawn errors
@@ -399,6 +425,7 @@ codex_local_status({ showAll: true })
 ```
 
 **Fix Implementation**:
+
 ```typescript
 // Add explicit checks:
 // 1. After spawn(), check process.pid
@@ -414,6 +441,7 @@ codex_local_status({ showAll: true })
 ```
 
 **Success Criteria**:
+
 - [ ] All failure modes have error messages
 - [ ] stderr captured and returned
 - [ ] Error types categorized
@@ -428,12 +456,14 @@ codex_local_status({ showAll: true })
 **Issues**: 2.1, 2.2, 2.4
 
 **Design Goals**:
+
 1. Allow dirty working directory with opt-in flag
 2. Support auto-stash workflow
 3. Distinguish implementation success from git workflow issues
 4. Provide clear error messages and recommendations
 
 **API Design**:
+
 ```typescript
 // Option 1: Simple flag
 {
@@ -462,11 +492,13 @@ codex_local_status({ showAll: true })
 ```
 
 **Implementation Approaches**:
+
 1. **Add flag to codex_local_exec**: Pass to Codex SDK
 2. **Wrap git commands**: Auto-stash in MCP server
 3. **Document workaround**: User manual git workflow
 
 **Success Criteria**:
+
 - [ ] API designed and documented
 - [ ] Implementation approach selected
 - [ ] Backward compatibility maintained
@@ -479,30 +511,32 @@ codex_local_status({ showAll: true })
 **Issue**: 2.3 - Only "Success" or "Failed" status
 
 **Design**:
+
 ```typescript
 // Proposed status levels:
 type TaskStatus =
-  | "pending"      // Not started
-  | "running"      // Executing
-  | "completed"    // Full success
-  | "partial"      // Implementation OK, workflow issues
-  | "warning"      // Succeeded with warnings
-  | "failed"       // Critical failure
-  | "canceled"     // User canceled
-  | "timeout"      // Exceeded time limit
+  | "pending" // Not started
+  | "running" // Executing
+  | "completed" // Full success
+  | "partial" // Implementation OK, workflow issues
+  | "warning" // Succeeded with warnings
+  | "failed" // Critical failure
+  | "canceled" // User canceled
+  | "timeout"; // Exceeded time limit
 
 // Status metadata:
 interface TaskStatusDetail {
   status: TaskStatus;
-  implementationSuccess: boolean;  // Code/files created
-  gitWorkflowSuccess: boolean;     // Branch/commit succeeded
-  testsSuccess: boolean;           // Tests passed
-  warnings: string[];              // Non-critical issues
-  errors: string[];                // Critical issues
+  implementationSuccess: boolean; // Code/files created
+  gitWorkflowSuccess: boolean; // Branch/commit succeeded
+  testsSuccess: boolean; // Tests passed
+  warnings: string[]; // Non-critical issues
+  errors: string[]; // Critical issues
 }
 ```
 
 **Implementation**:
+
 ```typescript
 // In metadata_extractor.ts:
 // - Parse git verification results
@@ -517,6 +551,7 @@ interface TaskStatusDetail {
 ```
 
 **Success Criteria**:
+
 - [ ] Status levels defined
 - [ ] Metadata extraction updated
 - [ ] Display logic implemented
@@ -527,51 +562,54 @@ interface TaskStatusDetail {
 ## Testing Strategy
 
 ### Unit Tests
+
 ```typescript
 // test/unit/registry.test.ts
-describe('Task Registry', () => {
-  test('tasks appear in registry after creation');
-  test('working directory filter works correctly');
-  test('stuck tasks are cleaned up');
-  test('status transitions correctly');
+describe("Task Registry", () => {
+  test("tasks appear in registry after creation");
+  test("working directory filter works correctly");
+  test("stuck tasks are cleaned up");
+  test("status transitions correctly");
 });
 
 // test/unit/execution.test.ts
-describe('Task Execution', () => {
-  test('simple file creation succeeds');
-  test('stdout/stderr captured correctly');
-  test('errors reported with details');
-  test('silent failures detected');
+describe("Task Execution", () => {
+  test("simple file creation succeeds");
+  test("stdout/stderr captured correctly");
+  test("errors reported with details");
+  test("silent failures detected");
 });
 
 // test/unit/git-workflow.test.ts
-describe('Git Workflow', () => {
-  test('clean working directory allows branch creation');
-  test('dirty working directory with allow flag succeeds');
-  test('auto-stash workflow works correctly');
-  test('status granularity reflects git state');
+describe("Git Workflow", () => {
+  test("clean working directory allows branch creation");
+  test("dirty working directory with allow flag succeeds");
+  test("auto-stash workflow works correctly");
+  test("status granularity reflects git state");
 });
 ```
 
 ### Integration Tests
+
 ```typescript
 // test/integration/auditor-toolkit.test.ts
-describe('Auditor Toolkit Scenarios', () => {
-  test('Phase 0 implementation with dirty working dir');
-  test('Large file creation (Mutate Writer)');
-  test('Multiple files with tests');
-  test('Git workflow with uncommitted changes');
+describe("Auditor Toolkit Scenarios", () => {
+  test("Phase 0 implementation with dirty working dir");
+  test("Large file creation (Mutate Writer)");
+  test("Multiple files with tests");
+  test("Git workflow with uncommitted changes");
 });
 ```
 
 ### Regression Tests
+
 ```typescript
 // Ensure fixes don't break existing functionality
-describe('Regression Tests', () => {
-  test('successful tasks from v3.4.0 still work');
-  test('registry isolation still works');
-  test('timeout detection still works');
-  test('error redaction still works');
+describe("Regression Tests", () => {
+  test("successful tasks from v3.4.0 still work");
+  test("registry isolation still works");
+  test("timeout detection still works");
+  test("error redaction still works");
 });
 ```
 
@@ -580,25 +618,30 @@ describe('Regression Tests', () => {
 ## Success Metrics
 
 ### Phase 1 (Foundation)
+
 - [ ] Registry location documented
 - [ ] Execution logging implemented
 - [ ] Diagnostic commands available
 
 ### Phase 2 (Critical Fixes)
+
 - [ ] Tasks execute and appear in registry (Issue 1.1 ✅)
 - [ ] Success reports match actual file creation (Issue 1.2 ✅)
 - [ ] No stuck tasks in registry (Issue 1.3 ✅)
 
 ### Phase 3 (High Priority)
+
 - [ ] Full output returned, not truncated (Issue 3.1 ✅)
 - [ ] Working directory isolation works (Issue 3.2 ✅)
 - [ ] All failures have error messages (Issue 3.3 ✅)
 
 ### Phase 4 (Enhancements)
+
 - [ ] Git workflow more flexible (Issues 2.1, 2.2, 2.4 ✅)
 - [ ] Task status accurately reflects outcome (Issue 2.3 ✅)
 
 ### Overall
+
 - [ ] All 12 issues resolved or enhancement path defined
 - [ ] Auditor toolkit scenarios working
 - [ ] Test coverage ≥ 80%
@@ -615,6 +658,7 @@ If fixes cause regressions:
 3. **Long-term**: Re-test fixes in isolation
 
 **Rollback Command**:
+
 ```bash
 npm uninstall -g @littlebearapps/mcp-delegator
 npm install -g @littlebearapps/mcp-delegator@3.4.0
@@ -625,6 +669,7 @@ npm install -g @littlebearapps/mcp-delegator@3.4.0
 ## Documentation Updates
 
 After fixes:
+
 1. Update `quickrefs/tools.md` with new parameters
 2. Update `quickrefs/troubleshooting.md` with registry location
 3. Update `CLAUDE.md` with version and changelog

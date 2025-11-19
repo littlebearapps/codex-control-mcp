@@ -5,17 +5,23 @@
  * Tasks continue even after Claude Code closes and can be checked from any device.
  */
 
-import { spawn } from 'child_process';
-import { InputValidator } from '../security/input_validator.js';
-import { globalRedactor } from '../security/redactor.js';
-import { globalTaskRegistry, CloudTaskFilter } from '../state/cloud_task_registry.js';
-import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
-import { TimeoutWatchdog } from '../executor/timeout_watchdog.js';
+import { spawn } from "child_process";
+import { InputValidator } from "../security/input_validator.js";
+import { globalRedactor } from "../security/redactor.js";
+import {
+  globalTaskRegistry,
+  CloudTaskFilter,
+} from "../state/cloud_task_registry.js";
+import {
+  RiskyOperationDetector,
+  GitOperationTier,
+} from "../security/risky_operation_detector.js";
+import { TimeoutWatchdog } from "../executor/timeout_watchdog.js";
 import {
   ToolExecuteExtra,
   sendProgressNotification,
   createCompletionNotification,
-} from '../types/progress.js';
+} from "../types/progress.js";
 
 export interface CloudSubmitInput {
   task: string;
@@ -23,6 +29,7 @@ export interface CloudSubmitInput {
   attempts?: number;
   model?: string;
   allow_destructive_git?: boolean;
+  format?: "json" | "markdown";
 }
 
 export interface CloudStatusInput {
@@ -30,18 +37,22 @@ export interface CloudStatusInput {
   list?: boolean;
   workingDir?: string;
   envId?: string;
-  status?: 'submitted' | 'completed' | 'failed' | 'cancelled';
+  status?: "submitted" | "completed" | "failed" | "cancelled";
   limit?: number;
   showStats?: boolean;
+  format?: "json" | "markdown";
 }
 
 export interface CloudResultsInput {
   taskId: string;
+  format?: "json" | "markdown";
+  include_output?: boolean;
+  max_output_bytes?: number;
 }
 
 export interface CloudToolResult {
   content: Array<{
-    type: 'text';
+    type: "text";
     text: string;
   }>;
   isError?: boolean;
@@ -52,7 +63,10 @@ export class CloudSubmitTool {
   /**
    * Submit a task to Codex Cloud for background execution
    */
-  async execute(input: CloudSubmitInput, extra?: ToolExecuteExtra): Promise<CloudToolResult> {
+  async execute(
+    input: CloudSubmitInput,
+    extra?: ToolExecuteExtra,
+  ): Promise<CloudToolResult> {
     let riskyOperationApproved = false; // Track if user approved risky git operation
 
     // Validate inputs
@@ -61,7 +75,7 @@ export class CloudSubmitTool {
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ Validation Error: ${validation.error}`,
           },
         ],
@@ -70,10 +84,31 @@ export class CloudSubmitTool {
     }
 
     if (!input.envId) {
+      if (input.format === "json") {
+        const json = {
+          version: "3.6",
+          schema_id: "codex/v3.6/execution_ack/v1",
+          tool: "_codex_cloud_submit",
+          tool_category: "execution_ack",
+          request_id: (await import("crypto")).randomUUID(),
+          ts: new Date().toISOString(),
+          status: "error",
+          meta: {},
+          error: {
+            code: "VALIDATION",
+            message: "Environment ID required",
+            retryable: false,
+          },
+        } as const;
+        return {
+          content: [{ type: "text", text: JSON.stringify(json) }],
+          isError: true,
+        };
+      }
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ Environment ID required\n\n**Tip**: Run \`codex cloud\` to browse available environments and get ENV_ID.\n\nOr configure environments at: https://chatgpt.com/codex/settings/environments`,
           },
         ],
@@ -90,13 +125,15 @@ export class CloudSubmitTool {
 
       // Tier 1: ALWAYS BLOCKED - No way to proceed
       if (highestTier === GitOperationTier.ALWAYS_BLOCKED) {
-        const blockedOps = riskyOps.filter(op => op.tier === GitOperationTier.ALWAYS_BLOCKED);
+        const blockedOps = riskyOps.filter(
+          (op) => op.tier === GitOperationTier.ALWAYS_BLOCKED,
+        );
         const errorMessage = detector.formatBlockedMessage(blockedOps);
 
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: errorMessage,
             },
           ],
@@ -105,15 +142,22 @@ export class CloudSubmitTool {
       }
 
       // Tier 2: REQUIRES CONFIRMATION - Check if user confirmed
-      if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !input.allow_destructive_git) {
-        const riskyOpsToConfirm = riskyOps.filter(op => op.tier === GitOperationTier.REQUIRES_CONFIRMATION);
-        const confirmMessage = detector.formatConfirmationMessage(riskyOpsToConfirm);
-        const confirmMetadata = detector.formatConfirmationMetadata(riskyOpsToConfirm);
+      if (
+        highestTier === GitOperationTier.REQUIRES_CONFIRMATION &&
+        !input.allow_destructive_git
+      ) {
+        const riskyOpsToConfirm = riskyOps.filter(
+          (op) => op.tier === GitOperationTier.REQUIRES_CONFIRMATION,
+        );
+        const confirmMessage =
+          detector.formatConfirmationMessage(riskyOpsToConfirm);
+        const confirmMetadata =
+          detector.formatConfirmationMetadata(riskyOpsToConfirm);
 
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: confirmMessage,
             },
           ],
@@ -124,7 +168,9 @@ export class CloudSubmitTool {
 
       // User confirmed risky operation - note this in submission
       if (input.allow_destructive_git) {
-        console.log('[CloudSubmit] ⚠️  User confirmed risky git operation for cloud execution');
+        console.log(
+          "[CloudSubmit] ⚠️  User confirmed risky git operation for cloud execution",
+        );
         riskyOperationApproved = true;
         // Note: Cloud execution doesn't create local checkpoint, but Codex Cloud
         // has its own safety mechanisms (git history is preserved in container)
@@ -132,14 +178,14 @@ export class CloudSubmitTool {
     }
 
     // Build command arguments
-    const args = ['cloud', 'exec', '--env', input.envId];
+    const args = ["cloud", "exec", "--env", input.envId];
 
     if (input.attempts) {
-      args.push('--attempts', String(input.attempts));
+      args.push("--attempts", String(input.attempts));
     }
 
     if (input.model) {
-      args.push('-c', `model="${input.model}"`);
+      args.push("-c", `model="${input.model}"`);
     }
 
     // Add task at the end
@@ -156,10 +202,36 @@ export class CloudSubmitTool {
       });
 
       if (!result.success) {
+        if (input.format === "json") {
+          const json = {
+            version: "3.6",
+            schema_id: "codex/v3.6/execution_ack/v1",
+            tool: "_codex_cloud_submit",
+            tool_category: "execution_ack",
+            request_id: (await import("crypto")).randomUUID(),
+            ts: new Date().toISOString(),
+            status: "error",
+            meta: {},
+            error: {
+              code: "TOOL_ERROR",
+              message: "Cloud task submission failed",
+              details: {
+                stderr_tail: redactedOutput.stderr.substring(
+                  Math.max(0, redactedOutput.stderr.length - 1000),
+                ),
+              },
+              retryable: true,
+            },
+          } as const;
+          return {
+            content: [{ type: "text", text: JSON.stringify(json) }],
+            isError: true,
+          };
+        }
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `❌ Cloud Task Submission Failed\n\n**Error**:\n\`\`\`\n${redactedOutput.stderr}\n\`\`\`\n\n**Troubleshooting**:\n- Verify environment exists: \`codex cloud\`\n- Check authentication: \`codex login\`\n- Verify environment ID is correct`,
             },
           ],
@@ -182,20 +254,23 @@ export class CloudSubmitTool {
             attempts: input.attempts,
           });
         } catch (error) {
-          console.error('[CloudSubmitTool] Failed to register task:', error);
+          console.error("[CloudSubmitTool] Failed to register task:", error);
           // Continue anyway - registration failure shouldn't block submission
         }
 
         // Send MCP notification for cloud task submission (v3.5.0)
         await sendProgressNotification(
           extra,
-          createCompletionNotification(taskId, `Cloud task submitted - running in background`),
-          `CloudSubmit:${taskId}`
+          createCompletionNotification(
+            taskId,
+            `Cloud task submitted - running in background`,
+          ),
+          `CloudSubmit:${taskId}`,
         );
       }
 
       // Build success message
-      let message = '';
+      let message = "";
 
       // Prepend risky operation notice if approved
       if (riskyOperationApproved) {
@@ -239,19 +314,65 @@ export class CloudSubmitTool {
         message += `\n**Submission Output**:\n\`\`\`\n${redactedOutput.stdout.trim()}\n\`\`\`\n`;
       }
 
+      if (input.format === "json") {
+        const json = {
+          version: "3.6",
+          schema_id: "codex/v3.6/execution_ack/v1",
+          tool: "_codex_cloud_submit",
+          tool_category: "execution_ack",
+          request_id: (await import("crypto")).randomUUID(),
+          ts: new Date().toISOString(),
+          status: "ok",
+          meta: {},
+          data: {
+            task_id: taskId || undefined,
+            thread_id: undefined,
+            accepted: true,
+            capability: "background",
+            started_at: new Date().toISOString(),
+          },
+        } as any;
+        if (json.data) {
+          Object.keys(json.data).forEach(
+            (k) => json.data[k] === undefined && delete json.data[k],
+          );
+        }
+        return { content: [{ type: "text", text: JSON.stringify(json) }] };
+      }
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: message,
           },
         ],
       };
     } catch (error) {
+      if ((input as any)?.format === "json") {
+        const json = {
+          version: "3.6",
+          schema_id: "codex/v3.6/execution_ack/v1",
+          tool: "_codex_cloud_submit",
+          tool_category: "execution_ack",
+          request_id: (await import("crypto")).randomUUID(),
+          ts: new Date().toISOString(),
+          status: "error",
+          meta: {},
+          error: {
+            code: "INTERNAL",
+            message: error instanceof Error ? error.message : String(error),
+            retryable: true,
+          },
+        } as const;
+        return {
+          content: [{ type: "text", text: JSON.stringify(json) }],
+          isError: true,
+        };
+      }
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ Unexpected Error\n\n${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -263,22 +384,25 @@ export class CloudSubmitTool {
   /**
    * Execute codex cloud command (with timeout detection v3.2.1)
    */
-  private runCodexCloud(args: string[], options?: {
-    idleTimeoutMs?: number;
-    hardTimeoutMs?: number;
-  }): Promise<{
+  private runCodexCloud(
+    args: string[],
+    options?: {
+      idleTimeoutMs?: number;
+      hardTimeoutMs?: number;
+    },
+  ): Promise<{
     success: boolean;
     stdout: string;
     stderr: string;
     exitCode: number;
-    timeout?: import('../executor/timeout_watchdog.js').TimeoutError;
+    timeout?: import("../executor/timeout_watchdog.js").TimeoutError;
   }> {
     return new Promise((resolve) => {
-      let stdout = '';
-      let stderr = '';
+      let stdout = "";
+      let stderr = "";
 
-      const proc = spawn('codex', args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
+      const proc = spawn("codex", args, {
+        stdio: ["ignore", "pipe", "pipe"],
         shell: false,
       });
 
@@ -286,7 +410,7 @@ export class CloudSubmitTool {
 
       // Create timeout watchdog (v3.2.1)
       const watchdog = new TimeoutWatchdog(proc, processId, {
-        idleTimeoutMs: options?.idleTimeoutMs ?? 5 * 60 * 1000,  // 5 min
+        idleTimeoutMs: options?.idleTimeoutMs ?? 5 * 60 * 1000, // 5 min
         hardTimeoutMs: options?.hardTimeoutMs ?? 10 * 60 * 1000, // 10 min (shorter for cloud submit)
         onTimeout: (timeout: any) => {
           const partial = watchdog.getPartialResults();
@@ -302,17 +426,17 @@ export class CloudSubmitTool {
         },
       });
 
-      proc.stdout?.on('data', (data) => {
+      proc.stdout?.on("data", (data) => {
         stdout += data.toString();
         watchdog.recordStdout(data);
       });
 
-      proc.stderr?.on('data', (data) => {
+      proc.stderr?.on("data", (data) => {
         stderr += data.toString();
         watchdog.recordStderr(data);
       });
 
-      proc.on('close', (exitCode) => {
+      proc.on("close", (exitCode) => {
         watchdog.stop();
 
         resolve({
@@ -323,7 +447,7 @@ export class CloudSubmitTool {
         });
       });
 
-      proc.on('error', (error) => {
+      proc.on("error", (error) => {
         watchdog.stop();
 
         resolve({
@@ -363,37 +487,48 @@ export class CloudSubmitTool {
    */
   static getSchema() {
     return {
-      name: '_codex_cloud_submit',
-      description: 'Fire-and-forget background execution - like starting a build server job. Submit a task to Codex Cloud and it keeps running even if you close Claude Code. Perfect for: comprehensive test suites (30-60 min), full refactorings, or creating GitHub PRs automatically. The magic: runs in a sandboxed container with your repo, can make commits and open PRs, continues while you work on other things. Use when: tasks take >30 minutes, you need GitHub integration (branch creation, commits, PRs), or want device independence. Returns: task ID immediately (<5 sec), then task runs in background (5-60 min typical). Check progress with _codex_cloud_status or the Web UI. Requires: environment ID (from Codex Cloud settings) with repo URL configured. Be specific in task descriptions - "Create feature branch \'feat/auth\', add JWT auth, test, create PR" beats "add authentication". Avoid for: quick local tasks (<5 min, use _codex_local_exec), or tasks needing real-time feedback.',
+      name: "_codex_cloud_submit",
+      description:
+        'Fire-and-forget background execution - like starting a build server job. Submit a task to Codex Cloud and it keeps running even if you close Claude Code. Perfect for: comprehensive test suites (30-60 min), full refactorings, or creating GitHub PRs automatically. The magic: runs in a sandboxed container with your repo, can make commits and open PRs, continues while you work on other things. Use when: tasks take >30 minutes, you need GitHub integration (branch creation, commits, PRs), or want device independence. Returns: task ID immediately (<5 sec), then task runs in background (5-60 min typical). Check progress with _codex_cloud_status or the Web UI. Requires: environment ID (from Codex Cloud settings) with repo URL configured. Be specific in task descriptions - "Create feature branch \'feat/auth\', add JWT auth, test, create PR" beats "add authentication". Avoid for: quick local tasks (<5 min, use _codex_local_exec), or tasks needing real-time feedback.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           task: {
-            type: 'string',
+            type: "string",
             description:
               'Task description for Codex Cloud (e.g., "Run full test suite and fix any failures")',
           },
           envId: {
-            type: 'string',
+            type: "string",
             description:
-              'Environment ID from Codex Cloud settings. Get this by running `codex cloud` or visiting https://chatgpt.com/codex/settings/environments',
+              "Environment ID from Codex Cloud settings. Get this by running `codex cloud` or visiting https://chatgpt.com/codex/settings/environments",
           },
           attempts: {
-            type: 'number',
-            description: 'Number of assistant attempts (best-of-N). Defaults to 1.',
+            type: "number",
+            description:
+              "Number of assistant attempts (best-of-N). Defaults to 1.",
             default: 1,
           },
           model: {
-            type: 'string',
-            description: 'OpenAI model to use (e.g., "gpt-4o", "o1", "o3-mini"). Defaults to environment default.',
+            type: "string",
+            description:
+              'OpenAI model to use (e.g., "gpt-4o", "o1", "o3-mini"). Defaults to environment default.',
           },
           allow_destructive_git: {
-            type: 'boolean',
-            description: 'Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.',
+            type: "boolean",
+            description:
+              "Allow risky git operations (rebase, reset --hard, force push, etc.). User must explicitly confirm via Claude Code dialog.",
             default: false,
           },
+          format: {
+            type: "string",
+            enum: ["json", "markdown"],
+            default: "markdown",
+            description:
+              "Response format. Default markdown for backward compatibility.",
+          },
         },
-        required: ['task', 'envId'],
+        required: ["task", "envId"],
       },
     };
   }
@@ -410,6 +545,10 @@ export class CloudStatusTool {
    */
   async execute(input: CloudStatusInput = {}): Promise<CloudToolResult> {
     try {
+      // JSON snapshot mode across modes
+      if (input.format === "json") {
+        return await this.jsonSnapshot(input);
+      }
       // MODE 1: Show pending tasks (default behavior, like check_reminder)
       if (!input.taskId && !input.list) {
         return await this.showPendingTasks();
@@ -431,7 +570,7 @@ export class CloudStatusTool {
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ Unexpected Error\n\n${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -445,7 +584,7 @@ export class CloudStatusTool {
    */
   private async showPendingTasks(): Promise<CloudToolResult> {
     const filter: CloudTaskFilter = {
-      status: 'submitted',
+      status: "submitted",
       limit: 50,
     };
 
@@ -455,21 +594,23 @@ export class CloudStatusTool {
       return {
         content: [
           {
-            type: 'text',
-            text: '✅ No pending Cloud tasks. All submitted tasks have been checked or completed.',
+            type: "text",
+            text: "✅ No pending Cloud tasks. All submitted tasks have been checked or completed.",
           },
         ],
       };
     }
 
     let message = `## ⏳ Pending Cloud Tasks\n\n`;
-    message += `**Count**: ${tasks.length} task${tasks.length === 1 ? '' : 's'}\n\n`;
+    message += `**Count**: ${tasks.length} task${tasks.length === 1 ? "" : "s"}\n\n`;
     message += `### Tasks:\n\n`;
 
     for (const task of tasks) {
       const submittedTime = new Date(task.timestamp);
       const now = new Date();
-      const minutesAgo = Math.floor((now.getTime() - submittedTime.getTime()) / 60000);
+      const minutesAgo = Math.floor(
+        (now.getTime() - submittedTime.getTime()) / 60000,
+      );
       const timeAgo =
         minutesAgo < 60
           ? `${minutesAgo}m ago`
@@ -477,7 +618,7 @@ export class CloudStatusTool {
 
       message += `**${task.taskId}**\n`;
       message += `- Environment: ${task.envId}\n`;
-      message += `- Task: ${task.task.substring(0, 100)}${task.task.length > 100 ? '...' : ''}\n`;
+      message += `- Task: ${task.task.substring(0, 100)}${task.task.length > 100 ? "..." : ""}\n`;
       message += `- Submitted: ${timeAgo}\n`;
       message += `- Check Status: https://chatgpt.com/codex/tasks/${task.taskId}\n\n`;
     }
@@ -486,7 +627,7 @@ export class CloudStatusTool {
     message += `💡 Use \`list: true\` parameter to see all tasks (not just pending).\n`;
 
     return {
-      content: [{ type: 'text', text: message }],
+      content: [{ type: "text", text: message }],
     };
   }
 
@@ -543,7 +684,7 @@ export class CloudStatusTool {
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: message,
         },
       ],
@@ -553,7 +694,9 @@ export class CloudStatusTool {
   /**
    * MODE 3: List all tasks with optional filtering
    */
-  private async listAllTasks(input: CloudStatusInput): Promise<CloudToolResult> {
+  private async listAllTasks(
+    input: CloudStatusInput,
+  ): Promise<CloudToolResult> {
     const filter: CloudTaskFilter = {
       workingDir: input.workingDir || process.cwd(),
       envId: input.envId,
@@ -570,10 +713,10 @@ export class CloudStatusTool {
       message += `**Total Tasks**: ${stats.total}\n`;
       message += `**By Status**: ${Object.entries(stats.byStatus)
         .map(([status, count]) => `${status} (${count})`)
-        .join(', ')}\n\n`;
+        .join(", ")}\n\n`;
     }
 
-    message += `**Filtered Results**: ${tasks.length} task${tasks.length !== 1 ? 's' : ''}\n`;
+    message += `**Filtered Results**: ${tasks.length} task${tasks.length !== 1 ? "s" : ""}\n`;
     message += `**Working Directory**: ${input.workingDir || process.cwd()}\n\n`;
 
     if (tasks.length === 0) {
@@ -587,7 +730,7 @@ export class CloudStatusTool {
         const relativeTime = this.getRelativeTime(date);
 
         message += `### ${task.taskId}\n\n`;
-        message += `- **Task**: ${task.task.length > 80 ? task.task.substring(0, 80) + '...' : task.task}\n`;
+        message += `- **Task**: ${task.task.length > 80 ? task.task.substring(0, 80) + "..." : task.task}\n`;
         message += `- **Environment**: ${task.envId}\n`;
         message += `- **Status**: ${this.getStatusEmoji(task.status)} ${task.status}\n`;
         message += `- **Submitted**: ${relativeTime} (${date.toLocaleString()})\n`;
@@ -619,7 +762,7 @@ export class CloudStatusTool {
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: message,
         },
       ],
@@ -627,20 +770,115 @@ export class CloudStatusTool {
   }
 
   /**
+   * JSON status_snapshot generator
+   */
+  private async jsonSnapshot(
+    input: CloudStatusInput,
+  ): Promise<CloudToolResult> {
+    const all = await globalTaskRegistry.listTasks({
+      workingDir: input.workingDir || undefined,
+      envId: input.envId || undefined,
+      status: input.status,
+      limit: input.limit || undefined,
+    });
+
+    const running = all.filter((t) => t.status === "submitted");
+    const completedAll = all.filter(
+      (t) =>
+        t.status === "completed" ||
+        t.status === "failed" ||
+        t.status === "cancelled",
+    );
+    const recentlyCompleted = completedAll
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
+      .slice(0, Math.max(1, Math.min(5, input.limit || 5)));
+
+    const json: any = {
+      version: "3.6",
+      schema_id: "codex/v3.6/status_snapshot/v1",
+      tool: "_codex_cloud_status",
+      tool_category: "status_snapshot",
+      request_id: (await import("crypto")).randomUUID(),
+      ts: new Date().toISOString(),
+      status: "ok",
+      meta: {
+        snapshot_ts: new Date().toISOString(),
+        total: all.length,
+      },
+      data: {
+        summary: {
+          running: running.length,
+          queued: running.length, // cloud registry treats submitted as queued
+          recently_completed: completedAll.length,
+        },
+      },
+    };
+
+    if (running.length > 0) {
+      json.data.tasks = running.map((t) => ({
+        task_id: t.taskId,
+        state: "working",
+        started_ts: t.timestamp,
+        elapsed_seconds: Math.max(
+          0,
+          Math.floor((Date.now() - new Date(t.timestamp).getTime()) / 1000),
+        ),
+        progress: t.progress
+          ? {
+              percent: t.progress.progressPercentage ?? 0,
+              completed_steps: t.progress.completedSteps ?? 0,
+              total_steps: t.progress.totalSteps ?? 0,
+              current_activity: t.progress.currentAction ?? null,
+            }
+          : null,
+      }));
+    }
+
+    if (running.length > 0) {
+      json.data.queue = running.map((t, idx) => ({
+        task_id: t.taskId,
+        position: idx,
+        estimated_start_ms: undefined,
+      }));
+      // strip undefineds from queue entries
+      json.data.queue.forEach((q: any) => {
+        if (q.estimated_start_ms === undefined) delete q.estimated_start_ms;
+      });
+    }
+
+    if (recentlyCompleted.length > 0) {
+      json.data.recently_completed = recentlyCompleted.map((t) => ({
+        task_id: t.taskId,
+        state: t.status,
+        duration_seconds: undefined,
+        completed_ts: t.lastCheckedStatus || t.timestamp,
+      }));
+      json.data.recently_completed.forEach((x: any) => {
+        if (x.duration_seconds === undefined) delete x.duration_seconds;
+      });
+    }
+
+    return { content: [{ type: "text", text: JSON.stringify(json) }] };
+  }
+
+  /**
    * Get status emoji for visual clarity
    */
   private getStatusEmoji(status: string): string {
     switch (status) {
-      case 'submitted':
-        return '🟡';
-      case 'completed':
-        return '🟢';
-      case 'failed':
-        return '🔴';
-      case 'cancelled':
-        return '⚫';
+      case "submitted":
+        return "🟡";
+      case "completed":
+        return "🟢";
+      case "failed":
+        return "🔴";
+      case "cancelled":
+        return "⚫";
       default:
-        return '⚪';
+        return "⚪";
     }
   }
 
@@ -654,12 +892,14 @@ export class CloudStatusTool {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 
-    return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? 's' : ''} ago`;
+    return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? "s" : ""} ago`;
   }
 
   /**
@@ -667,42 +907,52 @@ export class CloudStatusTool {
    */
   static getSchema() {
     return {
-      name: '_codex_cloud_status',
-      description: 'Check cloud task status - like tracking a package shipment. Three modes: (1) No params = show pending tasks (what\'s still running), (2) taskId = get specific task details with Web UI link, (3) list=true = full task history with filtering. Use this when: you want to check if your overnight refactoring finished, find a task ID you forgot, or see all completed work from last week. Think of it as your cloud dashboard. Returns: task states (submitted/completed/failed/cancelled), timing info, Web UI links. Perfect for: periodic "are we there yet?" checks, finding task IDs, debugging why something failed. The smart default (no params) shows only pending tasks - your "what\'s cooking?" view. Avoid for: local task status (use _codex_local_status).',
+      name: "_codex_cloud_status",
+      description:
+        'Check cloud task status - like tracking a package shipment. Three modes: (1) No params = show pending tasks (what\'s still running), (2) taskId = get specific task details with Web UI link, (3) list=true = full task history with filtering. Use this when: you want to check if your overnight refactoring finished, find a task ID you forgot, or see all completed work from last week. Think of it as your cloud dashboard. Returns: task states (submitted/completed/failed/cancelled), timing info, Web UI links. Perfect for: periodic "are we there yet?" checks, finding task IDs, debugging why something failed. The smart default (no params) shows only pending tasks - your "what\'s cooking?" view. Avoid for: local task status (use _codex_local_status).',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           taskId: {
-            type: 'string',
-            description: 'Check specific task by ID (MODE 2)',
+            type: "string",
+            description: "Check specific task by ID (MODE 2)",
           },
           list: {
-            type: 'boolean',
-            description: 'Show all tasks with filtering options (MODE 3)',
+            type: "boolean",
+            description: "Show all tasks with filtering options (MODE 3)",
             default: false,
           },
           workingDir: {
-            type: 'string',
-            description: 'Filter by working directory (defaults to current directory, MODE 3 only)',
+            type: "string",
+            description:
+              "Filter by working directory (defaults to current directory, MODE 3 only)",
           },
           envId: {
-            type: 'string',
-            description: 'Filter by Codex Cloud environment ID (MODE 3 only)',
+            type: "string",
+            description: "Filter by Codex Cloud environment ID (MODE 3 only)",
           },
           status: {
-            type: 'string',
-            enum: ['submitted', 'completed', 'failed', 'cancelled'],
-            description: 'Filter by task status (MODE 3 only)',
+            type: "string",
+            enum: ["submitted", "completed", "failed", "cancelled"],
+            description: "Filter by task status (MODE 3 only)",
           },
           limit: {
-            type: 'number',
-            description: 'Maximum number of tasks to return (default: 50, MODE 3 only)',
+            type: "number",
+            description:
+              "Maximum number of tasks to return (default: 50, MODE 3 only)",
             default: 50,
           },
           showStats: {
-            type: 'boolean',
-            description: 'Include statistics about all tasks (MODE 3 only)',
+            type: "boolean",
+            description: "Include statistics about all tasks (MODE 3 only)",
             default: false,
+          },
+          format: {
+            type: "string",
+            enum: ["json", "markdown"],
+            default: "markdown",
+            description:
+              "Response format. Default markdown for backward compatibility.",
           },
         },
       },
@@ -719,7 +969,7 @@ export class CloudResultsTool {
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ Task ID required\n\n**Usage**: Provide taskId from \`codex_cloud_submit\` response`,
           },
         ],
@@ -728,6 +978,107 @@ export class CloudResultsTool {
     }
 
     try {
+      if (input.format === "json") {
+        const task = await globalTaskRegistry.getTask(input.taskId);
+        if (!task) {
+          const jsonErr = {
+            version: "3.6",
+            schema_id: "codex/v3.6/result_set/v1",
+            tool: "_codex_cloud_results",
+            tool_category: "result_set",
+            request_id: (await import("crypto")).randomUUID(),
+            ts: new Date().toISOString(),
+            status: "error" as const,
+            meta: {},
+            error: {
+              code: "NOT_FOUND" as const,
+              message: "Task not found in cloud registry",
+              details: { task_id: input.taskId },
+              retryable: false,
+            },
+          };
+          return {
+            content: [{ type: "text", text: JSON.stringify(jsonErr) }],
+            isError: true,
+          };
+        }
+
+        const state = task.status === "submitted" ? "working" : task.status;
+        const includeOutput =
+          state === "failed" || input.include_output === true;
+        const maxBytes = input.max_output_bytes || 65536;
+        const truncate = (s: string) => {
+          if (!s) return { text: "", truncated: false, original: 0 };
+          const b = Buffer.from(s, "utf-8");
+          if (b.length <= maxBytes)
+            return { text: s, truncated: false, original: b.length };
+          const half = Math.floor(maxBytes / 2);
+          return {
+            text: Buffer.concat([
+              b.subarray(0, half),
+              Buffer.from("\n... [truncated] ...\n"),
+              b.subarray(b.length - half),
+            ]).toString("utf-8"),
+            truncated: true,
+            original: b.length,
+          };
+        };
+
+        const stdout = "";
+        const stderr = task.notes || "";
+        const tOut = truncate(stdout);
+        const tErr = truncate(stderr);
+
+        const json: any = {
+          version: "3.6",
+          schema_id: "codex/v3.6/result_set/v1",
+          tool: "_codex_cloud_results",
+          tool_category: "result_set",
+          request_id: (await import("crypto")).randomUUID(),
+          ts: new Date().toISOString(),
+          status: "ok",
+          meta: { count: 1 },
+          data: {
+            task_id: input.taskId,
+            state,
+            summary:
+              state === "failed"
+                ? "Task failed (see Web UI for details)"
+                : state === "completed"
+                  ? "Task completed (see Web UI for details)"
+                  : "Task in progress",
+            duration_seconds: undefined,
+            completed_ts: undefined,
+            metadata: {
+              task_status: state,
+            },
+          },
+        };
+        if (includeOutput) {
+          json.data.output = {
+            included: true,
+            stdout: tOut.text,
+            stderr: tErr.text,
+            truncated: tOut.truncated || tErr.truncated,
+            max_bytes: maxBytes,
+          };
+          if (tOut.truncated || tErr.truncated) {
+            json.data.output.original_size =
+              (tOut.original || 0) + (tErr.original || 0);
+          }
+        } else {
+          json.data.output = {
+            included: false,
+            reason: "Output not available via registry; use Web UI",
+            truncated: false,
+            max_bytes: 0,
+          };
+        }
+        if (json.data.duration_seconds === undefined)
+          delete json.data.duration_seconds;
+        if (json.data.completed_ts === undefined) delete json.data.completed_ts;
+        return { content: [{ type: "text", text: JSON.stringify(json) }] };
+      }
       let message = `📄 Codex Cloud Task Results\n\n`;
       message += `**Task ID**: ${input.taskId}\n\n`;
 
@@ -771,7 +1122,7 @@ export class CloudResultsTool {
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: message,
           },
         ],
@@ -780,7 +1131,7 @@ export class CloudResultsTool {
       return {
         content: [
           {
-            type: 'text',
+            type: "text",
             text: `❌ Unexpected Error\n\n${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -794,19 +1145,37 @@ export class CloudResultsTool {
    */
   static getSchema() {
     return {
-      name: '_codex_cloud_results',
-      description: 'Retrieve completed cloud task results - like downloading your build artifacts. Once a cloud task finishes (check with _codex_cloud_status first), use this to get the full output: what changed, which files were modified, PR links if created, CI results, error messages if failed. Think of it as unboxing your finished work. Use when: status shows "completed" or "failed" and you want detailed results beyond the summary. Returns: task summary, file diffs, commands executed, GitHub PR links (with CI status), error details. Perfect for: reviewing what Codex accomplished, getting that PR link to merge, debugging failures. The Web UI link (https://chatgpt.com/codex/tasks/{taskId}) shows pretty diffs and logs. Avoid for: checking if task is done yet (use _codex_cloud_status), or tasks still running.',
+      name: "_codex_cloud_results",
+      description:
+        'Retrieve completed cloud task results - like downloading your build artifacts. Once a cloud task finishes (check with _codex_cloud_status first), use this to get the full output: what changed, which files were modified, PR links if created, CI results, error messages if failed. Think of it as unboxing your finished work. Use when: status shows "completed" or "failed" and you want detailed results beyond the summary. Returns: task summary, file diffs, commands executed, GitHub PR links (with CI status), error details. Perfect for: reviewing what Codex accomplished, getting that PR link to merge, debugging failures. The Web UI link (https://chatgpt.com/codex/tasks/{taskId}) shows pretty diffs and logs. Avoid for: checking if task is done yet (use _codex_cloud_status), or tasks still running.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           taskId: {
-            type: 'string',
-            description: 'Task ID to get results for (from codex_cloud_submit)',
+            type: "string",
+            description: "Task ID to get results for (from codex_cloud_submit)",
+          },
+          format: {
+            type: "string",
+            enum: ["json", "markdown"],
+            default: "markdown",
+            description:
+              "Response format. Default markdown for backward compatibility.",
+          },
+          include_output: {
+            type: "boolean",
+            description:
+              "Include stdout/stderr output if available. For errors, always included.",
+            default: false,
+          },
+          max_output_bytes: {
+            type: "number",
+            description: "Maximum bytes of output to include (default 65536).",
+            default: 65536,
           },
         },
-        required: ['taskId'],
+        required: ["taskId"],
       },
     };
   }
 }
-

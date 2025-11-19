@@ -6,7 +6,7 @@
  *
  * v3.0 Feature: Bridge between unified tool and hidden primitives
  */
-import { IntentParseResult } from './intent-parser.js';
+import { IntentParseResult } from "./intent-parser.js";
 export interface PrimitiveTool {
     getSchema(): any;
     execute(params: any): Promise<any>;

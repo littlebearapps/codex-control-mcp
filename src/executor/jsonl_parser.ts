@@ -16,7 +16,7 @@ export interface CodexEvent {
 }
 
 export class JSONLParser {
-  private buffer: string = '';
+  private buffer: string = "";
   private lineCount: number = 0;
   private parseErrors: number = 0;
 
@@ -26,10 +26,10 @@ export class JSONLParser {
    */
   feed(chunk: string): CodexEvent[] {
     this.buffer += chunk;
-    const lines = this.buffer.split('\n');
+    const lines = this.buffer.split("\n");
 
     // Keep incomplete last line in buffer
-    this.buffer = lines.pop() || '';
+    this.buffer = lines.pop() || "";
 
     const events: CodexEvent[] = [];
 
@@ -47,7 +47,10 @@ export class JSONLParser {
       } catch (parseError) {
         this.parseErrors++;
         // Log non-JSON lines (likely stderr) but don't crash
-        console.warn(`[JSONLParser] Non-JSON line ${this.lineCount}:`, line.substring(0, 100));
+        console.warn(
+          `[JSONLParser] Non-JSON line ${this.lineCount}:`,
+          line.substring(0, 100),
+        );
       }
     }
 
@@ -65,11 +68,14 @@ export class JSONLParser {
 
     try {
       const event = JSON.parse(this.buffer);
-      this.buffer = '';
+      this.buffer = "";
       return event;
     } catch (parseError) {
-      console.warn('[JSONLParser] Incomplete buffer at end of stream:', this.buffer.substring(0, 100));
-      this.buffer = '';
+      console.warn(
+        "[JSONLParser] Incomplete buffer at end of stream:",
+        this.buffer.substring(0, 100),
+      );
+      this.buffer = "";
       return null;
     }
   }
@@ -89,7 +95,7 @@ export class JSONLParser {
    * Reset parser state (for reuse)
    */
   reset() {
-    this.buffer = '';
+    this.buffer = "";
     this.lineCount = 0;
     this.parseErrors = 0;
   }
@@ -99,31 +105,31 @@ export class JSONLParser {
  * Event type guards for type safety
  */
 export const isThreadStarted = (event: CodexEvent): boolean =>
-  event.type === 'thread.started';
+  event.type === "thread.started";
 
 export const isTurnStarted = (event: CodexEvent): boolean =>
-  event.type === 'turn.started';
+  event.type === "turn.started";
 
 export const isTurnCompleted = (event: CodexEvent): boolean =>
-  event.type === 'turn.completed';
+  event.type === "turn.completed";
 
 export const isTurnFailed = (event: CodexEvent): boolean =>
-  event.type === 'turn.failed';
+  event.type === "turn.failed";
 
 export const isItemStarted = (event: CodexEvent): boolean =>
-  event.type === 'item.started';
+  event.type === "item.started";
 
 export const isItemUpdated = (event: CodexEvent): boolean =>
-  event.type === 'item.updated';
+  event.type === "item.updated";
 
 export const isItemCompleted = (event: CodexEvent): boolean =>
-  event.type === 'item.completed';
+  event.type === "item.completed";
 
 /**
  * Extract item type from event (for item.* events)
  */
 export const getItemType = (event: CodexEvent): string | null => {
-  if (!event.type.startsWith('item.')) {
+  if (!event.type.startsWith("item.")) {
     return null;
   }
   return event.data?.type || null;
@@ -133,12 +139,12 @@ export const getItemType = (event: CodexEvent): string | null => {
  * Check if event represents a file modification
  */
 export const isFileChange = (event: CodexEvent): boolean => {
-  return getItemType(event) === 'file_change';
+  return getItemType(event) === "file_change";
 };
 
 /**
  * Check if event represents a command execution
  */
 export const isCommandExecution = (event: CodexEvent): boolean => {
-  return getItemType(event) === 'command_execution';
+  return getItemType(event) === "command_execution";
 };

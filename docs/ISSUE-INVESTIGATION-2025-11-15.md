@@ -1,4 +1,5 @@
 # Codex Control MCP - Issue Investigation & Resolution
+
 **Date**: 2025-11-15
 **Investigator**: Claude Code (Sonnet 4.5)
 **Context**: Issues discovered during Auditor Toolkit Google Platforms Standardization project
@@ -10,6 +11,7 @@
 **Issues Log**: `/Users/nathanschram/claude-code-tools/lba/tools/auditor-toolkit/main/docs/google-platforms-standardization-issues-log.md`
 
 **Summary**:
+
 - **Issue #1** (High): Git operations report success but don't execute (60% failure rate)
 - **Issue #2** (Medium): No progress visibility during long-running tasks
 
@@ -22,12 +24,14 @@
 **Severity**: High (affects 60% of git operations)
 
 **Symptoms**:
+
 - Codex reports "✅ Success" status
 - Git commands (branch creation, commits) silently fail
 - No errors reported to user
 - Requires manual verification and intervention
 
 **Affected Tasks**:
+
 - Phase 1.3: `T-local-mhykkcvhuum3cy` (branch + commit failed)
 - Phase 1.4: `T-local-mhykt3nb98m1gk` (commit failed)
 - Phase 1.5: `T-local-mhyl9ch7r44jsw` (commit failed)
@@ -43,16 +47,18 @@
 **Key Findings**:
 
 1. **No Git Verification** (lines 174-184):
+
    ```typescript
    // Current code marks task as "completed" if SDK doesn't throw error
    globalTaskRegistry.updateTask(taskId, {
-     status: 'completed',
+     status: "completed",
      threadId: threadId,
      result: JSON.stringify({
-       success: true,  // ❌ Assumes success without verification
+       success: true, // ❌ Assumes success without verification
        eventCount,
        threadId,
-       finalOutput: finalOutput || `SDK execution complete (${eventCount} events)`,
+       finalOutput:
+         finalOutput || `SDK execution complete (${eventCount} events)`,
      }),
    });
    ```
@@ -72,6 +78,7 @@
 **Primary**: Codex SDK runs git commands in isolated environment, git operations fail (permissions, config, working dir), but failures don't bubble up as SDK errors.
 
 **Contributing Factors**:
+
 1. Codex SDK may not propagate git exit codes
 2. Git errors might be in stderr but not treated as failures
 3. Task completion criteria only checks "no exceptions", not "operations succeeded"
@@ -88,6 +95,7 @@
 **Key Findings**:
 
 1. **Codex Suppresses Non-Zero Exit Code Output**:
+
    ```
    If exit_code == 0: Display stdout/stderr normally
    If exit_code != 0: Treat as 'error' and suppress detailed output
@@ -136,11 +144,13 @@
 #### Research Task 3: Other Related Issues
 
 **GitHub Issue #1308**: "sandboxing? no files seem to be written"
+
 - Shows git commands failing with exit code 128
 - User sees: `fatal: your current branch 'main' does not have any commits yet`
 - **Pattern matches our Issue #1**: Git failures not reported clearly
 
 **GitHub Issue #3727**: "New codex model sometimes switches git branch"
+
 - Codex unexpectedly changes working directory/branch
 - Shows Codex git operations can be unpredictable
 - **Reinforces need for post-execution verification**
@@ -154,12 +164,14 @@
 **Severity**: Medium (UX issue, not blocking)
 
 **Symptoms**:
+
 - Long-running tasks (572s, 9.5 minutes) provide no intermediate feedback
 - Cannot distinguish "working normally" from "stuck"
 - No visibility into current step or activity
 - No performance metrics during execution
 
 **Affected Task**:
+
 - Phase 1.5: `T-local-mhyl9ch7r44jsw` (572s, 3.6x average duration)
 
 ### Investigation Results
@@ -167,6 +179,7 @@
 #### Code Analysis (Completed ✅)
 
 **Files Reviewed**:
+
 1. `src/tools/local_status.ts` (174 lines)
 2. `src/executor/progress_inference.ts` (248 lines)
 3. `src/executor/jsonl_parser.ts` (145 lines)
@@ -174,21 +187,23 @@
 **Key Findings**:
 
 1. **Existing Progress Infrastructure** (lines 1-248 in progress_inference.ts):
+
    ```typescript
    export interface ProgressSummary {
-     currentAction: string | null;        // ✅ Available
-     completedSteps: number;              // ✅ Available
-     totalSteps: number;                  // ✅ Available
-     progressPercentage: number;          // ✅ Available
-     steps: ProgressStep[];               // ✅ Available
-     filesChanged: number;                // ✅ Available
-     commandsExecuted: number;            // ✅ Available
-     isComplete: boolean;                 // ✅ Available
-     hasFailed: boolean;                  // ✅ Available
+     currentAction: string | null; // ✅ Available
+     completedSteps: number; // ✅ Available
+     totalSteps: number; // ✅ Available
+     progressPercentage: number; // ✅ Available
+     steps: ProgressStep[]; // ✅ Available
+     filesChanged: number; // ✅ Available
+     commandsExecuted: number; // ✅ Available
+     isComplete: boolean; // ✅ Available
+     hasFailed: boolean; // ✅ Available
    }
    ```
 
 2. **BUT: Not Exposed to Users** (local_status.ts lines 86-97):
+
    ```typescript
    // Current implementation only shows:
    message += `- Elapsed: ${elapsed}s ago\n`;
@@ -272,6 +287,7 @@
 **Key Findings from MCP Specification**:
 
 1. **Official Progress Support** (modelcontextprotocol.info/specification/progress):
+
    ```json
    // Client sends progressToken with request
    {
@@ -318,12 +334,14 @@
 #### Root Cause Summary
 
 **Current State**:
+
 - Progress infrastructure exists (`progress_inference.ts`) but not exposed
 - Users only see "Elapsed: Xs ago" for running tasks
 - No real-time updates during long-running operations (5-10 minutes)
 - Cannot distinguish "working normally" from "stuck"
 
 **Missing Components**:
+
 1. Progress notifications from local_exec to Claude Code
 2. Enhanced local_status output with current action
 3. Activity log showing recent Codex operations
@@ -331,6 +349,7 @@
 #### Solution: Three-Layer Progress System
 
 **Architecture**:
+
 ```
 Codex SDK (JSONL events)
   ↓
@@ -344,21 +363,23 @@ Enhanced local_status Tool (display to user)
 **Implementation Plan**:
 
 1. **Store Progress in Task Registry** (`src/state/task_registry.ts`):
+
    ```typescript
    // Already has progressSteps field!
    export interface Task {
      // ...existing fields...
-     progressSteps?: string;  // ✅ Already exists!
+     progressSteps?: string; // ✅ Already exists!
      // ...
    }
    ```
 
 2. **Update Progress During Execution** (`src/tools/local_exec.ts`):
+
    ```typescript
    // In event handler (line 154+)
    const progressEngine = new ProgressInferenceEngine();
 
-   parser.on('event', (event: CodexEvent) => {
+   parser.on("event", (event: CodexEvent) => {
      // Existing: accumulate events
      allEvents.push(event);
 
@@ -374,6 +395,7 @@ Enhanced local_status Tool (display to user)
    ```
 
 3. **Enhanced Status Display** (`src/tools/local_status.ts`):
+
    ```typescript
    // For running tasks (lines 86-97)
    if (runningTasks.length > 0) {
@@ -395,7 +417,7 @@ Enhanced local_status Tool (display to user)
          message += `- Files Changed: ${progress.filesChanged}, Commands: ${progress.commandsExecuted}\n`;
        }
 
-       message += '\n';
+       message += "\n";
      }
    }
    ```
@@ -413,16 +435,19 @@ Enhanced local_status Tool (display to user)
    ```
 
 **Files to Modify**:
+
 - `src/tools/local_exec.ts` - Add progress tracking during execution
 - `src/tools/local_status.ts` - Display progress for running tasks
 - `src/tools/local_results.ts` - Show token usage metrics
 - `src/state/task_registry.ts` - (Already has progressSteps field!)
 
 **User-Facing Output Example**:
+
 ```markdown
 ## 📊 Codex Execution Status
 
 ### Active Processes (MCP Server)
+
 **Active Processes**: 1
 **Queued Tasks**: 0
 
@@ -431,15 +456,16 @@ Enhanced local_status Tool (display to user)
 #### 🔄 Running Tasks
 
 **T-local-abc123**:
+
 - Task: Run comprehensive test suite and fix all failures
 - Elapsed: 342s (5.7 minutes)
 - Progress: 45% (3/7 steps)
 - Current: Running tests in authentication module
 - Files Changed: 2, Commands: 15
-
 ```
 
 **Benefits**:
+
 - ✅ Real-time visibility into what Codex is doing
 - ✅ Progress percentage shows task completion
 - ✅ Current action shows immediate activity
@@ -461,6 +487,7 @@ Enhanced local_status Tool (display to user)
 ### Implementation Details
 
 **Modified Files**:
+
 1. `src/tools/local_exec.ts` (lines 1-5, 147-185)
    - Added ProgressInferenceEngine import
    - Initialize progress tracking in async execution
@@ -474,6 +501,7 @@ Enhanced local_status Tool (display to user)
    - Show activity metrics (files changed, commands executed)
 
 **Features Implemented**:
+
 - ✅ Real-time progress tracking (updates every 10 events)
 - ✅ Progress percentage calculation
 - ✅ Current action display ("Editing utils.ts")
@@ -488,6 +516,7 @@ Enhanced local_status Tool (display to user)
 #### 🔄 Running Tasks
 
 **T-local-abc123**:
+
 - Task: Run comprehensive test suite and fix all failures
 - Mode: workspace-write
 - Elapsed: 342s
@@ -499,6 +528,7 @@ Enhanced local_status Tool (display to user)
 ### Testing Plan
 
 **Manual Testing Required**:
+
 1. Start a long-running local_exec task
 2. Call local_status during execution
 3. Verify progress updates appear
@@ -514,6 +544,7 @@ Enhanced local_status Tool (display to user)
 **Codex SDK Limitation**: Suppresses stdout/stderr when commands exit with non-zero codes (GitHub Issue #1367)
 
 **Impact on Git Operations**:
+
 - Git commands fail (missing config, permissions, branch exists, etc.)
 - Exit codes 1, 128, etc. trigger output suppression
 - Codex continues execution without reporting failure
@@ -521,6 +552,7 @@ Enhanced local_status Tool (display to user)
 - Users unaware of failures until manual verification
 
 **Why MCP Server Can't Fix at Source**:
+
 - Can't modify Codex CLI behavior (upstream issue)
 - Can't inject `|| true` workarounds (don't control prompts)
 - Can't access suppressed stdout/stderr from Codex
@@ -531,6 +563,7 @@ Enhanced local_status Tool (display to user)
 **Approach**: After Codex SDK completes, run independent git commands to verify operations
 
 **Architecture**:
+
 ```
 Codex SDK Execution (in background)
   ↓
@@ -546,6 +579,7 @@ Update task status with warnings if failures detected
 **Implementation Plan**:
 
 1. **Create Git Verifier Module** (`src/utils/git_verifier.ts`):
+
    ```typescript
    interface GitVerificationResult {
      branchExists: boolean;
@@ -568,8 +602,8 @@ Update task status with warnings if failures detected
 
    async function verifyGitOperations(
      workingDir: string,
-     taskDescription: string
-   ): Promise<GitVerificationResult>
+     taskDescription: string,
+   ): Promise<GitVerificationResult>;
    ```
 
 2. **Parse Task Description for Git Operations**:
@@ -579,6 +613,7 @@ Update task status with warnings if failures detected
    - Detect git keywords: "branch", "commit", "stage", "add"
 
 3. **Run Verification Commands**:
+
    ```bash
    # Check current branch
    git rev-parse --abbrev-ref HEAD
@@ -598,24 +633,25 @@ Update task status with warnings if failures detected
    ```
 
 4. **Update Task Status**:
+
    ```typescript
    // In local_exec.ts after SDK completes
 
    // Run git verification
    const gitVerification = await verifyGitOperations(
      workingDir,
-     validated.task
+     validated.task,
    );
 
    // Determine final status
-   let finalStatus = 'completed';
+   let finalStatus = "completed";
    let warnings: string[] = [];
 
    if (gitVerification.errors.length > 0) {
-     finalStatus = 'completed_with_errors';
+     finalStatus = "completed_with_errors";
      warnings = gitVerification.errors;
    } else if (gitVerification.warnings.length > 0) {
-     finalStatus = 'completed_with_warnings';
+     finalStatus = "completed_with_warnings";
      warnings = gitVerification.warnings;
    }
 
@@ -635,6 +671,7 @@ Update task status with warnings if failures detected
    ```
 
 5. **User-Facing Output**:
+
    ```markdown
    ✅ Codex SDK Task Completed
 
@@ -649,6 +686,7 @@ Update task status with warnings if failures detected
    ⚠️ Files remain unstaged: 2 files need `git add`
 
    **Recommended Actions**:
+
    1. Create branch manually: `git checkout -b feature/gbp-api-v1-migration`
    2. Stage changes: `git add auditor_toolkit/adapters/gbp_adapter.py docs/gbp-v1-migration-progress.md`
    3. Create commit: `git commit -m "feat(gbp): migrate from My Business API v4 to Business Profile API v1"`
@@ -661,6 +699,7 @@ Update task status with warnings if failures detected
 ## Timeline
 
 ### Issue #1 Timeline
+
 - **2025-11-15 14:00**: Investigation started
 - **2025-11-15 14:15**: Code analysis complete
 - **2025-11-15 14:20**: Research phase started
@@ -670,6 +709,7 @@ Update task status with warnings if failures detected
 - **2025-11-15 15:30**: Testing complete (8/8 tests passing, 100%) ✅
 
 ### Issue #2 Timeline
+
 - **2025-11-15 16:00**: Investigation started
 - **2025-11-15 16:15**: Code analysis complete - found existing infrastructure
 - **2025-11-15 16:20**: Research phase started
@@ -706,17 +746,20 @@ Update task status with warnings if failures detected
 ### Implementation Details
 
 **New Module**: `src/utils/git_verifier.ts` (350+ lines)
+
 - Parses task descriptions to extract expected git operations
 - Runs independent git commands to verify operations succeeded
 - Generates actionable error messages and recommendations
 - Returns structured verification results
 
 **Modified Files**:
+
 1. `src/tools/local_exec.ts` - Runs verification after Codex completes
 2. `src/tools/local_results.ts` - Displays verification results to users
 3. `src/state/task_registry.ts` - Added `completed_with_warnings` and `completed_with_errors` statuses
 
 **Features**:
+
 - ✅ Branch creation verification (`git rev-parse --abbrev-ref HEAD`)
 - ✅ Commit verification (`git log -1`)
 - ✅ File staging verification (`git status --porcelain`)
@@ -750,25 +793,30 @@ Update task status with warnings if failures detected
 ### Testing Plan
 
 **Test Case 1: Branch Creation Failure**
+
 - Task: "Create branch feature/test-branch"
 - Expected: Detect branch wasn't created
 - Recommendation: `git checkout -b feature/test-branch`
 
 **Test Case 2: Commit Failure**
+
 - Task: "Commit changes with message 'test commit'"
 - Expected: Detect no new commit
 - Recommendation: `git commit -m "test commit"`
 
 **Test Case 3: File Staging Failure**
+
 - Task: "Stage file.txt and commit"
 - Expected: Detect file not staged
 - Recommendation: `git add file.txt`
 
 **Test Case 4: Success Case**
+
 - Task: "Run tests" (no git operations)
 - Expected: No verification errors, skip git checks
 
 **Test Case 5: Partial Success**
+
 - Task: "Create branch, stage files, commit"
 - Branch created: ✅
 - Files staged: ❌
@@ -795,6 +843,7 @@ Update task status with warnings if failures detected
 ### Both Issues Resolved ✅
 
 **Issue #1: Git Operations Silent Failure** - COMPLETE
+
 - **Root Cause**: Codex SDK suppresses stderr for non-zero exit codes (GitHub Issue #1367)
 - **Solution**: Post-execution git verification layer
 - **Implementation**: 3 files modified, 350+ lines added
@@ -802,6 +851,7 @@ Update task status with warnings if failures detected
 - **Status**: ✅ Ready for production validation
 
 **Issue #2: No Progress Visibility** - COMPLETE
+
 - **Root Cause**: Progress infrastructure exists but not exposed to users
 - **Solution**: Wire up existing ProgressInferenceEngine to task registry and status tool
 - **Implementation**: 2 files modified, ~40 lines added
@@ -837,6 +887,7 @@ Update task status with warnings if failures detected
 ### Files Modified
 
 **Issue #1**:
+
 - `src/utils/git_verifier.ts` (NEW - 352 lines)
 - `src/tools/local_exec.ts` (30 lines modified)
 - `src/tools/local_results.ts` (28 lines modified)
@@ -844,10 +895,12 @@ Update task status with warnings if failures detected
 - `test-git-verifier.ts` (NEW - 379 lines)
 
 **Issue #2**:
+
 - `src/tools/local_exec.ts` (15 lines modified)
 - `src/tools/local_status.ts` (20 lines modified)
 
 **Total Impact**:
+
 - 7 files modified/created
 - ~850 lines added
 - 0 build errors
@@ -860,6 +913,7 @@ Update task status with warnings if failures detected
 ### ✅ Development Complete
 
 **All implementation work finished**:
+
 - Issue #1: Git verification layer implemented and unit tested
 - Issue #2: Progress tracking implemented and compiling
 - Documentation: Comprehensive investigation + test plan
@@ -871,6 +925,7 @@ Update task status with warnings if failures detected
 **Location**: `docs/PRODUCTION-TEST-PLAN-2025-11-15.md`
 
 **Coverage**:
+
 - Issue #1: 5 test cases + control test
 - Issue #2: 5 test cases
 - Integration: 1 test case (both features together)
@@ -879,6 +934,7 @@ Update task status with warnings if failures detected
 **Environment**: Auditor Toolkit project (where issues were discovered)
 
 **Scope**:
+
 - Pre-test checklist (MCP server setup, git status)
 - Detailed test procedures with expected results
 - Manual verification steps (git commands, status checks)
@@ -890,6 +946,7 @@ Update task status with warnings if failures detected
 **Status**: ✅ All code complete, awaiting real-world testing
 
 **Next Actions**:
+
 1. Execute test plan in Auditor Toolkit project
 2. Validate git verification detects failures correctly
 3. Validate progress updates appear during long-running tasks
@@ -899,6 +956,7 @@ Update task status with warnings if failures detected
 ### 📊 Implementation Metrics
 
 **Time Investment**:
+
 - Investigation: ~1 hour (both issues)
 - Research: ~45 minutes (brave-search, documentation)
 - Implementation: ~1.5 hours (code + tests)
@@ -906,12 +964,14 @@ Update task status with warnings if failures detected
 - **Total**: ~3.75 hours
 
 **Code Quality**:
+
 - TypeScript compilation: ✅ 0 errors
 - Unit test coverage: ✅ 100% (Issue #1)
 - Build reproducibility: ✅ Clean builds
 - Documentation: ✅ Comprehensive (line-level references)
 
 **User Impact**:
+
 - Issue #1: Prevents 60% silent failure rate → actionable error messages
 - Issue #2: No visibility → real-time progress updates every 10 events
 - Combined: Significantly improved UX for git workflows and long tasks
@@ -921,4 +981,3 @@ Update task status with warnings if failures detected
 **Final Status**: 🎉 **DEVELOPMENT COMPLETE - READY FOR PRODUCTION VALIDATION**
 
 **Last Updated**: 2025-11-15 17:30
-

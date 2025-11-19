@@ -1,4 +1,4 @@
-import treeKill from 'tree-kill';
+import treeKill from "tree-kill";
 export class TimeoutWatchdog {
     child;
     taskId;
@@ -33,7 +33,7 @@ export class TimeoutWatchdog {
             onProgress: config.onProgress ?? (() => { }),
             onWarning: config.onWarning ?? (() => { }),
             onTimeout: config.onTimeout ?? (() => { }),
-            onActivity: config.onActivity ?? (() => { })
+            onActivity: config.onActivity ?? (() => { }),
         };
         this.startTimers();
     }
@@ -79,10 +79,10 @@ export class TimeoutWatchdog {
     getPartialResults() {
         return {
             lastEvents: [...this.lastEvents],
-            stdoutTail: Buffer.concat(this.stdoutChunks).toString('utf8'),
-            stderrTail: Buffer.concat(this.stderrChunks).toString('utf8'),
+            stdoutTail: Buffer.concat(this.stdoutChunks).toString("utf8"),
+            stderrTail: Buffer.concat(this.stderrChunks).toString("utf8"),
             lastActivityAt: new Date(this.lastActivity),
-            eventsCount: this.lastEvents.length
+            eventsCount: this.lastEvents.length,
         };
     }
     /**
@@ -96,18 +96,18 @@ export class TimeoutWatchdog {
      */
     abort(reason) {
         if (this.aborted) {
-            throw new Error('Watchdog already aborted');
+            throw new Error("Watchdog already aborted");
         }
         this.aborted = true;
         this.clearAllTimers();
         const error = {
-            code: reason === 'inactivity' ? 'EIDLE' : 'ETIMEDOUT',
-            kind: reason === 'manual' ? 'deadline' : reason,
+            code: reason === "inactivity" ? "EIDLE" : "ETIMEDOUT",
+            kind: reason === "manual" ? "deadline" : reason,
             message: this.getTimeoutMessage(reason),
-            idleMs: reason === 'inactivity' ? Date.now() - this.lastActivity : undefined,
-            wallClockMs: reason === 'deadline' ? Date.now() - this.startTime : undefined,
+            idleMs: reason === "inactivity" ? Date.now() - this.lastActivity : undefined,
+            wallClockMs: reason === "deadline" ? Date.now() - this.startTime : undefined,
             pid: this.child.pid,
-            killed: false
+            killed: false,
         };
         // Kill process
         this.killProcess((signal) => {
@@ -121,7 +121,7 @@ export class TimeoutWatchdog {
     startTimers() {
         // Hard timeout (wall-clock)
         this.hardTimer = setTimeout(() => {
-            this.abort('deadline');
+            this.abort("deadline");
         }, this.config.hardTimeoutMs);
         // Inactivity timer (resets on activity)
         this.resetIdleTimer();
@@ -139,7 +139,7 @@ export class TimeoutWatchdog {
             clearTimeout(this.idleTimer);
         }
         this.idleTimer = setTimeout(() => {
-            this.abort('inactivity');
+            this.abort("inactivity");
         }, this.config.idleTimeoutMs);
     }
     checkWarning() {
@@ -150,14 +150,14 @@ export class TimeoutWatchdog {
         if (idle >= warnAt && idle < this.config.idleTimeoutMs) {
             this.warned = true;
             const warning = {
-                level: 'warning',
-                logger: 'codex-timeout-watchdog',
+                level: "warning",
+                logger: "codex-timeout-watchdog",
                 data: {
                     message: `No output for ${Math.floor(idle / 1000)}s. Will abort in ${Math.floor((this.config.idleTimeoutMs - idle) / 1000)}s unless output resumes.`,
                     idleMs: idle,
                     willAbortInMs: this.config.idleTimeoutMs - idle,
-                    taskId: this.taskId
-                }
+                    taskId: this.taskId,
+                },
             };
             this.config.onWarning(warning);
         }
@@ -172,7 +172,7 @@ export class TimeoutWatchdog {
             progress: elapsed,
             total: total,
             elapsedMs: elapsed,
-            lastActivity: new Date(this.lastActivity)
+            lastActivity: new Date(this.lastActivity),
         };
         this.config.onProgress(progress);
     }
@@ -182,13 +182,13 @@ export class TimeoutWatchdog {
             return;
         // Try SIGTERM first
         try {
-            if (process.platform !== 'win32') {
-                process.kill(-pid, 'SIGTERM'); // Kill process group
+            if (process.platform !== "win32") {
+                process.kill(-pid, "SIGTERM"); // Kill process group
             }
             else {
-                treeKill(pid, 'SIGTERM');
+                treeKill(pid, "SIGTERM");
             }
-            onKilled('SIGTERM');
+            onKilled("SIGTERM");
         }
         catch (err) {
             // Process might already be dead
@@ -196,13 +196,13 @@ export class TimeoutWatchdog {
         // Force kill after grace period
         setTimeout(() => {
             try {
-                if (process.platform !== 'win32') {
-                    process.kill(-pid, 'SIGKILL');
+                if (process.platform !== "win32") {
+                    process.kill(-pid, "SIGKILL");
                 }
                 else {
-                    treeKill(pid, 'SIGKILL');
+                    treeKill(pid, "SIGKILL");
                 }
-                onKilled('SIGKILL');
+                onKilled("SIGKILL");
             }
             catch (err) {
                 // Process definitely dead now
@@ -229,14 +229,14 @@ export class TimeoutWatchdog {
     }
     getTimeoutMessage(reason) {
         switch (reason) {
-            case 'inactivity':
+            case "inactivity":
                 return `Codex CLI produced no output within the allowed inactivity window (${this.config.idleTimeoutMs / 1000}s).`;
-            case 'deadline':
+            case "deadline":
                 return `Codex CLI exceeded the maximum allowed wall-clock time (${this.config.hardTimeoutMs / 1000}s).`;
-            case 'manual':
-                return 'Codex CLI execution was manually aborted.';
+            case "manual":
+                return "Codex CLI execution was manually aborted.";
             default:
-                return 'Codex CLI execution timed out.';
+                return "Codex CLI execution timed out.";
         }
     }
 }

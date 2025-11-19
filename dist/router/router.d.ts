@@ -8,16 +8,16 @@
  * - Mode inference (local vs cloud)
  * - Async execution (returns task ID immediately)
  */
-import { IntentParser, Intent, IntentHints } from './intent_parser.js';
-import { TaskRegistry, Task } from '../state/task_registry.js';
+import { IntentParser, Intent, IntentHints } from "./intent_parser.js";
+import { TaskRegistry, Task } from "../state/task_registry.js";
 /**
  * Execution mode
  */
-export type ExecutionMode = 'local' | 'cloud' | 'auto';
+export type ExecutionMode = "local" | "cloud" | "auto";
 /**
  * Primitive operation (hidden tool)
  */
-export type PrimitiveOperation = '_codex_local_run' | '_codex_local_exec' | '_codex_local_resume' | '_codex_local_status' | '_codex_local_wait' | '_codex_local_cancel' | '_codex_local_results' | '_codex_cloud_submit' | '_codex_cloud_status' | '_codex_cloud_wait' | '_codex_cloud_cancel' | '_codex_cloud_results' | '_codex_cloud_list_environments' | '_codex_cloud_github_setup';
+export type PrimitiveOperation = "_codex_local_run" | "_codex_local_exec" | "_codex_local_resume" | "_codex_local_status" | "_codex_local_wait" | "_codex_local_cancel" | "_codex_local_results" | "_codex_cloud_submit" | "_codex_cloud_status" | "_codex_cloud_wait" | "_codex_cloud_cancel" | "_codex_cloud_results" | "_codex_cloud_list_environments" | "_codex_cloud_github_setup";
 /**
  * Router input (from unified `codex` tool)
  */

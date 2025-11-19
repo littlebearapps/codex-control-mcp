@@ -10,6 +10,7 @@
 This directory contains custom-built MCP (Model Context Protocol) servers that extend Claude Code's capabilities across all Little Bear Apps projects.
 
 **MCP Servers Available**:
+
 1. **Codex Control** - Programmatic control of OpenAI Codex for build/test/debug/review workflows
 
 ---
@@ -23,6 +24,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ### Quick Start
 
 1. **Build the server**:
+
    ```bash
    cd codex-control
    npm install
@@ -30,6 +32,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
    ```
 
 2. **Add to project's `.mcp.json`**:
+
    ```json
    {
      "mcpServers": {
@@ -47,6 +50,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
    ```
 
 3. **Test in Claude Code**:
+
    ```
    # Start Claude Code in any project with the MCP configuration
    # The server will auto-connect
@@ -61,6 +65,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ### Features
 
 **Core Capabilities**:
+
 - ✅ Execute Codex tasks (code analysis, tests, reviews)
 - ✅ Preview changes before applying (dry-run mode)
 - ✅ Apply file modifications with explicit confirmation
@@ -69,6 +74,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 - ✅ Full macOS Keychain integration
 
 **Security**:
+
 - ✅ Input validation (prevents injection, path traversal)
 - ✅ Secret redaction (15+ patterns automatically scrubbed)
 - ✅ Mutation gating (requires `confirm=true` for file changes)
@@ -76,6 +82,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 - ✅ Concurrency control (max 2-4 parallel processes)
 
 **Environment Variable Policy**:
+
 - `inherit-none` (default) - No env vars passed (most secure)
 - `inherit-all` - All env vars passed (convenient, less secure)
 - `allow-list` - Only specified vars passed (recommended)
@@ -83,6 +90,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ### Documentation
 
 **Server Documentation**:
+
 - README: `codex-control/README.md`
 - Phase 1 Report: `/Users/nathanschram/claude-code-tools/docs/sdk-implementation/CODEX-CONTROL-PHASE-1-COMPLETION-REPORT.md`
 - v1.1.0 Report: `/Users/nathanschram/claude-code-tools/docs/sdk-implementation/CODEX-CONTROL-V1.1.0-COMPLETION-REPORT.md`
@@ -90,12 +98,14 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 - Keychain Integration: `/Users/nathanschram/claude-code-tools/docs/sdk-implementation/CODEX-KEYCHAIN-INTEGRATION-GUIDE.md`
 
 **Related Systems**:
+
 - Keychain Secrets: `/Users/nathanschram/claude-code-tools/keychain/KEYCHAIN-QUICK-REFERENCE.md`
 - MCP Configuration: `/Users/nathanschram/claude-code-tools/mcp/CLAUDE.md`
 
 ### Usage Examples
 
 **Example 1: Code Analysis** (No Secrets Needed):
+
 ```json
 {
   "task": "Analyze main.py for security vulnerabilities and performance issues"
@@ -103,6 +113,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ```
 
 **Example 2: Integration Tests** (With Secrets):
+
 ```json
 {
   "task": "Run integration tests against staging API",
@@ -113,6 +124,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ```
 
 **Example 3: Apply Changes** (Two-Step Confirmation):
+
 ```json
 // Step 1: Request (gets confirmation warning)
 {
@@ -148,6 +160,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ```
 
 **No conflicts**:
+
 - ✅ Each instance has independent process queue
 - ✅ Shared secrets via Keychain
 - ✅ Concurrency control per instance
@@ -156,6 +169,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ### Keychain Integration
 
 **How It Works**:
+
 1. Secrets stored in macOS Keychain (T2/SEP chip encryption)
 2. `direnv` auto-loads secrets when entering project directory (via `.envrc`)
 3. Claude Code inherits all secrets from shell
@@ -163,6 +177,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 5. Environment policy controls what goes to Codex Cloud
 
 **Example - Integration Testing**:
+
 ```json
 {
   "task": "Run Runpod endpoint integration tests",
@@ -176,6 +191,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ```
 
 **Security Best Practices**:
+
 - Use `inherit-none` for code analysis (default)
 - Use `allow-list` for integration tests (recommended)
 - Use `inherit-all` only for trusted tasks (with caution)
@@ -186,25 +202,31 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ## Future MCP Servers (Planned)
 
 ### GitHub MCP Server
+
 **Purpose**: GitHub API operations (issues, PRs, workflows)
 **Status**: Planned
 **Features**:
+
 - Create/update issues and PRs
 - Trigger workflows
 - Manage labels and milestones
 
 ### Cloudflare MCP Server
+
 **Purpose**: Cloudflare API operations (Workers, Pages, D1)
 **Status**: Under Development (external MCP server exists)
 **Features**:
+
 - Deploy Workers
 - Manage D1 databases
 - KV operations
 
 ### Linear MCP Server
+
 **Purpose**: Linear project management
 **Status**: External MCP server available
 **Features**:
+
 - Issue management
 - Project tracking
 - Team collaboration
@@ -216,6 +238,7 @@ This directory contains custom-built MCP (Model Context Protocol) servers that e
 ### Creating New MCP Servers
 
 1. **Directory Structure**:
+
    ```
    your-server-name/
    ├── package.json
@@ -267,11 +290,13 @@ node dist/index.js
 ## Related Documentation
 
 **Global Documentation**:
+
 - SDK Documentation: `/Users/nathanschram/claude-code-tools/docs/sdks/`
 - MCP Configuration: `/Users/nathanschram/claude-code-tools/mcp/CLAUDE.md`
 - Keychain Secrets: `/Users/nathanschram/claude-code-tools/keychain/KEYCHAIN-QUICK-REFERENCE.md`
 
 **Per-Server Documentation**:
+
 - Codex Control: `codex-control/README.md`
 - Future servers: `{server-name}/README.md`
 

@@ -17,17 +17,11 @@
     },
     "context7": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@context7/mcp-server"
-      ]
+      "args": ["-y", "@context7/mcp-server"]
     },
     "mult-fetch": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@punkpeye/mcp-server-fetch"
-      ]
+      "args": ["-y", "@punkpeye/mcp-server-fetch"]
     }
   }
 }

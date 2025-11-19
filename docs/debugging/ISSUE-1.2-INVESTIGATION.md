@@ -9,6 +9,7 @@
 ## Issue Summary
 
 **Reported Symptom**:
+
 - `_codex_local_results` returns "Status: ✅ Success"
 - But no files created on disk
 - Git status shows "working tree clean"
@@ -23,6 +24,7 @@
 ## Evidence from Auditor Toolkit
 
 **Timeline**:
+
 1. Created task `T-local-mi1gob5gxgdvar` for Phase 3 implementation
 2. Called `_codex_local_wait` - completed in 379 seconds (6.3 minutes)
 3. Called `_codex_local_results` - showed "Status: ✅ Success" with truncated file listing
@@ -33,6 +35,7 @@
    - `tests/settings/ads/unit/test_oauth_manager.py` - NOT FOUND
 
 **Actual Evidence**:
+
 ```bash
 $ git status
 On branch feature/google-platforms-p0-p1-p2-foundation
@@ -55,6 +58,7 @@ $ find . -name "oauth_manager.py" -o -name "mutate_writer.py"
 **Step 1: Task Execution Completes** (`src/tools/local_exec.ts` lines 223-380)
 
 Background execution async IIFE:
+
 ```typescript
 (async () => {
   try {
@@ -107,14 +111,14 @@ Success is determined ONLY by git verification errors, NOT by actual file creati
 ```typescript
 export async function verifyGitOperations(
   workingDir: string,
-  taskDescription: string
+  taskDescription: string,
 ): Promise<GitVerificationResult> {
   const result: GitVerificationResult = {
     branchExists: false,
     commitExists: false,
     filesStaged: false,
     // ... other fields
-    errors: [],  // Empty array by default
+    errors: [], // Empty array by default
     warnings: [],
     recommendations: [],
   };
@@ -124,8 +128,10 @@ export async function verifyGitOperations(
 
   // ⚠️ CRITICAL: Skip verification if no git operations expected
   if (!expectations.expectGitOperations) {
-    console.error('[GitVerifier] No git operations expected, skipping verification');
-    return result;  // Returns empty errors array!
+    console.error(
+      "[GitVerifier] No git operations expected, skipping verification",
+    );
+    return result; // Returns empty errors array!
   }
 
   // ... rest of verification only runs if git keywords found
@@ -147,8 +153,17 @@ function parseGitExpectations(taskDescription: string): {
   const lower = taskDescription.toLowerCase();
 
   // Check if task involves git operations
-  const gitKeywords = ['branch', 'commit', 'stage', 'git add', 'git checkout', 'git commit'];
-  const expectGitOperations = gitKeywords.some(keyword => lower.includes(keyword));
+  const gitKeywords = [
+    "branch",
+    "commit",
+    "stage",
+    "git add",
+    "git checkout",
+    "git commit",
+  ];
+  const expectGitOperations = gitKeywords.some((keyword) =>
+    lower.includes(keyword),
+  );
 
   // ...
 }
@@ -169,7 +184,7 @@ message += `**Task**: ${task.instruction}\n\n`;
 
 // ...
 
-message += `**Status**: ${resultData.success ? '✅ Success' : '❌ Failed'}\n\n`;
+message += `**Status**: ${resultData.success ? "✅ Success" : "❌ Failed"}\n\n`;
 ```
 
 Displays "Status: ✅ Success" based on `resultData.success` from step 1.
@@ -181,11 +196,13 @@ Displays "Status: ✅ Success" based on `resultData.success` from step 1.
 ### The Logic Flaw
 
 **Current Logic**:
+
 ```
 Task completes → Git verification → No errors found → Success = true
 ```
 
 **The Problem**:
+
 1. Git verification is **skipped** if task description lacks git keywords
 2. Skipped verification returns **empty errors array**
 3. `gitVerification.errors.length === 0` evaluates to **true**
@@ -197,9 +214,11 @@ Task completes → Git verification → No errors found → Success = true
 ### Example Scenario
 
 **Task Description**:
+
 > "Implement Phase 3: Create oauth_manager.py and mutate_writer.py with OAuth2 functionality. Add comprehensive tests."
 
 **What Happens**:
+
 1. `parseGitExpectations("Implement Phase 3: Create oauth_manager.py...")` looks for git keywords
 2. No keywords found: "branch", "commit", "stage" NOT present
 3. `expectGitOperations: false`
@@ -213,6 +232,7 @@ Task completes → Git verification → No errors found → Success = true
 ### Why Codex Might Not Create Files
 
 **Possible Reasons**:
+
 1. **Codex SDK suppressed output** (Issue #1367) - Codex might have encountered errors but SDK didn't show them
 2. **Workspace-write mode issue** - Codex might have run in read-only mode despite mode setting
 3. **Git safety checks** - Codex might have refused to create files due to dirty working tree
@@ -227,25 +247,28 @@ Task completes → Git verification → No errors found → Success = true
 ### Git Verification Was Designed For Different Problem
 
 **Original Purpose** (per git_verifier.ts:3-6):
+
 > "Purpose: Verify git operations actually succeeded after Codex execution
 > Root Cause: Codex SDK suppresses stdout/stderr for non-zero exit codes (Issue #1367)
 > Solution: Run independent git commands to check branch, commits, staging"
 
 **What It Was Meant To Do**:
+
 - Verify git operations that Codex claims to have done
 - Catch silent git failures (branch not created, commit not made, etc.)
 
 **What It's Being Used For** (incorrectly):
+
 - Determine overall task success
 - Default to "success" when no git operations detected
 
 ### The Mismatch
 
-| What It Checks | What It Should Check |
-|----------------|---------------------|
-| Git operations (branch, commit, stage) | **Files actually created** |
-| Git keywords in task description | **Working directory changes** |
-| Empty errors array = success | **Task output confirms completion** |
+| What It Checks                         | What It Should Check                |
+| -------------------------------------- | ----------------------------------- |
+| Git operations (branch, commit, stage) | **Files actually created**          |
+| Git keywords in task description       | **Working directory changes**       |
+| Empty errors array = success           | **Task output confirms completion** |
 
 ---
 
@@ -257,18 +280,19 @@ Task completes → Git verification → No errors found → Success = true
 
 ```typescript
 // After git verification, check for actual changes
-const statusCheck = await runGit('git status --porcelain', workingDir);
+const statusCheck = await runGit("git status --porcelain", workingDir);
 const hasChanges = statusCheck.success && statusCheck.stdout.trim().length > 0;
 
 if (!hasChanges && expectations.expectGitOperations) {
   // Expected git operations but no changes detected
-  errors.push('No files created or modified - working tree clean');
+  errors.push("No files created or modified - working tree clean");
 }
 
 // Success only if either:
 // 1. Git verification passed AND files changed
 // 2. No git operations expected AND Codex reported success in output
-success: gitVerification.errors.length === 0 && (hasChanges || !expectations.expectGitOperations)
+success: gitVerification.errors.length === 0 &&
+  (hasChanges || !expectations.expectGitOperations);
 ```
 
 ### Option B: Parse Codex Output for Completion Signals
@@ -290,8 +314,8 @@ for (const pattern of fileCreationPatterns) {
   filesReported += Array.from(matches).length;
 }
 
-if (filesReported === 0 && mode === 'workspace-write') {
-  warnings.push('Codex did not report creating any files');
+if (filesReported === 0 && mode === "workspace-write") {
+  warnings.push("Codex did not report creating any files");
 }
 ```
 
@@ -302,8 +326,9 @@ if (filesReported === 0 && mode === 'workspace-write') {
 ```typescript
 // Extract filenames from task description
 const filenamePattern = /([a-z_]+\.py|[a-z_]+\.ts|[a-z_]+\.js)/gi;
-const mentionedFiles = Array.from(taskDescription.matchAll(filenamePattern))
-  .map(m => m[1]);
+const mentionedFiles = Array.from(
+  taskDescription.matchAll(filenamePattern),
+).map((m) => m[1]);
 
 // Check if mentioned files exist
 const missingFiles = [];
@@ -315,13 +340,14 @@ for (const file of mentionedFiles) {
 }
 
 if (missingFiles.length > 0) {
-  errors.push(`Expected files not found: ${missingFiles.join(', ')}`);
+  errors.push(`Expected files not found: ${missingFiles.join(", ")}`);
 }
 ```
 
 ### Option D: Combination Approach (Most Robust)
 
 Combine all three checks:
+
 1. Git status shows changes (Option A)
 2. Codex output mentions file creation (Option B)
 3. Expected files actually exist (Option C)
@@ -333,6 +359,7 @@ Combine all three checks:
 ### Test 1: Reproduce the Issue
 
 **Setup**:
+
 ```bash
 cd /tmp/test-issue-1.2
 git init
@@ -340,6 +367,7 @@ git commit --allow-empty -m "Initial commit"
 ```
 
 **Test Case**:
+
 ```typescript
 // Task without git keywords
 {
@@ -359,6 +387,7 @@ git commit --allow-empty -m "Initial commit"
 ```
 
 **Success Criteria**:
+
 - ✅ Reproduce false positive (claims success, no files created)
 
 ### Test 2: Verify Fix (Option A - Working Directory Changes)
@@ -366,6 +395,7 @@ git commit --allow-empty -m "Initial commit"
 **Apply fix**: Add working directory change check to git_verifier.ts
 
 **Test Case**:
+
 ```typescript
 {
   task: "Create a file named test.py with a simple print statement",
@@ -379,12 +409,14 @@ git commit --allow-empty -m "Initial commit"
 ```
 
 **Success Criteria**:
+
 - ✅ False positive prevented
 - ✅ Accurate success/failure reporting
 
 ### Test 3: Verify Fix Doesn't Break Valid Cases
 
 **Test Case 1: Valid File Creation**
+
 ```typescript
 {
   task: "Create oauth_manager.py with OAuth2 login flow",
@@ -395,6 +427,7 @@ git commit --allow-empty -m "Initial commit"
 ```
 
 **Test Case 2: Read-Only Analysis**
+
 ```typescript
 {
   task: "Analyze code for security vulnerabilities",
@@ -405,6 +438,7 @@ git commit --allow-empty -m "Initial commit"
 ```
 
 **Test Case 3: Git Operations**
+
 ```typescript
 {
   task: "Create branch feature/test, add test.py, commit with message 'Add test'",
@@ -415,6 +449,7 @@ git commit --allow-empty -m "Initial commit"
 ```
 
 **Success Criteria**:
+
 - ✅ All valid cases still pass
 - ✅ No false negatives introduced
 
@@ -423,6 +458,7 @@ git commit --allow-empty -m "Initial commit"
 ## Implementation Checklist
 
 **Phase 1: Investigation** ✅ COMPLETE
+
 - [x] Read local_exec.ts success logic
 - [x] Read local_results.ts display logic
 - [x] Read git_verifier.ts verification logic
@@ -430,24 +466,28 @@ git commit --allow-empty -m "Initial commit"
 - [x] Document findings
 
 **Phase 2: Design Fix**
+
 - [ ] Choose fix approach (A, B, C, or D)
 - [ ] Design implementation details
 - [ ] Write test cases
 - [ ] Review security implications
 
 **Phase 3: Implementation**
+
 - [ ] Modify git_verifier.ts with chosen approach
 - [ ] Update success determination logic in local_exec.ts
 - [ ] Add comprehensive logging
 - [ ] Update error messages
 
 **Phase 4: Testing**
+
 - [ ] Test 1: Reproduce issue (verify bug exists)
 - [ ] Test 2: Verify fix prevents false positives
 - [ ] Test 3: Verify no false negatives introduced
 - [ ] Test in auditor-toolkit with real workload
 
 **Phase 5: Documentation**
+
 - [ ] Update quickrefs/architecture.md
 - [ ] Update CHANGELOG.md
 - [ ] Add to troubleshooting.md
@@ -471,12 +511,18 @@ git commit --allow-empty -m "Initial commit"
    - See Issue 1.5 for logging infrastructure
 
 3. **Update Success Logic in local_exec.ts**
+
    ```typescript
    // Current (WRONG):
-   success: gitVerification.errors.length === 0
+   success: gitVerification.errors.length === 0;
 
    // Fixed (CORRECT):
-   success: determineTaskSuccess(gitVerification, mode, finalOutput, workingDir)
+   success: determineTaskSuccess(
+     gitVerification,
+     mode,
+     finalOutput,
+     workingDir,
+   );
    ```
 
 ### Long-Term Improvements
@@ -488,14 +534,15 @@ git commit --allow-empty -m "Initial commit"
    - Success determination → Combine all signals
 
 2. **Mode-Specific Success Criteria**
+
    ```typescript
-   if (mode === 'read-only') {
+   if (mode === "read-only") {
      // No files expected, check Codex output only
      success = !hasErrors(finalOutput);
-   } else if (mode === 'workspace-write') {
+   } else if (mode === "workspace-write") {
      // Files expected, verify creation
      success = filesCreated && !hasErrors(finalOutput);
-   } else if (mode === 'danger-full-access') {
+   } else if (mode === "danger-full-access") {
      // Same as workspace-write
      success = filesCreated && !hasErrors(finalOutput);
    }

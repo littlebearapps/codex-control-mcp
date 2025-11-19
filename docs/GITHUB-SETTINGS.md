@@ -212,6 +212,7 @@ After configuration, verify the following:
 
 **Issue**: `npm ERR! need auth` or similar
 **Solution**: Verify npm Trusted Publisher is configured correctly:
+
 1. Go to npmjs.com → Package settings → Publishing access
 2. Verify GitHub Actions is listed
 3. Check repository name and workflow file match
@@ -220,6 +221,7 @@ After configuration, verify the following:
 
 **Issue**: Can still push directly to `main`
 **Solution**:
+
 1. Verify branch protection rule is active
 2. Check "Include administrators" is enabled
 3. Ensure you're not bypassing with force push
@@ -228,6 +230,7 @@ After configuration, verify the following:
 
 **Issue**: Can merge PR without passing tests
 **Solution**:
+
 1. Ensure "Require status checks" is enabled
 2. Select specific status checks to require
 3. Wait for at least one CI run to populate status checks list

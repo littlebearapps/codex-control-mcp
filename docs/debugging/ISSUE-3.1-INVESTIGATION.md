@@ -9,6 +9,7 @@
 ## Issue Summary
 
 **Reported Symptom**:
+
 - `_codex_local_results` returns file listing instead of implementation output
 - Output appears truncated
 - Can't see actual work performed
@@ -19,6 +20,7 @@
 **Expected vs Actual**:
 
 **Expected**:
+
 ```
 Status: ✅ Success
 Files Created:
@@ -33,6 +35,7 @@ Implementation Summary:
 ```
 
 **Actual**:
+
 ```
 Status: ✅ Success
 [Truncated file listing]
@@ -49,30 +52,35 @@ Status: ✅ Success
 **File**: `src/tools/local_exec.ts` lines 263-307
 
 **Current Implementation**:
+
 ```typescript
 // Initialize output accumulator
-let finalOutput = '';
+let finalOutput = "";
 
 // Event processing loop
 for await (const event of events) {
   // ...
 
   // Capture final output from various event types
-  if (event.type === 'item.completed') {
+  if (event.type === "item.completed") {
     const item = (event as any).item;
 
     // Capture command execution output (the actual work!)
-    if (item?.type === 'command_execution' && item.aggregated_output) {
-      finalOutput += item.aggregated_output + '\n';
-      console.error(`[LocalExec:${taskId}] Captured command output: ${item.aggregated_output.substring(0, 100)}...`);
+    if (item?.type === "command_execution" && item.aggregated_output) {
+      finalOutput += item.aggregated_output + "\n";
+      console.error(
+        `[LocalExec:${taskId}] Captured command output: ${item.aggregated_output.substring(0, 100)}...`,
+      );
     }
 
     // Capture Codex's reasoning/messages
-    else if (item?.type === 'agent_message' && item.text) {
-      finalOutput += item.text + '\n';
-      console.error(`[LocalExec:${taskId}] Captured agent message: ${item.text.substring(0, 100)}...`);
+    else if (item?.type === "agent_message" && item.text) {
+      finalOutput += item.text + "\n";
+      console.error(
+        `[LocalExec:${taskId}] Captured agent message: ${item.text.substring(0, 100)}...`,
+      );
     }
-  } else if (event.type === 'turn.completed') {
+  } else if (event.type === "turn.completed") {
     // Keep for completion marker
     console.error(`[LocalExec:${taskId}] Turn completed`);
   }
@@ -80,6 +88,7 @@ for await (const event of events) {
 ```
 
 **Stored in Registry** (line 355):
+
 ```typescript
 result: JSON.stringify({
   success: gitVerification.errors.length === 0,
@@ -91,6 +100,7 @@ result: JSON.stringify({
 ```
 
 **What's Captured**:
+
 - ✅ `command_execution` items with `aggregated_output` (shell commands)
 - ✅ `agent_message` items with `text` (Codex reasoning)
 - ❌ File creation/modification events
@@ -105,11 +115,12 @@ result: JSON.stringify({
 **File**: `src/tools/local_results.ts` lines 135-147
 
 **Current Implementation**:
+
 ```typescript
 // Include Codex output
 if (resultData.finalOutput) {
   const output = globalRedactor.redact(resultData.finalOutput);
-  const maxLength = 10000;  // ⚠️ HARD-CODED 10KB LIMIT
+  const maxLength = 10000; // ⚠️ HARD-CODED 10KB LIMIT
   const truncated = output.substring(0, maxLength);
   const wasTruncated = output.length > maxLength;
 
@@ -122,6 +133,7 @@ if (resultData.finalOutput) {
 ```
 
 **Truncation Strategy**:
+
 - **Hard-coded limit**: 10,000 characters (10KB)
 - **Simple substring**: No smart truncation (mid-word, mid-line cuts)
 - **Notice shown**: "(Output truncated - showing first 10000 characters)"
@@ -138,12 +150,14 @@ if (resultData.finalOutput) {
 **Problem**: Only captures 2 event types out of many possible SDK events
 
 **Evidence**:
+
 - Codex SDK emits many event types: `turn.started`, `item.created`, `item.completed`, `turn.completed`, etc.
 - Items can have types: `command_execution`, `agent_message`, `file_write`, `file_read`, `code_generation`, etc.
 - **Current code only captures**: `command_execution` + `agent_message`
 - **Missing events**: File operations, code generation summaries, test results
 
 **Why User Saw File Listing**:
+
 1. Codex runs `ls` or `find` commands to explore directory
 2. These are `command_execution` items → Captured in `finalOutput`
 3. Codex creates OAuth2 code files (file_write events) → **NOT captured**
@@ -159,6 +173,7 @@ if (resultData.finalOutput) {
 **Problem**: 10KB limit too small for detailed output
 
 **Context**:
+
 - OAuth Manager implementation: ~200 lines of code
 - Test file: ~100 lines
 - Codex explanations and reasoning: ~500-1000 lines
@@ -167,6 +182,7 @@ if (resultData.finalOutput) {
 **Current Limit**: 10KB (10,000 characters)
 
 **What Gets Cut**:
+
 1. First 10KB might be:
    - Command outputs (ls, git status, etc.)
    - Initial exploration messages
@@ -179,6 +195,7 @@ if (resultData.finalOutput) {
 
 **Evidence from Auditor-Toolkit**:
 User report says output was "truncated file listing" - suggests:
+
 - Early output (file listings) preserved
 - Later output (implementation details) truncated away
 
@@ -189,22 +206,24 @@ User report says output was "truncated file listing" - suggests:
 **Problem**: Just concatenating text, not parsing meaningful events
 
 **Current Approach**:
+
 ```typescript
-finalOutput += item.aggregated_output + '\n';  // Append everything
-finalOutput += item.text + '\n';               // Append everything
+finalOutput += item.aggregated_output + "\n"; // Append everything
+finalOutput += item.text + "\n"; // Append everything
 ```
 
 **Better Approach** (not implemented):
+
 ```typescript
 // Parse structured event data
-if (item.type === 'file_write') {
+if (item.type === "file_write") {
   summaryData.filesCreated.push({
     path: item.file_path,
     lines: item.line_count,
   });
 }
 
-if (item.type === 'test_execution') {
+if (item.type === "test_execution") {
   summaryData.testsRun = item.total;
   summaryData.testsPassed = item.passed;
   summaryData.testsFailed = item.failed;
@@ -220,16 +239,19 @@ if (item.type === 'test_execution') {
 **Problem**: When no events captured, shows unhelpful message
 
 **Code** (line 355):
+
 ```typescript
-finalOutput: finalOutput || `SDK execution complete (${eventCount} events)`
+finalOutput: finalOutput || `SDK execution complete (${eventCount} events)`;
 ```
 
 **What This Means**:
+
 - If no `command_execution` or `agent_message` events captured
 - Fallback: "SDK execution complete (47 events)"
 - User sees: "Success" but no details about what happened
 
 **Why This Happens**:
+
 - Codex might emit only `file_write` events (not captured)
 - Or events have different structure than expected
 - **Result**: Empty `finalOutput` → Generic fallback message
@@ -267,17 +289,20 @@ finalOutput: finalOutput || `SDK execution complete (${eventCount} events)`
 ### Option A: Increase Truncation Limit (Quick Fix)
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_results.ts line 138
-const maxLength = 50000;  // ✅ 50KB instead of 10KB
+const maxLength = 50000; // ✅ 50KB instead of 10KB
 ```
 
 **Benefits**:
+
 - ✅ Simple one-line change
 - ✅ Captures more output
 - ✅ Minimal risk
 
 **Limitations**:
+
 - ⚠️ Still loses data beyond 50KB
 - ⚠️ Doesn't solve root cause (wrong events captured)
 - ⚠️ Large outputs still truncated
@@ -289,6 +314,7 @@ const maxLength = 50000;  // ✅ 50KB instead of 10KB
 ### Option B: Smart Truncation with Summary (Better)
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_results.ts
 const maxLength = 50000;
@@ -297,7 +323,7 @@ if (output.length > maxLength) {
   // Keep first 40KB and last 10KB (most important parts)
   const head = output.substring(0, 40000);
   const tail = output.substring(output.length - 10000);
-  const truncated = head + '\n\n...[middle section truncated]...\n\n' + tail;
+  const truncated = head + "\n\n...[middle section truncated]...\n\n" + tail;
 
   message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
   message += `\n*(Output truncated - showing first 40KB and last 10KB of ${output.length} chars total)*\n`;
@@ -307,11 +333,13 @@ if (output.length > maxLength) {
 ```
 
 **Benefits**:
+
 - ✅ Preserves early context (setup, exploration)
 - ✅ Preserves final summary (results, conclusions)
 - ✅ User sees both beginning and end
 
 **Limitations**:
+
 - ⚠️ Middle section lost (might contain important details)
 - ⚠️ Still arbitrary limits
 
@@ -320,49 +348,52 @@ if (output.length > maxLength) {
 ### Option C: Capture Additional Event Types (Proper Fix)
 
 **Implementation** (src/tools/local_exec.ts):
+
 ```typescript
 // Enhanced event capture
-if (event.type === 'item.completed') {
+if (event.type === "item.completed") {
   const item = (event as any).item;
 
   // Command execution (existing)
-  if (item?.type === 'command_execution' && item.aggregated_output) {
-    finalOutput += item.aggregated_output + '\n';
+  if (item?.type === "command_execution" && item.aggregated_output) {
+    finalOutput += item.aggregated_output + "\n";
   }
 
   // Agent messages (existing)
-  else if (item?.type === 'agent_message' && item.text) {
-    finalOutput += item.text + '\n';
+  else if (item?.type === "agent_message" && item.text) {
+    finalOutput += item.text + "\n";
   }
 
   // File write events (NEW)
-  else if (item?.type === 'file_write' && item.file_path) {
+  else if (item?.type === "file_write" && item.file_path) {
     finalOutput += `Created file: ${item.file_path}`;
     if (item.line_count) {
       finalOutput += ` (${item.line_count} lines)`;
     }
-    finalOutput += '\n';
+    finalOutput += "\n";
   }
 
   // Test execution results (NEW)
-  else if (item?.type === 'test_execution' && item.summary) {
+  else if (item?.type === "test_execution" && item.summary) {
     finalOutput += `Test results: ${item.summary}\n`;
   }
 
   // Code generation summary (NEW)
-  else if (item?.type === 'code_generation' && item.summary) {
+  else if (item?.type === "code_generation" && item.summary) {
     finalOutput += `Code generated: ${item.summary}\n`;
   }
 }
 ```
 
 **Benefits**:
+
 - ✅ Captures file operations
 - ✅ Captures test results
 - ✅ Captures implementation summaries
 - ✅ User sees actual work performed
 
 **Limitations**:
+
 - ⚠️ Requires understanding SDK event schema
 - ⚠️ Event types might vary between SDK versions
 - ⚠️ Need to test with real Codex executions
@@ -378,6 +409,7 @@ if (event.type === 'item.completed') {
 **Current Usage**: Extracts test results, file operations, etc. from text output
 
 **Enhanced Implementation**:
+
 ```typescript
 // src/tools/local_exec.ts (after event loop)
 import { extractMetadata } from '../utils/metadata_extractor.js';
@@ -397,12 +429,13 @@ result: JSON.stringify({
 ```
 
 **Display in local_results.ts**:
+
 ```typescript
 // Show structured summary BEFORE raw output
 if (resultData.metadata) {
   if (resultData.metadata.files_modified) {
     message += `**Files Modified**: ${resultData.metadata.files_modified.length}\n`;
-    resultData.metadata.files_modified.forEach(f => {
+    resultData.metadata.files_modified.forEach((f) => {
       message += `- ${f}\n`;
     });
     message += `\n`;
@@ -418,12 +451,14 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 ```
 
 **Benefits**:
+
 - ✅ Leverages existing metadata extractor
 - ✅ Structured summary always visible (even if raw output truncated)
 - ✅ User sees high-level results first
 - ✅ Zero-token-cost extraction (local regex parsing)
 
 **Limitations**:
+
 - ⚠️ Metadata extraction may miss some details
 - ⚠️ Depends on output format consistency
 
@@ -434,16 +469,19 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 ### Option E: Combination Approach (Recommended)
 
 **Phase 1** (Quick - v3.4.2):
+
 1. **Increase limit** to 50KB (Option A)
 2. **Use metadata extractor** to show structured summary (Option D)
 3. **Smart truncation** - first 40KB + last 10KB (Option B)
 
 **Phase 2** (Medium - v3.5.0):
+
 1. **Capture additional event types** (Option C)
 2. Test with real Codex SDK executions
 3. Refine based on actual event schema
 
 **Phase 3** (Long-term):
+
 1. Pagination support for very large outputs
 2. Compressed storage for historical results
 3. Detailed event log viewer
@@ -455,6 +493,7 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 ### Test 1: Verify Current Truncation Behavior
 
 **Setup**:
+
 ```typescript
 // Create task that generates > 10KB output
 {
@@ -464,11 +503,13 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 ```
 
 **Expected**:
+
 - Output > 10KB
 - Truncation notice shown
 - Can't see final analysis results
 
 **Success Criteria**:
+
 - ✅ Confirms 10KB truncation limit
 - ✅ Identifies what's lost in truncation
 
@@ -479,10 +520,12 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 **Same Task**, but with 50KB limit
 
 **Expected**:
+
 - More output visible
 - Final analysis results captured
 
 **Success Criteria**:
+
 - ✅ 50KB limit adequate for most tasks
 - ✅ User sees implementation details
 
@@ -491,6 +534,7 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 ### Test 3: Verify Metadata Extraction (After Option D)
 
 **Test Case**:
+
 ```typescript
 {
   task: "Create test file with 3 functions, run tests, fix any failures",
@@ -499,6 +543,7 @@ message += `**Codex Output**:\n\`\`\`\n${truncated}\n\`\`\`\n`;
 ```
 
 **Expected Output**:
+
 ```
 Status: ✅ Success
 
@@ -510,11 +555,15 @@ Status: ✅ Success
 
 **Codex Output**:
 ```
+
 [detailed output...]
+
 ```
+
 ```
 
 **Success Criteria**:
+
 - ✅ Structured summary visible first
 - ✅ Easy to scan results
 - ✅ Raw output available for details
@@ -524,6 +573,7 @@ Status: ✅ Success
 ## Implementation Checklist
 
 **Phase 1: Quick Fixes** (v3.4.2 - Priority 1)
+
 - [ ] Increase truncation limit from 10KB to 50KB (local_results.ts line 138)
 - [ ] Implement smart truncation (first 40KB + last 10KB)
 - [ ] Add metadata extraction to local_exec.ts result
@@ -532,6 +582,7 @@ Status: ✅ Success
 - [ ] Verify structured summary useful
 
 **Phase 2: Enhanced Capture** (v3.5.0)
+
 - [ ] Research Codex SDK event schema
 - [ ] Identify all event types (file_write, test_execution, etc.)
 - [ ] Add capture logic for file operations
@@ -541,6 +592,7 @@ Status: ✅ Success
 - [ ] Refine based on actual event structure
 
 **Phase 3: Advanced Features** (Future)
+
 - [ ] Pagination for outputs > 50KB
 - [ ] Compressed storage for historical results
 - [ ] Event log viewer tool
@@ -586,6 +638,7 @@ Status: ✅ Success
 **Status**: 🔍 Investigation Complete - ✅ ROOT CAUSE IDENTIFIED
 
 **Root Causes**:
+
 1. **Limited event type capture**: Only `command_execution` and `agent_message` items captured, missing file operations, test results, code generation summaries
 2. **Aggressive truncation**: 10KB limit too small for detailed output, cuts off implementation details
 3. **No structured extraction**: Just concatenating text, not parsing meaningful results
@@ -594,5 +647,6 @@ Status: ✅ Success
 **Impact**: User saw command outputs (file listings) but not actual implementation work (files created, tests passing, code written)
 
 **Next Action**:
+
 - **Quick Fix**: Increase limit to 50KB + smart truncation + metadata extraction (v3.4.2)
 - **Proper Fix**: Capture additional event types (file_write, test_execution, code_generation) (v3.5.0)

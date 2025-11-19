@@ -9,22 +9,25 @@
 ## Issue Summary
 
 **Reported Symptom**:
+
 - Tasks from different working directories appear in same registry
 - `showAll: false` should filter by current directory
 - Stuck tasks from unrelated projects pollute output
 - Example: 9 stuck tasks from `/tmp/git-safety-test` appear when querying from auditor-toolkit
 
 **Expected Behavior**:
+
 ```typescript
 // User in /project-a/
-_codex_local_status({ showAll: false })
+_codex_local_status({ showAll: false });
 // Should show ONLY tasks from /project-a/
 ```
 
 **Actual Behavior**:
+
 ```typescript
 // User in /project-a/
-_codex_local_status({ showAll: false })
+_codex_local_status({ showAll: false });
 // Shows tasks from ALL projects (mixed together)
 ```
 
@@ -41,13 +44,13 @@ _codex_local_status({ showAll: false })
 ```typescript
 export class LocalStatusTool {
   async execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult> {
-    const workingDir = input.workingDir || process.cwd();  // ⚠️ THE ISSUE
+    const workingDir = input.workingDir || process.cwd(); // ⚠️ THE ISSUE
     const showAll = input.showAll || false;
 
     // Query tasks with filter
     const tasks = globalTaskRegistry.queryTasks({
-      origin: 'local',
-      workingDir: showAll ? undefined : workingDir  // Filter by workingDir if showAll=false
+      origin: "local",
+      workingDir: showAll ? undefined : workingDir, // Filter by workingDir if showAll=false
     });
 
     // ... display logic
@@ -56,6 +59,7 @@ export class LocalStatusTool {
 ```
 
 **Tool Schema Description** (lines 173-177):
+
 ```typescript
 workingDir: {
   type: 'string',
@@ -64,6 +68,7 @@ workingDir: {
 ```
 
 **The Problem**:
+
 - Description says: "Defaults to current directory"
 - Implementation uses: `process.cwd()` (MCP server's directory)
 - **These are NOT the same thing!**
@@ -102,9 +107,9 @@ queryTasks(filter: TaskFilter = {}): Task[] {
 
 ```typescript
 const registeredTask = globalTaskRegistry.registerTask({
-  origin: 'local',
+  origin: "local",
   instruction: validated.task,
-  workingDir: validated.workingDir || process.cwd(),  // ⚠️ SAME ISSUE
+  workingDir: validated.workingDir || process.cwd(), // ⚠️ SAME ISSUE
   mode: validated.mode,
   model: validated.model,
   threadId: thread.id || undefined,
@@ -112,6 +117,7 @@ const registeredTask = globalTaskRegistry.registerTask({
 ```
 
 **All Tools Use Same Pattern**:
+
 ```bash
 src/tools/local_run.ts:98:        const workingDir = input.workingDir || process.cwd();
 src/tools/local_status.ts:32:    const workingDir = input.workingDir || process.cwd();
@@ -127,6 +133,7 @@ src/tools/local_resume.ts:127:   const workingDir = process.cwd();
 ### The Fundamental Issue
 
 **MCP Server Context**:
+
 ```
 User's perspective:
   - Running Claude Code in: /Users/nathanschram/project-a/
@@ -139,6 +146,7 @@ MCP Server's perspective:
 ```
 
 **The Disconnect**:
+
 ```
 process.cwd() returns MCP server's working directory
               NOT user's current working directory
@@ -151,6 +159,7 @@ process.cwd() returns MCP server's working directory
 **What Actually Happened**:
 
 1. **Tasks Created** (weeks ago in `/tmp/git-safety-test`):
+
    ```bash
    cd /tmp/git-safety-test
    # User explicitly ran tests that created tasks
@@ -158,6 +167,7 @@ process.cwd() returns MCP server's working directory
    ```
 
 2. **Tasks Created** (in auditor-toolkit):
+
    ```bash
    cd /Users/nathanschram/auditor-toolkit
    # Claude Code calls _codex_local_exec() WITHOUT workingDir parameter
@@ -182,24 +192,30 @@ Let me re-analyze the user's report...
 ## Deeper Investigation
 
 **User's Report Re-examined**:
+
 > "9 stuck tasks from /tmp/git-safety-test appear when querying from auditor-toolkit"
 
 **Hypothesis 1**: Tasks have `working_dir = /tmp/git-safety-test`
+
 - If query filters by `working_dir = process.cwd()` (MCP server's directory)
 - These tasks SHOULD NOT match → Not the issue ❌
 
 **Hypothesis 2**: User explicitly passed `showAll: true`
+
 - This would bypass working directory filter
 - But report says `showAll: false` should filter → Not the issue ❌
 
 **Hypothesis 3**: Tasks have `working_dir = NULL` or empty
+
 - Would not match filter → Check database schema
 
 **Hypothesis 4**: User is using `showAll: true` by default
+
 - Tool description recommends this
 - Then all tasks show (expected behavior) → Possible! ✅
 
 **Hypothesis 5**: The DEFAULT behavior is the problem
+
 - User expects default to show "only my current project"
 - But default `showAll: false` + `process.cwd()` shows "only MCP server's directory tasks"
 - Neither of these is what user wants! → **THIS IS THE ISSUE** ✅
@@ -209,16 +225,18 @@ Let me re-analyze the user's report...
 ## The REAL Root Cause
 
 **What Users Expect**:
+
 ```typescript
 // User in /project-a/
-_codex_local_status()  // No parameters
+_codex_local_status(); // No parameters
 // Expected: Show tasks from /project-a/ (my current project)
 ```
 
 **What Actually Happens**:
+
 ```typescript
 // User in /project-a/ (but MCP server is in /mcp-server/)
-_codex_local_status()  // No parameters
+_codex_local_status(); // No parameters
 // workingDir defaults to process.cwd() = /mcp-server/
 // Filters by: working_dir = '/mcp-server/'
 // Returns: Tasks created with MCP server's directory (almost none!)
@@ -258,6 +276,7 @@ Actual: Both projects' tasks mixed together
 ```
 
 **This suggests**:
+
 - User is seeing tasks from MULTIPLE directories at once
 - **Conclusion**: User is using `showAll: true` (or equivalent)
 - The issue is: User WANTS per-project isolation but can't get it easily
@@ -297,6 +316,7 @@ Actual: Both projects' tasks mixed together
 ### Option A: Change Default to `showAll: true`
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_status.ts
 async execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult> {
@@ -311,12 +331,14 @@ async execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult> {
 ```
 
 **Benefits**:
+
 - ✅ More useful default (see all local tasks)
 - ✅ Matches user expectation: "show me what's running"
 - ✅ No breaking changes (just different default)
 - ✅ Users can still filter with `workingDir` parameter
 
 **Limitations**:
+
 - ⚠️ Shows tasks from ALL projects (not isolated by default)
 - ⚠️ Users must explicitly pass `workingDir` for isolation
 
@@ -325,6 +347,7 @@ async execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult> {
 ### Option B: Make `workingDir` Required
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_status.ts
 export interface LocalStatusToolInput {
@@ -356,10 +379,12 @@ inputSchema: {
 ```
 
 **Benefits**:
+
 - ✅ Forces explicit directory specification (no confusion)
 - ✅ Clear expectations about filtering
 
 **Limitations**:
+
 - ❌ Breaking change (existing calls without parameter fail)
 - ❌ More verbose (always need to pass parameter)
 
@@ -368,6 +393,7 @@ inputSchema: {
 ### Option C: Document the Limitation (Minimal Fix)
 
 **Implementation**:
+
 ```typescript
 // Update tool schema description only
 workingDir: {
@@ -383,11 +409,13 @@ showAll: {
 ```
 
 **Benefits**:
+
 - ✅ No code changes required
 - ✅ No breaking changes
 - ✅ Honest about limitation
 
 **Limitations**:
+
 - ❌ Doesn't fix UX problem
 - ❌ Users still confused by default behavior
 
@@ -402,6 +430,7 @@ showAll: {
 3. **Add deprecation warning** when using default `process.cwd()`
 
 **Implementation**:
+
 ```typescript
 // src/tools/local_status.ts
 async execute(input: LocalStatusToolInput): Promise<LocalStatusToolResult> {
@@ -437,12 +466,14 @@ inputSchema: {
 ```
 
 **Benefits**:
+
 - ✅ Better default behavior (show all tasks)
 - ✅ Clear documentation about limitation
 - ✅ Warning helps debug confusion
 - ✅ Small behavior change (non-breaking)
 
 **Limitations**:
+
 - ⚠️ Slight API behavior change (default showAll changes)
 
 ---
@@ -452,6 +483,7 @@ inputSchema: {
 ### Test 1: Reproduce Current Behavior
 
 **Setup**:
+
 ```bash
 # Create tasks in different directories
 cd /tmp/test-project-a
@@ -462,16 +494,18 @@ cd /tmp/test-project-b
 ```
 
 **Test Case**:
+
 ```typescript
 // From any directory
 {
-  showAll: false  // Default workingDir = process.cwd() (MCP server's directory)
+  showAll: false; // Default workingDir = process.cwd() (MCP server's directory)
 }
 // Expected: No tasks (unless some were created with MCP server's directory)
 // Actual: (verify this is what happens)
 ```
 
 **Success Criteria**:
+
 - ✅ Reproduces confusion (no tasks shown despite tasks existing)
 
 ---
@@ -481,13 +515,16 @@ cd /tmp/test-project-b
 **Apply Fix**: Change default `showAll` to `true`
 
 **Test Case**:
+
 ```typescript
 // From any directory
-{}  // No parameters
+{
+} // No parameters
 // Expected: Shows ALL local tasks (from all directories)
 ```
 
 **Success Criteria**:
+
 - ✅ Shows tasks from all projects
 - ✅ More useful default behavior
 
@@ -496,6 +533,7 @@ cd /tmp/test-project-b
 ### Test 3: Verify Filtering Still Works
 
 **Test Case**:
+
 ```typescript
 // Explicit filtering
 {
@@ -506,6 +544,7 @@ cd /tmp/test-project-b
 ```
 
 **Success Criteria**:
+
 - ✅ Filtering works correctly when explicit
 
 ---
@@ -513,15 +552,17 @@ cd /tmp/test-project-b
 ### Test 4: Verify Warning Message
 
 **Test Case**:
+
 ```typescript
 // Use old default (after migration period)
 {
-  showAll: false  // Explicit false
+  showAll: false; // Explicit false
 }
 // Expected: Warning logged about using process.cwd()
 ```
 
 **Success Criteria**:
+
 - ✅ Warning helps users understand limitation
 
 ---
@@ -529,6 +570,7 @@ cd /tmp/test-project-b
 ## Implementation Checklist
 
 **Phase 1: Investigation** ✅ COMPLETE
+
 - [x] Read local_status.ts filtering logic
 - [x] Read task_registry.ts query implementation
 - [x] Understand MCP context limitation
@@ -536,24 +578,28 @@ cd /tmp/test-project-b
 - [x] Document findings
 
 **Phase 2: Design Fix**
+
 - [ ] Choose fix approach (A, B, C, or D)
 - [ ] Design implementation details
 - [ ] Write test cases
 - [ ] Review API compatibility
 
 **Phase 3: Implementation**
+
 - [ ] Modify local_status.ts default behavior
 - [ ] Update tool schema descriptions
 - [ ] Add deprecation warning
 - [ ] Update documentation
 
 **Phase 4: Testing**
+
 - [ ] Test 1: Reproduce current behavior
 - [ ] Test 2: Verify fix improves UX
 - [ ] Test 3: Verify filtering still works
 - [ ] Test 4: Verify warning appears
 
 **Phase 5: Documentation**
+
 - [ ] Update quickrefs/tools.md
 - [ ] Update CHANGELOG.md
 - [ ] Add to troubleshooting.md

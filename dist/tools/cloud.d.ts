@@ -4,29 +4,34 @@
  * Codex Cloud allows tasks to run in the background in sandboxed containers.
  * Tasks continue even after Claude Code closes and can be checked from any device.
  */
-import { ToolExecuteExtra } from '../types/progress.js';
+import { ToolExecuteExtra } from "../types/progress.js";
 export interface CloudSubmitInput {
     task: string;
     envId: string;
     attempts?: number;
     model?: string;
     allow_destructive_git?: boolean;
+    format?: "json" | "markdown";
 }
 export interface CloudStatusInput {
     taskId?: string;
     list?: boolean;
     workingDir?: string;
     envId?: string;
-    status?: 'submitted' | 'completed' | 'failed' | 'cancelled';
+    status?: "submitted" | "completed" | "failed" | "cancelled";
     limit?: number;
     showStats?: boolean;
+    format?: "json" | "markdown";
 }
 export interface CloudResultsInput {
     taskId: string;
+    format?: "json" | "markdown";
+    include_output?: boolean;
+    max_output_bytes?: number;
 }
 export interface CloudToolResult {
     content: Array<{
-        type: 'text';
+        type: "text";
         text: string;
     }>;
     isError?: boolean;
@@ -76,6 +81,12 @@ export declare class CloudSubmitTool {
                     description: string;
                     default: boolean;
                 };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
+                };
             };
             required: string[];
         };
@@ -103,6 +114,10 @@ export declare class CloudStatusTool {
      * MODE 3: List all tasks with optional filtering
      */
     private listAllTasks;
+    /**
+     * JSON status_snapshot generator
+     */
+    private jsonSnapshot;
     /**
      * Get status emoji for visual clarity
      */
@@ -152,6 +167,12 @@ export declare class CloudStatusTool {
                     description: string;
                     default: boolean;
                 };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
+                };
             };
         };
     };
@@ -173,6 +194,22 @@ export declare class CloudResultsTool {
                 taskId: {
                     type: string;
                     description: string;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
+                };
+                include_output: {
+                    type: string;
+                    description: string;
+                    default: boolean;
+                };
+                max_output_bytes: {
+                    type: string;
+                    description: string;
+                    default: number;
                 };
             };
             required: string[];

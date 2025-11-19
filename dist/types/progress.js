@@ -59,8 +59,8 @@ export async function sendProgressNotification(extra, params, context) {
     }
     try {
         await extra.sendNotification({
-            method: 'notifications/progress',
-            params
+            method: "notifications/progress",
+            params,
         });
     }
     catch (error) {
@@ -89,7 +89,7 @@ export function createStartNotification(taskId, message) {
         progressToken: taskId,
         progress: 0,
         total: 100,
-        message: message || 'Starting task...'
+        message: message || "Starting task...",
     };
 }
 /**
@@ -113,7 +113,7 @@ export function createCompletionNotification(taskId, message) {
         progressToken: taskId,
         progress: 100,
         total: 100,
-        message: message || 'Task complete'
+        message: message || "Task complete",
     };
 }
 /**
@@ -140,7 +140,7 @@ export function createElapsedTimeNotification(taskId, elapsedSeconds) {
         progressToken: taskId,
         progress: elapsedSeconds,
         total: undefined,
-        message: `Codex executing (${elapsedSeconds}s elapsed)`
+        message: `Codex executing (${elapsedSeconds}s elapsed)`,
     };
 }
 /**
@@ -174,7 +174,7 @@ export function createStepProgressNotification(taskId, completedSteps, totalStep
         progressToken: taskId,
         progress: completedSteps,
         total: totalSteps,
-        message
+        message,
     };
 }
 //# sourceMappingURL=progress.js.map

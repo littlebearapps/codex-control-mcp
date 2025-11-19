@@ -17,6 +17,7 @@ Successfully located and analyzed the MCP Delegator task registry. Found **60 to
 ## Registry Location
 
 ### Primary Registry (SQLite)
+
 ```
 Path: ~/.config/codex-control/tasks.db
 Size: 5.2 MB
@@ -25,6 +26,7 @@ Permissions: -rw-r--r-- (user read/write)
 ```
 
 ### Legacy Files (Still Present)
+
 ```
 ~/.config/codex-control/
 ├── tasks.db                    (5.2 MB) ← PRIMARY (SQLite)
@@ -100,14 +102,14 @@ CREATE INDEX idx_created_at ON tasks(created_at DESC);
 
 ### Task Count Summary
 
-| Origin | Status | Count | Notes |
-|--------|--------|-------|-------|
-| local | completed | 35 | ✅ Successful tasks |
-| local | completed_with_warnings | 11 | ⚠️ Partial success |
-| local | completed_with_errors | 4 | ⚠️ Errors but finished |
-| local | working | **9** | ❌ **STUCK** (25+ hours) |
-| local | failed | 1 | ❌ Critical failure |
-| **TOTAL** | | **60** | |
+| Origin    | Status                  | Count  | Notes                    |
+| --------- | ----------------------- | ------ | ------------------------ |
+| local     | completed               | 35     | ✅ Successful tasks      |
+| local     | completed_with_warnings | 11     | ⚠️ Partial success       |
+| local     | completed_with_errors   | 4      | ⚠️ Errors but finished   |
+| local     | working                 | **9**  | ❌ **STUCK** (25+ hours) |
+| local     | failed                  | 1      | ❌ Critical failure      |
+| **TOTAL** |                         | **60** |                          |
 
 ### Stuck Tasks Analysis (Issue 1.3 Confirmed)
 
@@ -126,19 +128,20 @@ ORDER BY elapsed_hours DESC;
 
 **Results**:
 
-| Task ID | Instruction | Elapsed (hours) | Working Dir |
-|---------|-------------|-----------------|-------------|
-| T-local-mi11zt6ku9ilj7 | Rebase current branch onto main | 25.6 | /tmp/git-safety-test |
-| T-local-mi1206eenm3nb3 | Rebase current branch onto main | 25.6 | /tmp/git-safety-test |
-| T-local-mi120fyptzj88g | Show git log --oneline | 25.6 | /tmp/git-safety-test |
-| T-local-mi125ln8deph68 | Rebase current branch onto main | 25.5 | /tmp/git-safety-test |
-| T-local-mi125xxpuu9hdy | Show git log --online | 25.5 | /tmp/git-safety-test |
-| T-local-mi1266lchz7y10 | Rebase current branch onto main | 25.5 | /tmp/git-safety-test |
-| T-local-mi126oy3ov0pwv | Show git log --oneline | 25.5 | /tmp/git-safety-test |
-| T-local-mi126umnoks0g4 | Rebase current branch onto main | 25.5 | /tmp/git-safety-test |
-| T-local-mi127ad04c1cnm | Show git log --oneline | 25.5 | /tmp/git-safety-test |
+| Task ID                | Instruction                     | Elapsed (hours) | Working Dir          |
+| ---------------------- | ------------------------------- | --------------- | -------------------- |
+| T-local-mi11zt6ku9ilj7 | Rebase current branch onto main | 25.6            | /tmp/git-safety-test |
+| T-local-mi1206eenm3nb3 | Rebase current branch onto main | 25.6            | /tmp/git-safety-test |
+| T-local-mi120fyptzj88g | Show git log --oneline          | 25.6            | /tmp/git-safety-test |
+| T-local-mi125ln8deph68 | Rebase current branch onto main | 25.5            | /tmp/git-safety-test |
+| T-local-mi125xxpuu9hdy | Show git log --online           | 25.5            | /tmp/git-safety-test |
+| T-local-mi1266lchz7y10 | Rebase current branch onto main | 25.5            | /tmp/git-safety-test |
+| T-local-mi126oy3ov0pwv | Show git log --oneline          | 25.5            | /tmp/git-safety-test |
+| T-local-mi126umnoks0g4 | Rebase current branch onto main | 25.5            | /tmp/git-safety-test |
+| T-local-mi127ad04c1cnm | Show git log --oneline          | 25.5            | /tmp/git-safety-test |
 
 **Observations**:
+
 - ✅ All from test directory `/tmp/git-safety-test`
 - ✅ All git operations (log, rebase)
 - ✅ All created around same time (likely single test session)
@@ -166,12 +169,12 @@ ORDER BY elapsed_hours DESC;
 
 ### Impact
 
-| Component | Current Name | Should Be | Status |
-|-----------|-------------|-----------|--------|
-| npm package | `@littlebearapps/mcp-delegator` | ✅ Correct | ✅ OK |
-| CLI command | `mcp-delegator` | ✅ Correct | ✅ OK |
-| Config directory | `~/.config/codex-control/` | ❌ Wrong | ❌ NEEDS FIX |
-| SQLite database | `~/.config/codex-control/tasks.db` | ❌ Wrong path | ❌ NEEDS FIX |
+| Component        | Current Name                                | Should Be     | Status       |
+| ---------------- | ------------------------------------------- | ------------- | ------------ |
+| npm package      | `@littlebearapps/mcp-delegator`             | ✅ Correct    | ✅ OK        |
+| CLI command      | `mcp-delegator`                             | ✅ Correct    | ✅ OK        |
+| Config directory | `~/.config/codex-control/`                  | ❌ Wrong      | ❌ NEEDS FIX |
+| SQLite database  | `~/.config/codex-control/tasks.db`          | ❌ Wrong path | ❌ NEEDS FIX |
 | Environment file | `~/.config/codex-control/environments.json` | ❌ Wrong path | ❌ NEEDS FIX |
 
 ---
@@ -181,11 +184,13 @@ ORDER BY elapsed_hours DESC;
 ### Phase 1: Code Changes
 
 **Files to Update** (config path constant):
+
 - `src/state/task_registry.ts:93` - Change `'codex-control'` → `'mcp-delegator'`
 - `src/state/cloud_task_registry.ts` - Check for hardcoded paths
 - Any other files with config directory references
 
 **Search Command**:
+
 ```bash
 grep -r "codex-control" src/
 grep -r "\.config/codex" src/
@@ -194,23 +199,25 @@ grep -r "\.config/codex" src/
 ### Phase 2: Migration Logic
 
 **Backward Compatibility Approach**:
+
 ```typescript
 // In task_registry.ts constructor:
-const oldConfigDir = path.join(os.homedir(), '.config', 'codex-control');
-const newConfigDir = path.join(os.homedir(), '.config', 'mcp-delegator');
+const oldConfigDir = path.join(os.homedir(), ".config", "codex-control");
+const newConfigDir = path.join(os.homedir(), ".config", "mcp-delegator");
 
 // If old directory exists and new doesn't, migrate
 if (fs.existsSync(oldConfigDir) && !fs.existsSync(newConfigDir)) {
-  console.log('Migrating config from codex-control to mcp-delegator...');
+  console.log("Migrating config from codex-control to mcp-delegator...");
   fs.renameSync(oldConfigDir, newConfigDir);
-  console.log('Migration complete!');
+  console.log("Migration complete!");
 }
 
 // Use new directory
-this.dbPath = dbPath || path.join(newConfigDir, 'tasks.db');
+this.dbPath = dbPath || path.join(newConfigDir, "tasks.db");
 ```
 
 **Migration Checklist**:
+
 - [ ] Detect old config directory
 - [ ] Rename `~/.config/codex-control/` → `~/.config/mcp-delegator/`
 - [ ] Verify all files migrated (tasks.db, environments.json, etc.)
@@ -220,7 +227,8 @@ this.dbPath = dbPath || path.join(newConfigDir, 'tasks.db');
 ### Phase 3: User Communication
 
 **CHANGELOG Entry**:
-```markdown
+
+````markdown
 ### v3.5.0 - Config Directory Migration
 
 **BREAKING CHANGE**: Config directory renamed for consistency
@@ -229,15 +237,19 @@ this.dbPath = dbPath || path.join(newConfigDir, 'tasks.db');
 - **New**: `~/.config/mcp-delegator/`
 
 **What Happens**:
+
 - First run after upgrade automatically migrates old directory
 - All task history, environments preserved
 - No action required from users
 
 **Manual Migration** (if needed):
+
 ```bash
 mv ~/.config/codex-control ~/.config/mcp-delegator
 ```
-```
+````
+
+````
 
 **README Update**:
 - Document new config path
@@ -254,9 +266,10 @@ mv ~/.config/codex-control ~/.config/mcp-delegator
    ```bash
    npm update -g @littlebearapps/mcp-delegator
    # Should install v3.4.0 (currently v3.2.1)
-   ```
+````
 
 2. **Clean up stuck tasks**:
+
    ```bash
    # Manual cleanup for now
    sqlite3 ~/.config/codex-control/tasks.db
@@ -267,10 +280,11 @@ mv ~/.config/codex-control ~/.config/mcp-delegator
 3. **Test cleanup_registry tool**:
    ```typescript
    // Via MCP
-   mcp__mcp-delegator___codex_cleanup_registry({
-     dryRun: true,
-     olderThanHours: 24
-   })
+   mcp__mcp -
+     delegator___codex_cleanup_registry({
+       dryRun: true,
+       olderThanHours: 24,
+     });
    ```
 
 ### Short-term (P1)
@@ -309,6 +323,7 @@ mv ~/.config/codex-control ~/.config/mcp-delegator
 ## Appendix: Registry Queries
 
 ### Count tasks by status
+
 ```sql
 SELECT status, COUNT(*) as count
 FROM tasks
@@ -317,6 +332,7 @@ ORDER BY count DESC;
 ```
 
 ### Find stuck tasks (running > 2 hours)
+
 ```sql
 SELECT id, instruction,
   ROUND((julianday('now') - julianday(created_at/1000, 'unixepoch')) * 24, 1) as hours
@@ -327,6 +343,7 @@ ORDER BY hours DESC;
 ```
 
 ### Find tasks by working directory
+
 ```sql
 SELECT id, instruction, status
 FROM tasks
@@ -336,6 +353,7 @@ LIMIT 10;
 ```
 
 ### Recent task activity
+
 ```sql
 SELECT id, instruction, status,
   datetime(created_at/1000, 'unixepoch') as created
@@ -345,6 +363,7 @@ LIMIT 20;
 ```
 
 ### Database size analysis
+
 ```sql
 SELECT
   COUNT(*) as total_tasks,

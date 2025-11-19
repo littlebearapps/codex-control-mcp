@@ -16,7 +16,7 @@ export interface CodexMetadata {
     failed: number;
     skipped: number;
     total: number;
-    failed_tests?: string[];  // Names of failed tests
+    failed_tests?: string[]; // Names of failed tests
   };
 
   // File operation metadata
@@ -42,7 +42,7 @@ export interface CodexMetadata {
 
   // Task status metadata
   task_status?: {
-    status: 'pending' | 'running' | 'completed' | 'failed' | 'canceled';
+    status: "pending" | "running" | "completed" | "failed" | "canceled";
     progress_percent?: number;
     task_id?: string;
   };
@@ -51,7 +51,7 @@ export interface CodexMetadata {
   error_context?: {
     error_message?: string;
     error_type?: string;
-    failed_files?: string[];  // Files where errors occurred
+    failed_files?: string[]; // Files where errors occurred
     error_locations?: Array<{
       file: string;
       line?: number;
@@ -59,7 +59,7 @@ export interface CodexMetadata {
       message: string;
     }>;
     stack_trace?: string;
-    suggestions?: string[];  // Where to look / what to fix
+    suggestions?: string[]; // Where to look / what to fix
   };
 }
 
@@ -70,7 +70,7 @@ export function extractMetadata(
   output: string,
   exitCode?: number,
   threadId?: string,
-  taskId?: string
+  taskId?: string,
 ): CodexMetadata {
   const metadata: CodexMetadata = {
     success: exitCode === 0 || exitCode === undefined,
@@ -89,7 +89,12 @@ export function extractMetadata(
 
   // Extract file operations
   const fileOps = extractFileOperations(output);
-  if (fileOps && (fileOps.files_changed.length > 0 || fileOps.files_added.length > 0 || fileOps.files_deleted.length > 0)) {
+  if (
+    fileOps &&
+    (fileOps.files_changed.length > 0 ||
+      fileOps.files_added.length > 0 ||
+      fileOps.files_deleted.length > 0)
+  ) {
     metadata.file_operations = fileOps;
   }
 
@@ -101,7 +106,7 @@ export function extractMetadata(
   // Extract task status
   if (taskId) {
     metadata.task_status = {
-      status: metadata.success ? 'completed' : 'failed',
+      status: metadata.success ? "completed" : "failed",
       task_id: taskId,
     };
   }
@@ -123,7 +128,9 @@ export function extractMetadata(
 /**
  * Extract test results from output
  */
-function extractTestResults(output: string): CodexMetadata['test_results'] | null {
+function extractTestResults(
+  output: string,
+): CodexMetadata["test_results"] | null {
   // Common test result patterns
   const patterns = [
     // Jest: "Tests: 2 failed, 45 passed, 47 total"
@@ -177,7 +184,7 @@ function extractFailedTestNames(output: string): string[] {
   // Pattern: "✗ test name" or "FAIL test name"
   const patterns = [
     /(?:✗|FAIL|Failed:)\s+(.+?)(?:\n|$)/g,
-    /\d+\)\s+(.+?)\n/g,  // Numbered list: "1) test name"
+    /\d+\)\s+(.+?)\n/g, // Numbered list: "1) test name"
   ];
 
   for (const pattern of patterns) {
@@ -190,14 +197,16 @@ function extractFailedTestNames(output: string): string[] {
     }
   }
 
-  return failedTests.slice(0, 10);  // Limit to 10 failed tests
+  return failedTests.slice(0, 10); // Limit to 10 failed tests
 }
 
 /**
  * Extract file operations from output
  */
-function extractFileOperations(output: string): CodexMetadata['file_operations'] {
-  const fileOps: CodexMetadata['file_operations'] = {
+function extractFileOperations(
+  output: string,
+): CodexMetadata["file_operations"] {
+  const fileOps: CodexMetadata["file_operations"] = {
     files_changed: [],
     files_added: [],
     files_deleted: [],
@@ -223,7 +232,9 @@ function extractFileOperations(output: string): CodexMetadata['file_operations']
   }
 
   // Extract lines added/removed
-  const linesMatch = output.match(/(\d+)\s*insertions?\(\+\),\s*(\d+)\s*deletions?\(-\)/i);
+  const linesMatch = output.match(
+    /(\d+)\s*insertions?\(\+\),\s*(\d+)\s*deletions?\(-\)/i,
+  );
   if (linesMatch) {
     fileOps.lines_added = parseInt(linesMatch[1], 10);
     fileOps.lines_removed = parseInt(linesMatch[2], 10);
@@ -235,13 +246,17 @@ function extractFileOperations(output: string): CodexMetadata['file_operations']
 /**
  * Extract thread info from output
  */
-function extractThreadInfo(output: string, threadId: string): CodexMetadata['thread_info'] {
-  const threadInfo: CodexMetadata['thread_info'] = {
+function extractThreadInfo(
+  output: string,
+  threadId: string,
+): CodexMetadata["thread_info"] {
+  const threadInfo: CodexMetadata["thread_info"] = {
     thread_id: threadId,
   };
 
   // Extract token usage from Codex SDK output
-  const tokenPattern = /"total_token_usage":\s*\{[^}]*"input_tokens":\s*(\d+),[^}]*"cached_input_tokens":\s*(\d+),[^}]*"output_tokens":\s*(\d+),[^}]*"total_tokens":\s*(\d+)/;
+  const tokenPattern =
+    /"total_token_usage":\s*\{[^}]*"input_tokens":\s*(\d+),[^}]*"cached_input_tokens":\s*(\d+),[^}]*"output_tokens":\s*(\d+),[^}]*"total_tokens":\s*(\d+)/;
   const tokenMatch = output.match(tokenPattern);
 
   if (tokenMatch) {
@@ -259,7 +274,7 @@ function extractThreadInfo(output: string, threadId: string): CodexMetadata['thr
 
     // Calculate cache hit rate
     if (input > 0) {
-      threadInfo.cache_hit_rate = Math.round((cached / input) * 1000) / 10;  // 1 decimal place
+      threadInfo.cache_hit_rate = Math.round((cached / input) * 1000) / 10; // 1 decimal place
     }
   }
 
@@ -269,8 +284,11 @@ function extractThreadInfo(output: string, threadId: string): CodexMetadata['thr
 /**
  * Extract error context from failed output
  */
-function extractErrorContext(output: string, exitCode?: number): CodexMetadata['error_context'] {
-  const errorContext: CodexMetadata['error_context'] = {};
+function extractErrorContext(
+  output: string,
+  exitCode?: number,
+): CodexMetadata["error_context"] {
+  const errorContext: CodexMetadata["error_context"] = {};
 
   // Extract error message (first line of error)
   const errorPatterns = [
@@ -295,9 +313,15 @@ function extractErrorContext(output: string, exitCode?: number): CodexMetadata['
   }
 
   // Extract error locations (file:line:column)
-  const errorLocations: Array<{ file: string; line?: number; column?: number; message: string }> = [];
+  const errorLocations: Array<{
+    file: string;
+    line?: number;
+    column?: number;
+    message: string;
+  }> = [];
   // Use [ \t] instead of \s to avoid matching newlines in the separator
-  const locationPattern = /(?:at\s+)?([\/\w.-]+\.(?:ts|js|tsx|jsx|py|go|rs)):(\d+)(?::(\d+))?[:,\t ]*(.+?)(?:\n|$)/gi;
+  const locationPattern =
+    /(?:at\s+)?([\/\w.-]+\.(?:ts|js|tsx|jsx|py|go|rs)):(\d+)(?::(\d+))?[:,\t ]*(.+?)(?:\n|$)/gi;
   const seen = new Set<string>(); // Track unique locations
 
   let match;
@@ -311,14 +335,14 @@ function extractErrorContext(output: string, exitCode?: number): CodexMetadata['
     const noisePatterns = [
       /^Stack trace:?$/i,
       /^at\s+$/,
-      /^\d+$/,  // Just a number
-      /^[\s:]+$/,  // Just whitespace/colons
-      /^[)]+$/,  // Just closing parens
+      /^\d+$/, // Just a number
+      /^[\s:]+$/, // Just whitespace/colons
+      /^[)]+$/, // Just closing parens
     ];
 
-    const isNoise = noisePatterns.some(pattern => pattern.test(message));
+    const isNoise = noisePatterns.some((pattern) => pattern.test(message));
     if (isNoise) {
-      message = '';  // Clear noise messages
+      message = ""; // Clear noise messages
     }
 
     // Create unique key for deduplication
@@ -337,18 +361,26 @@ function extractErrorContext(output: string, exitCode?: number): CodexMetadata['
   }
 
   if (errorLocations.length > 0) {
-    errorContext.error_locations = errorLocations.slice(0, 5);  // Limit to 5 locations
-    errorContext.failed_files = [...new Set(errorLocations.map(loc => loc.file))];
+    errorContext.error_locations = errorLocations.slice(0, 5); // Limit to 5 locations
+    errorContext.failed_files = [
+      ...new Set(errorLocations.map((loc) => loc.file)),
+    ];
   }
 
   // Extract stack trace (first 5 lines)
-  const stackMatch = output.match(/(?:Stack trace|Traceback)[:\s]*\n((?:.*\n){1,5})/i);
+  const stackMatch = output.match(
+    /(?:Stack trace|Traceback)[:\s]*\n((?:.*\n){1,5})/i,
+  );
   if (stackMatch) {
     errorContext.stack_trace = stackMatch[1].trim();
   }
 
   // Generate suggestions based on error context
-  errorContext.suggestions = generateSuggestions(errorContext, output, exitCode);
+  errorContext.suggestions = generateSuggestions(
+    errorContext,
+    output,
+    exitCode,
+  );
 
   return errorContext;
 }
@@ -356,43 +388,56 @@ function extractErrorContext(output: string, exitCode?: number): CodexMetadata['
 /**
  * Generate suggestions for where to look / what to fix
  */
-function generateSuggestions(errorContext: CodexMetadata['error_context'], output: string, exitCode?: number): string[] {
+function generateSuggestions(
+  errorContext: CodexMetadata["error_context"],
+  output: string,
+  exitCode?: number,
+): string[] {
   const suggestions: string[] = [];
 
   // File-specific suggestions
   if (errorContext?.failed_files && errorContext.failed_files.length > 0) {
-    suggestions.push(`Check ${errorContext.failed_files.join(', ')} for errors`);
+    suggestions.push(
+      `Check ${errorContext.failed_files.join(", ")} for errors`,
+    );
   }
 
   // Error location suggestions
-  if (errorContext?.error_locations && errorContext.error_locations.length > 0) {
+  if (
+    errorContext?.error_locations &&
+    errorContext.error_locations.length > 0
+  ) {
     const firstError = errorContext.error_locations[0];
-    suggestions.push(`Start investigation at ${firstError.file}:${firstError.line}`);
+    suggestions.push(
+      `Start investigation at ${firstError.file}:${firstError.line}`,
+    );
   }
 
   // Test failure suggestions
-  if (output.includes('test') && output.includes('fail')) {
-    suggestions.push('Run failing tests individually to isolate issues');
-    suggestions.push('Check test setup and teardown logic');
+  if (output.includes("test") && output.includes("fail")) {
+    suggestions.push("Run failing tests individually to isolate issues");
+    suggestions.push("Check test setup and teardown logic");
   }
 
   // Common error patterns
-  if (errorContext?.error_type === 'TypeError') {
-    suggestions.push('Check variable types and null/undefined values');
-  } else if (errorContext?.error_type === 'SyntaxError') {
-    suggestions.push('Review syntax near the error location');
-  } else if (errorContext?.error_type === 'ReferenceError') {
-    suggestions.push('Verify all variables and imports are defined');
+  if (errorContext?.error_type === "TypeError") {
+    suggestions.push("Check variable types and null/undefined values");
+  } else if (errorContext?.error_type === "SyntaxError") {
+    suggestions.push("Review syntax near the error location");
+  } else if (errorContext?.error_type === "ReferenceError") {
+    suggestions.push("Verify all variables and imports are defined");
   }
 
   // Exit code suggestions
   if (exitCode === 1) {
-    suggestions.push('Review command output for specific error messages');
+    suggestions.push("Review command output for specific error messages");
   } else if (exitCode && exitCode > 1) {
-    suggestions.push(`Exit code ${exitCode} indicates specific failure type - check documentation`);
+    suggestions.push(
+      `Exit code ${exitCode} indicates specific failure type - check documentation`,
+    );
   }
 
-  return suggestions.slice(0, 3);  // Limit to 3 suggestions
+  return suggestions.slice(0, 3); // Limit to 3 suggestions
 }
 
 /**

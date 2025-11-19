@@ -41,6 +41,7 @@ Instead of trusting the exit code, verify if the package exists in the registry.
 ### Implementation
 
 **1. Enable `continue-on-error` for release step** (`.github/workflows/release.yml`):
+
 ```yaml
 - name: Release
   id: release
@@ -51,6 +52,7 @@ Instead of trusting the exit code, verify if the package exists in the registry.
 ```
 
 **2. Add verification step** (`.github/workflows/release.yml`):
+
 ```yaml
 - name: Verify publication (handles E409 packument errors)
   if: steps.release.outcome == 'failure'
@@ -61,6 +63,7 @@ Instead of trusting the exit code, verify if the package exists in the registry.
 ```
 
 **3. Verification script** (`.github/scripts/publish-with-retry.sh`):
+
 ```bash
 #!/bin/bash
 # Check if package exists in npm registry
@@ -89,6 +92,7 @@ exit 1
 ## How It Works
 
 ### Scenario 1: Normal Success
+
 ```
 semantic-release → npm publish → Success ✅
 → Workflow succeeds ✅
@@ -96,6 +100,7 @@ semantic-release → npm publish → Success ✅
 ```
 
 ### Scenario 2: E409 Error (Package Actually Published)
+
 ```
 semantic-release → npm publish → E409 Error ❌
 → continue-on-error prevents workflow failure
@@ -105,6 +110,7 @@ semantic-release → npm publish → E409 Error ❌
 ```
 
 ### Scenario 3: Real Failure (Package Not Published)
+
 ```
 semantic-release → npm publish → Real Error ❌
 → continue-on-error prevents immediate failure
@@ -153,6 +159,7 @@ To test this fix:
 If npm fixes the E409 race condition in the registry, this workaround can be removed.
 
 Monitor:
+
 - npm CLI releases
 - npm registry infrastructure updates
 - Community reports of E409 errors

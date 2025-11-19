@@ -11,6 +11,7 @@
 ### 1. Comprehensive Error Logging
 
 **File**: `src/utils/logger.ts` (new)
+
 - Structured JSON logging to `.codex-errors.log`
 - Log levels: debug, info, warn, error
 - Per-working-directory logs
@@ -19,6 +20,7 @@
 ### 2. Tool Execution Wrapper
 
 **File**: `src/index.ts` (updated)
+
 - All tool calls now logged (start, success, failure)
 - Invalid result detection (prevents silent failures)
 - Full stack traces captured
@@ -27,6 +29,7 @@
 ### 3. MCP Configuration
 
 **File**: `.mcp.full.json` (updated)
+
 ```json
 {
   "env": {
@@ -45,6 +48,7 @@
 **Every tool call generates logs**:
 
 1. **Tool Start**: When tool is invoked
+
    ```json
    {
      "timestamp": "2025-11-15T18:00:00.123Z",
@@ -56,6 +60,7 @@
    ```
 
 2. **Tool Success**: When tool completes
+
    ```json
    {
      "timestamp": "2025-11-15T18:00:05.456Z",
@@ -100,11 +105,13 @@ This is a bug in the MCP server. Check .codex-errors.log for details.
 ### Scenario 1: Tool Fails Silently
 
 **Old Behavior**:
+
 - Tool returns "Tool ran without output or errors"
 - Claude Code thinks it succeeded
 - No way to debug
 
 **New Behavior**:
+
 - Tool returns: "❌ Internal Error: Tool returned no result. Check .codex-errors.log"
 - Claude Code reads `.codex-errors.log`
 - Sees actual error with stack trace
@@ -113,11 +120,13 @@ This is a bug in the MCP server. Check .codex-errors.log for details.
 ### Scenario 2: Tool Hangs
 
 **Old Behavior**:
+
 - Claude Code waits forever
 - No indication of problem
 - No way to know if hung or slow
 
 **New Behavior**:
+
 - Tool logs "Tool started" immediately
 - Claude Code can check `.codex-errors.log`
 - If no "Tool completed" after reasonable time, Claude Code knows it's hung
@@ -126,11 +135,13 @@ This is a bug in the MCP server. Check .codex-errors.log for details.
 ### Scenario 3: Tool Throws Exception
 
 **Old Behavior**:
+
 - Generic error message
 - No stack trace
 - Can't troubleshoot
 
 **New Behavior**:
+
 - Error message says: "Check .codex-errors.log for full stack trace"
 - Claude Code reads log file
 - Sees full stack trace with context
@@ -141,17 +152,20 @@ This is a bug in the MCP server. Check .codex-errors.log for details.
 ## Claude Code Troubleshooting Workflow
 
 ### Step 1: Tool Call Fails
+
 ```bash
 # Tool returns error message mentioning .codex-errors.log
 ```
 
 ### Step 2: Read Error Log
+
 ```bash
 # Claude Code runs:
 tail -20 .codex-errors.log
 ```
 
 ### Step 3: Analyze Error
+
 ```json
 {
   "timestamp": "2025-11-15T18:00:05.789Z",
@@ -162,13 +176,14 @@ tail -20 .codex-errors.log
     "stack": "...",
     "input": {
       "task": "Create branch",
-      "working_dir": "/tmp/test"  // <- BUG: Should be "workingDir"
+      "working_dir": "/tmp/test" // <- BUG: Should be "workingDir"
     }
   }
 }
 ```
 
 ### Step 4: Fix and Retry
+
 ```bash
 # Claude Code identifies issue: wrong parameter name
 # Retries with correct parameter: "workingDir" instead of "working_dir"
@@ -230,18 +245,21 @@ mcp__mcp-delegator___codex_local_run({
 ## Benefits
 
 ### For Claude Code
+
 ✅ **Can detect failures** - No more silent failures
 ✅ **Can troubleshoot** - Full context in log files
 ✅ **Can retry intelligently** - Knows what went wrong
 ✅ **Can stop waiting** - Knows when tool actually failed
 
 ### For Users
+
 ✅ **Faster debugging** - Claude Code fixes issues automatically
 ✅ **Better error messages** - Clear indication of what to check
 ✅ **No mysterious hangs** - Tool timeouts are logged
 ✅ **Audit trail** - Full history of tool executions
 
 ### For Developers
+
 ✅ **Easy debugging** - JSON logs with full context
 ✅ **Per-directory isolation** - Logs don't mix between projects
 ✅ **Configurable** - Can adjust log level via env var
@@ -252,12 +270,14 @@ mcp__mcp-delegator___codex_local_run({
 ## Next Steps
 
 ### Immediate (v3.2.2)
+
 - [ ] Restart Claude Code to load new MCP config
 - [ ] Test basic logging (see Test 1 above)
 - [ ] Test error logging (see Test 2 above)
 - [ ] Verify silent failure is now detected
 
 ### Future Enhancements (v3.3.0+)
+
 - [ ] Add timeout wrapper with automatic timeout logging
 - [ ] Add progress heartbeat for long-running tasks
 - [ ] Add log rotation (max file size)
@@ -269,14 +289,15 @@ mcp__mcp-delegator___codex_local_run({
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CODEX_LOG_FILE` | (none) | Path to log file (supports ${PWD}) |
-| `CODEX_LOG_LEVEL` | `info` | Logging level (debug/info/warn/error) |
+| Variable          | Default | Description                           |
+| ----------------- | ------- | ------------------------------------- |
+| `CODEX_LOG_FILE`  | (none)  | Path to log file (supports ${PWD})    |
+| `CODEX_LOG_LEVEL` | `info`  | Logging level (debug/info/warn/error) |
 
 ### Examples
 
 **Debug Mode** (verbose logging):
+
 ```json
 {
   "env": {
@@ -287,6 +308,7 @@ mcp__mcp-delegator___codex_local_run({
 ```
 
 **Production Mode** (errors only):
+
 ```json
 {
   "env": {
@@ -297,6 +319,7 @@ mcp__mcp-delegator___codex_local_run({
 ```
 
 **Disabled** (no logging):
+
 ```json
 {
   "env": {

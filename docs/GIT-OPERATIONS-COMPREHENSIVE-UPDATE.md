@@ -15,11 +15,13 @@ Comprehensive review and update of git operation safety classifications based on
 ## Changes Overview
 
 ### Tier 1 (ALWAYS_BLOCKED)
+
 - **Before**: 4 operations
 - **After**: 11 operations
 - **Change**: +7 operations (175% increase)
 
 ### Tier 2 (REQUIRES_CONFIRMATION)
+
 - **Before**: 5 operations
 - **After**: 4 operations
 - **Change**: -2 moved to Tier 1, +1 new operation
@@ -36,6 +38,7 @@ Comprehensive review and update of git operation safety classifications based on
 **New Tier**: Tier 1 (ALWAYS_BLOCKED)
 
 **Rationale**:
+
 - Removes commits from branch history
 - High risk of losing unpushed work permanently
 - AI agents may not understand recovery implications
@@ -55,6 +58,7 @@ Comprehensive review and update of git operation safety classifications based on
 **New Tier**: Tier 1 (ALWAYS_BLOCKED)
 
 **Rationale**:
+
 - Destroys ENTIRE repository including all history
 - Irreversible without remote backup
 - Even safety checkpoint would be deleted with repo
@@ -76,6 +80,7 @@ Comprehensive review and update of git operation safety classifications based on
 **New Tier**: Tier 1 (ALWAYS_BLOCKED)
 
 **Rationale**:
+
 - Permanently discards uncommitted changes
 - Uncommitted work is NOT in git history (no reflog)
 - No recovery possible for uncommitted changes
@@ -95,6 +100,7 @@ Comprehensive review and update of git operation safety classifications based on
 **New Tier**: Tier 1 (ALWAYS_BLOCKED)
 
 **Rationale**:
+
 - Permanently deletes untracked files and directories
 - Untracked files are NOT in git (no reflog, no recovery)
 - Can lose important work (local configs, scripts, generated files)
@@ -115,6 +121,7 @@ Comprehensive review and update of git operation safety classifications based on
 **Tier**: Tier 1 (ALWAYS_BLOCKED)
 
 **Rationale**:
+
 - Discards uncommitted changes when switching branches
 - Similar to `git reset --hard` in destructiveness
 - Often used accidentally by AI agents
@@ -133,6 +140,7 @@ Comprehensive review and update of git operation safety classifications based on
 **Tier**: Tier 1 (ALWAYS_BLOCKED)
 
 **Rationale**:
+
 - Permanently removes stashed changes
 - Stash reflog expires quickly (default: 90 days for reachable, 30 days for unreachable)
 - Recovery window is limited
@@ -151,6 +159,7 @@ Comprehensive review and update of git operation safety classifications based on
 **Tier**: Tier 1 (ALWAYS_BLOCKED)
 
 **Rationale**:
+
 - Removes worktree with uncommitted changes
 - Uncommitted changes are lost permanently
 - No recovery mechanism for worktree-specific uncommitted work
@@ -170,6 +179,7 @@ Comprehensive review and update of git operation safety classifications based on
 **Tier**: Tier 2 (REQUIRES_CONFIRMATION)
 
 **Rationale**:
+
 - Deletes branch even if unmerged
 - Can lose commits if branch wasn't pushed to remote
 - **Recoverable**: Commits still exist in reflog (unless GC'd)
@@ -186,16 +196,19 @@ Comprehensive review and update of git operation safety classifications based on
 ### 4. Remaining in Tier 2 (No Changes)
 
 #### 4.1 `git rebase`
+
 - Fully recoverable via reflog/checkpoint
 - Very common workflow operation
 - Safety checkpoint makes recovery trivial
 
 #### 4.2 `git push --force` (non-protected branches)
+
 - Common in feature branch workflows
 - Protected branches (main/master) already blocked in Tier 1
 - Team collaboration patterns expect this
 
 #### 4.3 `git commit --amend`
+
 - Very common operation (fix commit messages)
 - Trivially recoverable via reflog
 - Too low-risk to block entirely
@@ -236,6 +249,7 @@ Comprehensive review and update of git operation safety classifications based on
 ### Tier 3: SAFE (infinite operations)
 
 **Examples**:
+
 - `git status`, `git log`, `git diff`, `git show`, `git blame`
 - `git add`, `git commit` (without --amend)
 - `git push` (fast-forward only)
@@ -252,16 +266,19 @@ Comprehensive review and update of git operation safety classifications based on
 **Issue Discovered**: Test 1.6 failed because pattern didn't match "delete **the** git repository"
 
 **Old Pattern**:
+
 ```regex
 /(delete|remove|rm)\s+(git\s+)?repo(sitory)?/i
 ```
 
 **New Pattern**:
+
 ```regex
 /(delete|remove|rm)\s+(the\s+)?(this\s+)?(git\s+)?repo(sitory)?/i
 ```
 
 **Now Matches**:
+
 - "delete repo"
 - "delete repository"
 - "delete git repo"
@@ -280,6 +297,7 @@ Comprehensive review and update of git operation safety classifications based on
 ### Completed Tests
 
 **Tier 1 (ALWAYS_BLOCKED)**:
+
 - Test 1.1: `git gc --prune=now` ✅
 - Test 1.2: `git reflog expire --expire-unreachable=now` ✅
 - Test 1.3: `git push --force` to main ✅
@@ -288,6 +306,7 @@ Comprehensive review and update of git operation safety classifications based on
 - Test 1.6: `delete git repository` ⏳ (pattern fixed, awaiting retest)
 
 **Tier 2 (REQUIRES_CONFIRMATION)**:
+
 - Test 2.1: `git reset --hard` ✅ (moved to Tier 1)
 - Test 2.2: `git rebase` ✅
 - Test 2.3: `git push --force` (non-protected) ✅
@@ -297,14 +316,17 @@ Comprehensive review and update of git operation safety classifications based on
 ### Pending Tests
 
 **New Tier 1 Operations** (need UAT):
+
 - `git checkout --force`
 - `git stash drop/clear`
 - `git worktree remove --force`
 
 **New Tier 2 Operations** (need UAT):
+
 - `git branch -D`
 
 **Tier 1.6 Retest**:
+
 - `delete git repository` (with fixed pattern)
 
 ---

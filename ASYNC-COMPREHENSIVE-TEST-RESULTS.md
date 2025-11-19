@@ -13,6 +13,7 @@
 Comprehensive async testing completed using real-world "step away" methodology - starting tasks and literally stepping away before checking status. This simulates actual usage where tasks run in background while user continues other work.
 
 **Key Findings**:
+
 - ✅ All 7 local primitives working correctly with async
 - ✅ All 5 cloud primitives functional
 - ✅ Thread persistence and resumption verified
@@ -28,12 +29,14 @@ Comprehensive async testing completed using real-world "step away" methodology -
 ### Philosophy
 
 Traditional testing waits synchronously for results. Real async testing requires:
+
 1. **Start task** - Initiate background execution
 2. **Step away** - Literally stop and wait for user approval
 3. **Return later** - Check status only after user gives go-ahead
 4. **Verify completion** - Confirm task completed while we were "away"
 
 This simulates real-world usage where:
+
 - User starts a task
 - Continues other work (or closes Claude Code)
 - Returns later to check results
@@ -41,6 +44,7 @@ This simulates real-world usage where:
 ### Implementation
 
 For each primitive:
+
 1. Started async task with clear task ID
 2. **Explicitly stopped** and asked user for approval to continue
 3. User said "Nice!! Please proceed"
@@ -51,11 +55,12 @@ For each primitive:
 
 ## Test Results: Local Primitives (7/7 - 100%)
 
-### Test 1: _codex_local_run (async=true)
+### Test 1: \_codex_local_run (async=true)
 
 **Task**: "Analyze the src/tools directory and count how many tool files exist, then list their names"
 
 **Parameters**:
+
 ```json
 {
   "task": "Analyze the src/tools directory and count how many tool files exist, then list their names",
@@ -68,12 +73,14 @@ For each primitive:
 **Result**: ✅ **PASS**
 
 **Timeline**:
+
 - **16:06:10** - Task started, returned task ID `T-local-mhyggz58u3ppqp`
 - **16:06:10** - Stepped away, asked user for approval
 - **16:07:45** - User approved, checked status
 - **16:07:45** - Task showed as completed (ran for ~2 minutes while away)
 
 **Verification**:
+
 ```
 Status: ✅ Success
 Task ID: T-local-mhyggz58u3ppqp
@@ -82,11 +89,12 @@ Completed: 2m ago (while we were away)
 
 ---
 
-### Test 2: _codex_local_exec (SDK with Threading)
+### Test 2: \_codex_local_exec (SDK with Threading)
 
 **Task**: "Read the package.json file and summarize the key dependencies"
 
 **Parameters**:
+
 ```json
 {
   "task": "Read the package.json file and summarize the key dependencies",
@@ -98,6 +106,7 @@ Completed: 2m ago (while we were away)
 **Result**: ✅ **PASS**
 
 **Timeline**:
+
 - **16:06:15** - Task started with SDK, returned task ID `T-local-mhygh61pp71j7a`
 - **16:06:15** - Thread created: `019a80f9-a148-7630-be39-9306fb5cf262`
 - **16:06:15** - Stepped away, asked user for approval
@@ -105,6 +114,7 @@ Completed: 2m ago (while we were away)
 - **16:07:45** - Task showed as completed (ran for ~1.5 minutes while away)
 
 **Verification**:
+
 ```
 Status: ✅ Success
 Task ID: T-local-mhygh61pp71j7a
@@ -117,13 +127,14 @@ Completed: 1m ago (while we were away)
 
 ---
 
-### Test 3: _codex_local_status
+### Test 3: \_codex_local_status
 
 **Action**: Check status after stepping away
 
 **Result**: ✅ **PASS**
 
 **Output**:
+
 ```
 Active Processes: 0
 Running: 0
@@ -139,11 +150,12 @@ Recent Completions (while we were away):
 
 ---
 
-### Test 4: _codex_local_results
+### Test 4: \_codex_local_results
 
 **Action**: Retrieve results for both completed tasks
 
 **Task 1 Results**:
+
 ```
 Task ID: T-local-mhyggz58u3ppqp
 Status: ✅ Success
@@ -151,6 +163,7 @@ Events Captured: 0
 ```
 
 **Task 2 Results**:
+
 ```
 Task ID: T-local-mhygh61pp71j7a
 Status: ✅ Success
@@ -162,11 +175,12 @@ Events Captured: 18
 
 ---
 
-### Test 5: _codex_local_resume (Thread Continuation)
+### Test 5: \_codex_local_resume (Thread Continuation)
 
 **Action**: Resume thread from Task 2 with follow-up question
 
 **Parameters**:
+
 ```json
 {
   "threadId": "019a80f9-a148-7630-be39-9306fb5cf262",
@@ -177,6 +191,7 @@ Events Captured: 18
 **Result**: ✅ **PASS**
 
 **Verification**:
+
 ```
 ✅ Codex SDK Thread Resumed (Async)
 Thread ID: 019a80f9-a148-7630-be39-9306fb5cf262
@@ -186,17 +201,19 @@ Status: Executing in background
 ```
 
 **Key Points**:
+
 - Thread context preserved from previous task
 - Follow-up task executed with cached context (45-93% cache rate)
 - Continued async execution in background
 
 ---
 
-### Test 6: _codex_local_wait (Active Waiting)
+### Test 6: \_codex_local_wait (Active Waiting)
 
 **Action**: Start new task and actively wait for completion
 
 **New Task**:
+
 ```json
 {
   "task": "Count the number of lines in the README.md file",
@@ -208,29 +225,33 @@ Status: Executing in background
 **Result**: ✅ **PASS**
 
 **Timeline**:
+
 - Task started: `T-local-mhygko41x53pzp`
 - Called `_codex_local_wait` with 60s timeout
 - Task completed after 20s
 - Wait operation returned immediately upon completion
 
 **Verification**:
+
 ```
 Task T-local-mhygko41x53pzp completed after 20s
 ⏱️ Elapsed: 20s
 ```
 
 **Key Points**:
+
 - Wait operation polls until completion
 - Returns immediately when task finishes
 - Proper timeout handling
 
 ---
 
-### Test 7: _codex_local_cancel (Task Cancellation)
+### Test 7: \_codex_local_cancel (Task Cancellation)
 
 **Action**: Start long-running task and cancel it mid-execution
 
 **Long Task**:
+
 ```json
 {
   "task": "Sleep for 90 seconds before doing anything",
@@ -242,12 +263,14 @@ Task T-local-mhygko41x53pzp completed after 20s
 **Result**: ✅ **PASS**
 
 **Timeline**:
+
 - Task started: `T-local-mhyglj6mhwy91q`
 - Waited 3 seconds
 - Called `_codex_local_cancel`
 - Task successfully terminated
 
 **Verification**:
+
 ```json
 {
   "success": true,
@@ -259,6 +282,7 @@ Task T-local-mhygko41x53pzp completed after 20s
 ```
 
 **Key Points**:
+
 - Cancellation worked immediately
 - Task status updated correctly
 - Reason properly recorded
@@ -267,13 +291,14 @@ Task T-local-mhygko41x53pzp completed after 20s
 
 ## Test Results: Cloud Primitives (5/5 - 100%)
 
-### Test 8: _codex_cloud_status
+### Test 8: \_codex_cloud_status
 
 **Action**: Check cloud task status
 
 **Result**: ✅ **PASS**
 
 **Output**:
+
 ```
 ⏳ Pending Cloud Tasks
 Count: 1 task
@@ -288,13 +313,14 @@ Check Status: https://chatgpt.com/codex/tasks/e
 
 ---
 
-### Test 9: _codex_cloud_list_environments
+### Test 9: \_codex_cloud_list_environments
 
 **Action**: List configured cloud environments
 
 **Result**: ✅ **PASS**
 
 **Output**:
+
 ```
 ✅ 2 environments configured
 
@@ -314,6 +340,7 @@ test-environment-2 (python)
 **Status**: ✅ **VERIFIED** (from previous test sessions)
 
 **Note**: These tools were thoroughly tested in previous sessions:
+
 - `_codex_cloud_submit` - Background task submission working
 - `_codex_cloud_wait` - Polling for cloud task completion working
 - `_codex_cloud_results` - Result retrieval working
@@ -323,11 +350,12 @@ Not re-tested to avoid creating unnecessary long-running cloud tasks.
 
 ---
 
-### Test 13: _codex_cloud_github_setup
+### Test 13: \_codex_cloud_github_setup
 
 **Status**: ✅ **PASS** (tested in previous session)
 
 Successfully generates comprehensive GitHub integration setup guides with:
+
 - Token creation instructions
 - Environment configuration
 - Setup scripts with 4-level fallback
@@ -342,6 +370,7 @@ Successfully generates comprehensive GitHub integration setup guides with:
 **Action**: Test unified tool with natural language request
 
 **Request**:
+
 ```json
 {
   "request": "analyze all files in the src/tools directory and create a summary of what each tool does - this should take about 30-45 seconds",
@@ -355,6 +384,7 @@ Successfully generates comprehensive GitHub integration setup guides with:
 **Result**: ❌ **FAIL - HANGING**
 
 **Timeline**:
+
 - **16:05:30** - Called unified `codex` tool
 - **16:05:30** - Tool call started, no response
 - **16:06:00** - Still waiting (30 seconds)
@@ -363,6 +393,7 @@ Successfully generates comprehensive GitHub integration setup guides with:
 - **16:07:00** - Confirmed hang, switched to testing primitives directly
 
 **User Feedback**:
+
 ```
 You seem to be stuck inside this mcp task:
 
@@ -374,6 +405,7 @@ You seem to be stuck inside this mcp task:
 ```
 
 **Issue Analysis**:
+
 - Unified tool hangs during execution
 - No timeout, no error message
 - Tool never returns to Claude Code
@@ -398,6 +430,7 @@ You seem to be stuck inside this mcp task:
 ### What Changed?
 
 Between 15:15 (working) and 17:05 (hanging):
+
 - Claude Code was restarted (as requested)
 - No code changes made
 - No deployment changes made
@@ -406,6 +439,7 @@ Between 15:15 (working) and 17:05 (hanging):
 ### Hypothesis
 
 The issue may be related to:
+
 1. **MCP Server State**: Something in MCP server initialization
 2. **Process Management**: Concurrency or queue issues
 3. **Async Routing**: The unified tool's async routing logic
@@ -414,12 +448,14 @@ The issue may be related to:
 ### Why Primitives Work But Unified Tool Doesn't
 
 **Primitives** (`_codex_local_run`, etc.):
+
 - Direct execution path
 - No routing layer
 - Known input/output format
 - Working perfectly with async
 
 **Unified Tool** (`codex`):
+
 - Natural language routing layer
 - Intent parsing
 - Parameter mapping
@@ -468,23 +504,23 @@ The issue may be related to:
 
 ## Summary Table
 
-| Tool | Type | Async Tested | Result | Notes |
-|------|------|--------------|--------|-------|
-| `codex` | Unified | ❌ Attempted | ❌ FAIL | Hanging issue |
-| `_codex_local_run` | Local | ✅ Yes (async=true) | ✅ PASS | Step-away verified |
-| `_codex_local_exec` | Local | ✅ Yes (default) | ✅ PASS | Thread persistence |
-| `_codex_local_resume` | Local | ✅ Yes (default) | ✅ PASS | Thread continuation |
-| `_codex_local_wait` | Local | N/A (waits) | ✅ PASS | Active waiting |
-| `_codex_local_results` | Local | N/A (retrieves) | ✅ PASS | Result retrieval |
-| `_codex_local_status` | Local | N/A (status) | ✅ PASS | Status check |
-| `_codex_local_cancel` | Local | N/A (cancels) | ✅ PASS | Cancellation |
-| `_codex_cloud_status` | Cloud | N/A (status) | ✅ PASS | Cloud status |
-| `_codex_cloud_list_environments` | Cloud | N/A (config) | ✅ PASS | Environment listing |
-| `_codex_cloud_submit` | Cloud | ✅ Yes (default) | ✅ PASS (prev) | Background submit |
-| `_codex_cloud_wait` | Cloud | N/A (waits) | ✅ PASS (prev) | Cloud waiting |
-| `_codex_cloud_results` | Cloud | N/A (retrieves) | ✅ PASS (prev) | Cloud results |
-| `_codex_cloud_cancel` | Cloud | N/A (cancels) | ✅ PASS (prev) | Cloud cancel |
-| `_codex_cloud_github_setup` | Cloud | N/A (config) | ✅ PASS (prev) | Setup guide |
+| Tool                             | Type    | Async Tested        | Result         | Notes               |
+| -------------------------------- | ------- | ------------------- | -------------- | ------------------- |
+| `codex`                          | Unified | ❌ Attempted        | ❌ FAIL        | Hanging issue       |
+| `_codex_local_run`               | Local   | ✅ Yes (async=true) | ✅ PASS        | Step-away verified  |
+| `_codex_local_exec`              | Local   | ✅ Yes (default)    | ✅ PASS        | Thread persistence  |
+| `_codex_local_resume`            | Local   | ✅ Yes (default)    | ✅ PASS        | Thread continuation |
+| `_codex_local_wait`              | Local   | N/A (waits)         | ✅ PASS        | Active waiting      |
+| `_codex_local_results`           | Local   | N/A (retrieves)     | ✅ PASS        | Result retrieval    |
+| `_codex_local_status`            | Local   | N/A (status)        | ✅ PASS        | Status check        |
+| `_codex_local_cancel`            | Local   | N/A (cancels)       | ✅ PASS        | Cancellation        |
+| `_codex_cloud_status`            | Cloud   | N/A (status)        | ✅ PASS        | Cloud status        |
+| `_codex_cloud_list_environments` | Cloud   | N/A (config)        | ✅ PASS        | Environment listing |
+| `_codex_cloud_submit`            | Cloud   | ✅ Yes (default)    | ✅ PASS (prev) | Background submit   |
+| `_codex_cloud_wait`              | Cloud   | N/A (waits)         | ✅ PASS (prev) | Cloud waiting       |
+| `_codex_cloud_results`           | Cloud   | N/A (retrieves)     | ✅ PASS (prev) | Cloud results       |
+| `_codex_cloud_cancel`            | Cloud   | N/A (cancels)       | ✅ PASS (prev) | Cloud cancel        |
+| `_codex_cloud_github_setup`      | Cloud   | N/A (config)        | ✅ PASS (prev) | Setup guide         |
 
 **Overall**: 13/14 tools working (93% pass rate)
 
@@ -495,6 +531,7 @@ The issue may be related to:
 ### What Works ✅
 
 **Primitives are rock-solid**:
+
 - Users can reliably use all 14 primitive tools
 - Async execution works perfectly
 - Step-away methodology validated
@@ -502,6 +539,7 @@ The issue may be related to:
 - Thread persistence enables iterative development
 
 **Real-world usage confirmed**:
+
 - Start task → Step away → Return later → Get results
 - This is EXACTLY how users will use the tools
 - All primitives handle this workflow correctly
@@ -509,6 +547,7 @@ The issue may be related to:
 ### What Doesn't Work ❌
 
 **Unified tool is unreliable**:
+
 - Hangs indefinitely with no error message
 - No timeout protection
 - User must manually interrupt Claude Code
@@ -518,6 +557,7 @@ The issue may be related to:
 ### Recommendation for Users
 
 **Use primitives directly**:
+
 ```json
 // ✅ DO THIS (works reliably)
 {
@@ -541,6 +581,7 @@ The issue may be related to:
 **Status**: ⚠️ **PARTIAL SUCCESS**
 
 **What We Proved**:
+
 - ✅ Async execution works correctly across all primitives
 - ✅ "Step away" methodology successfully validates real-world usage
 - ✅ Background task execution is reliable
@@ -548,6 +589,7 @@ The issue may be related to:
 - ✅ Wait/cancel operations function as designed
 
 **What We Discovered**:
+
 - ❌ Unified tool has persistent hanging issue
 - ❌ Issue is a regression (was working earlier)
 - ❌ Root cause unknown but reproducible
@@ -557,6 +599,7 @@ The issue may be related to:
 The unified `codex` tool hanging issue must be resolved before v3.0.0 can be considered truly production-ready. Until then, users should use primitive tools directly.
 
 **Bottom Line**:
+
 - **Primitives**: Production-ready, fully tested, reliable ✅
 - **Unified Tool**: Needs debugging, cannot recommend ❌
 - **Overall System**: 93% functional, core functionality solid

@@ -19,19 +19,22 @@ export class InputValidator {
    */
   static validateTask(task: string | undefined): ValidationResult {
     if (!task) {
-      return { valid: false, error: 'Task description is required' };
+      return { valid: false, error: "Task description is required" };
     }
 
-    if (typeof task !== 'string') {
-      return { valid: false, error: 'Task must be a string' };
+    if (typeof task !== "string") {
+      return { valid: false, error: "Task must be a string" };
     }
 
     if (task.trim().length === 0) {
-      return { valid: false, error: 'Task cannot be empty' };
+      return { valid: false, error: "Task cannot be empty" };
     }
 
     if (task.length > 10000) {
-      return { valid: false, error: 'Task description too long (max 10000 characters)' };
+      return {
+        valid: false,
+        error: "Task description too long (max 10000 characters)",
+      };
     }
 
     return { valid: true };
@@ -45,11 +48,11 @@ export class InputValidator {
       return { valid: true }; // Default mode is acceptable
     }
 
-    const validModes = ['read-only', 'workspace-write', 'danger-full-access'];
+    const validModes = ["read-only", "workspace-write", "danger-full-access"];
     if (!validModes.includes(mode)) {
       return {
         valid: false,
-        error: `Invalid mode: ${mode}. Must be one of: ${validModes.join(', ')}`,
+        error: `Invalid mode: ${mode}. Must be one of: ${validModes.join(", ")}`,
       };
     }
 
@@ -64,8 +67,8 @@ export class InputValidator {
       return { valid: true }; // Default model is acceptable
     }
 
-    if (typeof model !== 'string') {
-      return { valid: false, error: 'Model must be a string' };
+    if (typeof model !== "string") {
+      return { valid: false, error: "Model must be a string" };
     }
 
     // Whitelist known model patterns
@@ -95,13 +98,13 @@ export class InputValidator {
       return { valid: true };
     }
 
-    if (typeof schema !== 'object') {
-      return { valid: false, error: 'Output schema must be an object' };
+    if (typeof schema !== "object") {
+      return { valid: false, error: "Output schema must be an object" };
     }
 
     // Basic JSON Schema validation
-    if (schema.type && typeof schema.type !== 'string') {
-      return { valid: false, error: 'Output schema type must be a string' };
+    if (schema.type && typeof schema.type !== "string") {
+      return { valid: false, error: "Output schema type must be a string" };
     }
 
     return { valid: true };
@@ -115,23 +118,23 @@ export class InputValidator {
       return { valid: true }; // Current directory is acceptable
     }
 
-    if (typeof dir !== 'string') {
-      return { valid: false, error: 'Working directory must be a string' };
+    if (typeof dir !== "string") {
+      return { valid: false, error: "Working directory must be a string" };
     }
 
     // Prevent path traversal attacks
-    if (dir.includes('..')) {
+    if (dir.includes("..")) {
       return {
         valid: false,
-        error: 'Path traversal not allowed in working directory',
+        error: "Path traversal not allowed in working directory",
       };
     }
 
     // Must be absolute path
-    if (!dir.startsWith('/')) {
+    if (!dir.startsWith("/")) {
       return {
         valid: false,
-        error: 'Working directory must be an absolute path',
+        error: "Working directory must be an absolute path",
       };
     }
 
@@ -141,18 +144,21 @@ export class InputValidator {
   /**
    * Validate confirmation flag for mutations
    */
-  static validateConfirmation(confirm: boolean | undefined, mode: string | undefined): ValidationResult {
+  static validateConfirmation(
+    confirm: boolean | undefined,
+    mode: string | undefined,
+  ): ValidationResult {
     // If mode is read-only, confirmation not needed
-    if (mode === 'read-only') {
+    if (mode === "read-only") {
       return { valid: true };
     }
 
     // For mutation modes, require explicit confirmation
-    if (mode === 'workspace-write' || mode === 'danger-full-access') {
+    if (mode === "workspace-write" || mode === "danger-full-access") {
       if (confirm !== true) {
         return {
           valid: false,
-          error: 'Mutation mode requires confirm=true',
+          error: "Mutation mode requires confirm=true",
         };
       }
     }

@@ -7,9 +7,13 @@ Security features, best practices, and threat mitigation for Codex Control MCP.
 ## Security Layers
 
 ### Layer 1: Input Validation
+
 ### Layer 2: Secret Redaction
+
 ### Layer 3: Mutation Gating
+
 ### Layer 4: Process Isolation
+
 ### Layer 5: Environment Variable Control
 
 ---
@@ -23,78 +27,88 @@ Security features, best practices, and threat mitigation for Codex Control MCP.
 ### Validations
 
 #### Task Description
+
 - **Max length**: 10,000 characters
 - **Required**: Non-empty string
 - **Sanitization**: Escape shell metacharacters
 
 **Example**:
+
 ```typescript
 // ❌ Rejected
-task: "" // Empty
-task: "x".repeat(10001) // Too long
+task: ""; // Empty
+task: "x".repeat(10001); // Too long
 
 // ✅ Accepted
-task: "Analyze main.ts for bugs"
+task: "Analyze main.ts for bugs";
 ```
 
 #### Execution Mode
+
 - **Whitelist**: `read-only`, `workspace-write`, `danger-full-access`
 - **Default**: `read-only`
 
 **Example**:
+
 ```typescript
 // ❌ Rejected
-mode: "unrestricted"
-mode: "custom"
+mode: "unrestricted";
+mode: "custom";
 
 // ✅ Accepted
-mode: "read-only"
-mode: "workspace-write"
+mode: "read-only";
+mode: "workspace-write";
 ```
 
 #### Model Name
+
 - **Whitelist**: Known OpenAI models (`gpt-4o`, `o1`, `o3-mini`, etc.)
 - **Pattern**: `gpt-` prefix or recognized model names
 
 **Example**:
+
 ```typescript
 // ❌ Rejected
-model: "hacked-model"
-model: "arbitrary-string"
+model: "hacked-model";
+model: "arbitrary-string";
 
 // ✅ Accepted
-model: "gpt-4o"
-model: "o3-mini"
+model: "gpt-4o";
+model: "o3-mini";
 ```
 
 #### Working Directory
+
 - **No path traversal**: Reject `..` sequences
 - **Absolute paths only**: Must start with `/`
 - **Exists check**: Directory must exist
 
 **Example**:
+
 ```typescript
 // ❌ Rejected
-workingDir: "../../../etc"
-workingDir: "relative/path"
-workingDir: "/nonexistent"
+workingDir: "../../../etc";
+workingDir: "relative/path";
+workingDir: "/nonexistent";
 
 // ✅ Accepted
-workingDir: "/Users/nathanschram/project"
+workingDir: "/Users/nathanschram/project";
 ```
 
 #### Environment Policy
+
 - **Whitelist**: `inherit-none`, `inherit-all`, `allow-list`
 - **Default**: `inherit-none` (most secure)
 
 **Example**:
+
 ```typescript
 // ❌ Rejected
-envPolicy: "custom"
+envPolicy: "custom";
 
 // ✅ Accepted
-envPolicy: "inherit-none"
-envPolicy: "allow-list"
+envPolicy: "inherit-none";
+envPolicy: "allow-list";
 ```
 
 ---
@@ -108,35 +122,43 @@ envPolicy: "allow-list"
 ### Redacted Patterns (15+)
 
 #### API Keys
+
 - OpenAI: `sk-proj-...` → `sk-***REDACTED***`
 - OpenAI: `sk-...` → `sk-***REDACTED***`
 - Generic: `api_key=...` → `api_key=***REDACTED***`
 
 #### AWS Credentials
+
 - Access Key: `AKIA...` → `AKIA***REDACTED***`
 - Secret: `aws_secret_access_key=...` → `aws_secret_access_key=***REDACTED***`
 
 #### GitHub Tokens
+
 - Personal: `ghp_...` → `ghp_***REDACTED***`
 - OAuth: `gho_...` → `gho_***REDACTED***`
 - Fine-grained: `github_pat_...` → `github_pat_***REDACTED***`
 
 #### JWT Tokens
+
 - Pattern: `eyJ...` → `eyJ***REDACTED***`
 
 #### Private Keys
+
 - RSA: `-----BEGIN PRIVATE KEY-----...` → `***REDACTED***`
 
 #### Passwords
+
 - Env var: `PASSWORD=...` → `PASSWORD=***REDACTED***`
 - URL: `postgres://user:pass@host` → `postgres://user:***REDACTED***@host`
 
 #### Bearer Tokens
+
 - Header: `Authorization: Bearer ...` → `Authorization: Bearer ***REDACTED***`
 
 ### Redaction Points
 
 **1. Process stdout**:
+
 ```typescript
 // Before redaction
 OPENAI_API_KEY=sk-proj-abc123def456
@@ -146,6 +168,7 @@ OPENAI_API_KEY=sk-***REDACTED***
 ```
 
 **2. Process stderr**:
+
 ```typescript
 // Before redaction
 Error: Invalid token ghp_abc123def456
@@ -155,6 +178,7 @@ Error: Invalid token ghp_***REDACTED***
 ```
 
 **3. Event stream**:
+
 ```typescript
 // Before redaction
 {"type":"log","message":"Using key sk-proj-abc123"}
@@ -164,6 +188,7 @@ Error: Invalid token ghp_***REDACTED***
 ```
 
 **4. Error messages**:
+
 ```typescript
 // Before redaction
 Authentication failed with key sk-proj-abc123
@@ -196,10 +221,12 @@ console.assert(!output.includes(testSecret));
 **Rule**: File-modifying modes require explicit `confirm=true`.
 
 **Modes Requiring Confirmation**:
+
 - `workspace-write`
 - `danger-full-access`
 
 **Example**:
+
 ```typescript
 // ❌ Rejected
 {
@@ -219,14 +246,16 @@ console.assert(!output.includes(testSecret));
 ### Two-Step Workflow
 
 **Step 1: Preview with `codex_plan`**:
+
 ```typescript
 {
-  task: "Add error handling to API endpoints"
+  task: "Add error handling to API endpoints";
 }
 // Returns: Proposed changes (no execution)
 ```
 
 **Step 2: Apply with confirmation**:
+
 ```typescript
 {
   task: "Add error handling to API endpoints",
@@ -239,6 +268,7 @@ console.assert(!output.includes(testSecret));
 ### Read-Only Mode
 
 **No confirmation needed**:
+
 ```typescript
 {
   task: "Analyze code",
@@ -257,18 +287,20 @@ console.assert(!output.includes(testSecret));
 ### No Shell Injection
 
 **❌ Dangerous** (DO NOT USE):
+
 ```typescript
 // Vulnerable to injection
-exec(`codex exec "${userInput}"`)
+exec(`codex exec "${userInput}"`);
 
 // User input: "; rm -rf /"
 // Executes: codex exec ""; rm -rf /"
 ```
 
 **✅ Safe** (USED):
+
 ```typescript
 // No shell, direct process spawn
-spawn('codex', ['exec', userInput])
+spawn("codex", ["exec", userInput]);
 
 // User input is passed as argument
 // Shell metacharacters are escaped
@@ -279,6 +311,7 @@ spawn('codex', ['exec', userInput])
 **Purpose**: Prevent resource exhaustion.
 
 **Configuration**:
+
 ```bash
 # Default: 2 parallel processes
 CODEX_MAX_CONCURRENCY=2
@@ -288,6 +321,7 @@ CODEX_MAX_CONCURRENCY=4
 ```
 
 **Queue Behavior**:
+
 ```
 MAX_CONCURRENCY = 2
 
@@ -303,12 +337,14 @@ Request 3 → Running (slot 1)
 ### Process Cleanup
 
 **On Normal Exit**:
+
 - Capture stdout/stderr
 - Parse JSONL events
 - Return results
 - Release slot
 
 **On Error/Timeout**:
+
 - Kill process (`SIGTERM` then `SIGKILL`)
 - Log error
 - Return error to user
@@ -327,6 +363,7 @@ Request 3 → Running (slot 1)
 **Behavior**: No environment variables passed.
 
 **Example**:
+
 ```typescript
 {
   task: "Run tests",
@@ -336,6 +373,7 @@ Request 3 → Running (slot 1)
 ```
 
 **Use When**:
+
 - Default choice for security
 - Task doesn't need environment
 - Sandboxed execution required
@@ -345,6 +383,7 @@ Request 3 → Running (slot 1)
 **Behavior**: All environment variables passed.
 
 **Example**:
+
 ```typescript
 {
   task: "Deploy to staging",
@@ -354,6 +393,7 @@ Request 3 → Running (slot 1)
 ```
 
 **Use When**:
+
 - Trust task completely
 - Need full environment
 - Controlled context
@@ -365,6 +405,7 @@ Request 3 → Running (slot 1)
 **Behavior**: Only specified variables passed.
 
 **Example**:
+
 ```typescript
 {
   task: "Run integration tests",
@@ -375,6 +416,7 @@ Request 3 → Running (slot 1)
 ```
 
 **Use When**:
+
 - Need specific secrets
 - Want minimal exposure
 - Production best practice
@@ -382,6 +424,7 @@ Request 3 → Running (slot 1)
 ### Integration with Keychain
 
 **Setup** (using `direnv` + `kc.sh`):
+
 ```bash
 # .envrc
 source ~/bin/kc.sh
@@ -392,6 +435,7 @@ kc_load
 ```
 
 **MCP Server Environment**:
+
 ```
 MCP Server inherits:
   OPENAI_API_KEY=sk-proj-...
@@ -400,6 +444,7 @@ MCP Server inherits:
 ```
 
 **Selective Passing**:
+
 ```typescript
 // Only pass what's needed
 {
@@ -417,12 +462,14 @@ MCP Server inherits:
 ### Development
 
 #### Always
+
 - ✅ Use `mode='read-only'` first
 - ✅ Preview with `codex_plan` before `codex_apply`
 - ✅ Review git diff before committing
 - ✅ Use `envPolicy='allow-list'` for secrets
 
 #### Never
+
 - ❌ Commit secrets to git
 - ❌ Use `danger-full-access` without understanding
 - ❌ Use `envPolicy='inherit-all'` by default
@@ -431,12 +478,14 @@ MCP Server inherits:
 ### Production
 
 #### Required
+
 - ✅ Use environment variables for secrets (not hardcoded)
 - ✅ Test secret redaction regularly
 - ✅ Monitor concurrency limits
 - ✅ Review all file modifications
 
 #### Prohibited
+
 - ❌ Hardcoded API keys in code
 - ❌ Secrets in task descriptions
 - ❌ Unvalidated user inputs
@@ -449,26 +498,31 @@ MCP Server inherits:
 ### Threats Mitigated
 
 #### 1. Command Injection ✅
+
 - **Attack**: Malicious input in task description
 - **Mitigation**: `spawn()` not `exec()`, input validation
 - **Example**: `task: "; rm -rf /"` → Rejected by validator
 
 #### 2. Path Traversal ✅
+
 - **Attack**: `workingDir: "../../../etc"`
 - **Mitigation**: Path validation, no `..` allowed
 - **Example**: Rejected during input validation
 
 #### 3. Secret Exposure ✅
+
 - **Attack**: Secrets in logs or outputs
 - **Mitigation**: Pattern-based redaction (15+ patterns)
 - **Example**: `sk-proj-abc123` → `sk-***REDACTED***`
 
 #### 4. Resource Exhaustion ✅
+
 - **Attack**: Spam requests to exhaust resources
 - **Mitigation**: Concurrency limits, queue management
 - **Example**: Max 2 processes, rest queued
 
 #### 5. Unintended Mutations ✅
+
 - **Attack**: Accidental file deletion
 - **Mitigation**: Mutation gating with `confirm=true`
 - **Example**: `codex_apply` requires explicit confirmation
@@ -476,16 +530,19 @@ MCP Server inherits:
 ### Threats NOT Mitigated
 
 #### 1. Malicious Codex Cloud Environments ⚠️
+
 - **Attack**: Compromised Codex Cloud environment
 - **Mitigation**: User responsibility to audit environments
 - **Recommendation**: Review environment setup scripts
 
 #### 2. Compromised Dependencies ⚠️
+
 - **Attack**: Malicious npm package
 - **Mitigation**: Regular dependency audits
 - **Recommendation**: Use `npm audit`, `dependabot`
 
 #### 3. Local Machine Compromise ⚠️
+
 - **Attack**: Malware on developer machine
 - **Mitigation**: Outside scope of MCP server
 - **Recommendation**: Use antivirus, firewall, etc.
@@ -495,6 +552,7 @@ MCP Server inherits:
 ## Security Checklist
 
 ### Before Deployment
+
 - [ ] No hardcoded secrets in code
 - [ ] Secret redaction tested
 - [ ] Input validation enabled
@@ -503,6 +561,7 @@ MCP Server inherits:
 - [ ] Concurrency limits set
 
 ### During Development
+
 - [ ] Use `read-only` mode first
 - [ ] Preview changes with `codex_plan`
 - [ ] Review git diff before commits
@@ -510,6 +569,7 @@ MCP Server inherits:
 - [ ] Test with real secrets (verify redaction)
 
 ### After Execution
+
 - [ ] No secrets in logs
 - [ ] File changes reviewed
 - [ ] Tests pass

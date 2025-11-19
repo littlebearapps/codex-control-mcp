@@ -10,6 +10,7 @@
 **Recommendation**: ✅ **MIGRATE ENTIRELY TO SQLITE** - JSON registry is legacy and inferior
 
 The codebase has TWO task registries running in parallel:
+
 1. **SQLite Registry** (`task_registry.ts`) - Modern, feature-rich ← **TARGET**
 2. **JSON Registry** (`local_task_registry.ts`) - Legacy, limited ← **DEPRECATED**
 
@@ -19,77 +20,79 @@ The codebase has TWO task registries running in parallel:
 
 ### Data Structure Comparison
 
-| Feature | JSON Registry | SQLite Registry | Winner |
-|---------|--------------|-----------------|--------|
-| **Storage** | `~/.config/codex-control/local-tasks.json` | `~/.config/codex-control/tasks.db` | SQLite (persistent) |
-| **Size** | 110 KB (1217 lines) | 5.4 MB (60 tasks) | SQLite (scalable) |
-| **Status Values** | 3 (running/completed/failed) | 8 (pending/working/completed/completed_with_warnings/completed_with_errors/failed/canceled/unknown) | ✅ SQLite |
-| **Progress Tracking** | ❌ No | ✅ Yes (`progress_steps` JSON field) | ✅ SQLite |
-| **Threading Support** | ❌ No | ✅ Yes (`thread_id` field) | ✅ SQLite |
-| **Timestamps** | 1 (`submittedAt`) | 4 (`created_at`, `updated_at`, `completed_at`, `last_event_at`) | ✅ SQLite |
-| **Origin Tracking** | ❌ No (local only) | ✅ Yes (`origin`: local/cloud) | ✅ SQLite |
-| **Metadata** | ❌ No | ✅ Yes (`metadata` JSON field) | ✅ SQLite |
-| **User Support** | ❌ No | ✅ Yes (`user_id` for multi-user) | ✅ SQLite |
-| **Polling Guidance** | ❌ No | ✅ Yes (`poll_frequency_ms`) | ✅ SQLite |
-| **TTL Support** | ❌ No | ✅ Yes (`keep_alive_until`) | ✅ SQLite |
-| **Schema Migration** | ❌ Manual file edits | ✅ Automated schema migrations | ✅ SQLite |
-| **Query Performance** | ⚠️ O(n) scans | ✅ Indexed queries | ✅ SQLite |
-| **Concurrency** | ⚠️ File locking issues | ✅ SQLite WAL mode | ✅ SQLite |
+| Feature               | JSON Registry                              | SQLite Registry                                                                                     | Winner              |
+| --------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------- |
+| **Storage**           | `~/.config/codex-control/local-tasks.json` | `~/.config/codex-control/tasks.db`                                                                  | SQLite (persistent) |
+| **Size**              | 110 KB (1217 lines)                        | 5.4 MB (60 tasks)                                                                                   | SQLite (scalable)   |
+| **Status Values**     | 3 (running/completed/failed)               | 8 (pending/working/completed/completed_with_warnings/completed_with_errors/failed/canceled/unknown) | ✅ SQLite           |
+| **Progress Tracking** | ❌ No                                      | ✅ Yes (`progress_steps` JSON field)                                                                | ✅ SQLite           |
+| **Threading Support** | ❌ No                                      | ✅ Yes (`thread_id` field)                                                                          | ✅ SQLite           |
+| **Timestamps**        | 1 (`submittedAt`)                          | 4 (`created_at`, `updated_at`, `completed_at`, `last_event_at`)                                     | ✅ SQLite           |
+| **Origin Tracking**   | ❌ No (local only)                         | ✅ Yes (`origin`: local/cloud)                                                                      | ✅ SQLite           |
+| **Metadata**          | ❌ No                                      | ✅ Yes (`metadata` JSON field)                                                                      | ✅ SQLite           |
+| **User Support**      | ❌ No                                      | ✅ Yes (`user_id` for multi-user)                                                                   | ✅ SQLite           |
+| **Polling Guidance**  | ❌ No                                      | ✅ Yes (`poll_frequency_ms`)                                                                        | ✅ SQLite           |
+| **TTL Support**       | ❌ No                                      | ✅ Yes (`keep_alive_until`)                                                                         | ✅ SQLite           |
+| **Schema Migration**  | ❌ Manual file edits                       | ✅ Automated schema migrations                                                                      | ✅ SQLite           |
+| **Query Performance** | ⚠️ O(n) scans                              | ✅ Indexed queries                                                                                  | ✅ SQLite           |
+| **Concurrency**       | ⚠️ File locking issues                     | ✅ SQLite WAL mode                                                                                  | ✅ SQLite           |
 
 ### JSON Registry Fields (7 fields)
+
 ```typescript
 interface LocalTask {
-  taskId: string;           // Task identifier
-  task: string;             // Task description
-  mode?: string;            // Execution mode
-  model?: string;           // Model name
-  workingDir?: string;      // Working directory
-  submittedAt: string;      // ISO timestamp
-  status: 'running' | 'completed' | 'failed';  // 3 values only
-  result?: CodexProcessResult;  // Execution result
-  error?: string;           // Error message
-  progress?: ProgressSummary;   // Progress info
+  taskId: string; // Task identifier
+  task: string; // Task description
+  mode?: string; // Execution mode
+  model?: string; // Model name
+  workingDir?: string; // Working directory
+  submittedAt: string; // ISO timestamp
+  status: "running" | "completed" | "failed"; // 3 values only
+  result?: CodexProcessResult; // Execution result
+  error?: string; // Error message
+  progress?: ProgressSummary; // Progress info
 }
 ```
 
 ### SQLite Registry Fields (23 fields)
+
 ```typescript
 interface Task {
   // Core fields (6)
-  id: string;               // Task ID (T-local-abc123)
-  externalId?: string;      // Cloud task ID or local PID
-  alias?: string;           // Human-friendly name
-  origin: 'local' | 'cloud'; // Task origin
-  status: TaskStatus;       // 8 granular values
-  instruction: string;      // Task description
+  id: string; // Task ID (T-local-abc123)
+  externalId?: string; // Cloud task ID or local PID
+  alias?: string; // Human-friendly name
+  origin: "local" | "cloud"; // Task origin
+  status: TaskStatus; // 8 granular values
+  instruction: string; // Task description
 
   // Context (4)
-  workingDir?: string;      // Working directory
-  envId?: string;           // Cloud environment ID
-  mode?: string;            // Execution mode
-  model?: string;           // Model name
+  workingDir?: string; // Working directory
+  envId?: string; // Cloud environment ID
+  mode?: string; // Execution mode
+  model?: string; // Model name
 
   // Timestamps (4)
-  createdAt: number;        // Unix timestamp (ms)
-  updatedAt: number;        // Unix timestamp (ms)
-  completedAt?: number;     // Unix timestamp (ms)
-  lastEventAt?: number;     // Last JSONL event
+  createdAt: number; // Unix timestamp (ms)
+  updatedAt: number; // Unix timestamp (ms)
+  completedAt?: number; // Unix timestamp (ms)
+  lastEventAt?: number; // Last JSONL event
 
   // Progress tracking (3)
-  progressSteps?: string;   // JSON-encoded ProgressSummary
+  progressSteps?: string; // JSON-encoded ProgressSummary
   pollFrequencyMs?: number; // Recommended polling interval
-  keepAliveUntil?: number;  // TTL for results
+  keepAliveUntil?: number; // TTL for results
 
   // Threading (2)
-  threadId?: string;        // Codex SDK thread ID
-  userId?: string;          // Multi-user support
+  threadId?: string; // Codex SDK thread ID
+  userId?: string; // Multi-user support
 
   // Results (2)
-  result?: string;          // JSON-encoded result
-  error?: string;           // Error message
+  result?: string; // JSON-encoded result
+  error?: string; // Error message
 
   // Metadata (1)
-  metadata?: string;        // JSON-encoded context
+  metadata?: string; // JSON-encoded context
 }
 ```
 
@@ -119,6 +122,7 @@ All three are **CLI tools** (legacy v2.x API):
    - Status: ⚠️ **Should be deprecated** (use `_codex_local_run` with confirm=true)
 
 **Export**:
+
 ```typescript
 // src/state/local_task_registry.ts
 export const localTaskRegistry = new LocalTaskRegistry();
@@ -129,6 +133,7 @@ export const localTaskRegistry = new LocalTaskRegistry();
 All **v3.x MCP tools** use the unified SQLite registry:
 
 #### Local Execution Tools (5)
+
 1. **`local_run.ts`** - One-shot execution
 2. **`local_exec.ts`** - SDK execution with threading
 3. **`local_resume.ts`** - Resume threaded conversations
@@ -136,22 +141,26 @@ All **v3.x MCP tools** use the unified SQLite registry:
 5. **`local_results.ts`** - Get task results
 
 #### Local Management Tools (3)
+
 6. **`local_wait.ts`** - Wait for task completion
 7. **`local_cancel.ts`** - Cancel running tasks
-8. *(Future)* `local_cleanup.ts` - Registry cleanup
+8. _(Future)_ `local_cleanup.ts` - Registry cleanup
 
 #### Cloud Execution Tools (4)
+
 9. **`cloud.ts`** - Submit cloud tasks
 10. **`cloud_wait.ts`** - Wait for cloud completion
 11. **`cloud_cancel.ts`** - Cancel cloud tasks
-12. *(Planned)* `cloud_status.ts` - Cloud task status
+12. _(Planned)_ `cloud_status.ts` - Cloud task status
 
 **Import Pattern**:
+
 ```typescript
-import { globalTaskRegistry } from '../state/task_registry.js';
+import { globalTaskRegistry } from "../state/task_registry.js";
 ```
 
 **Export**:
+
 ```typescript
 // src/state/task_registry.ts
 export const globalTaskRegistry = new TaskRegistry();
@@ -164,18 +173,21 @@ export const globalTaskRegistry = new TaskRegistry();
 ### Current State
 
 **SQLite Registry** (`~/.config/codex-control/tasks.db`):
+
 - ✅ 60 tasks total
 - ✅ Last updated: 2025-11-16 (TODAY - actively used)
 - ✅ Comprehensive data (23 fields per task)
 - ✅ Used by all modern MCP tools
 
 **JSON Registry** (`~/.config/codex-control/local-tasks.json`):
+
 - ⚠️ 7 tasks total
 - ⚠️ Last updated: 2025-11-14 (2 days ago)
 - ⚠️ Limited data (10 fields per task)
 - ⚠️ Used only by 3 legacy CLI tools
 
 **Data Overlap**:
+
 ```bash
 # Check if JSON tasks exist in SQLite
 $ sqlite3 tasks.db "SELECT id FROM tasks WHERE id LIKE 'local-%';"
@@ -193,15 +205,18 @@ $ sqlite3 tasks.db "SELECT id FROM tasks WHERE id LIKE 'local-%';"
 #### Option 1: Hard Cutover (RECOMMENDED)
 
 **Pros**:
+
 - ✅ Clean break from legacy code
 - ✅ No dual-registry complexity
 - ✅ Forces adoption of modern tools
 
 **Cons**:
+
 - ⚠️ Loses 7 tasks in JSON registry (all completed, 2+ days old)
 - ⚠️ Breaks 3 legacy CLI tools (already deprecated)
 
 **Steps**:
+
 1. Deprecate `cli_run`, `cli_plan`, `cli_apply` tools
 2. Update documentation to use `_codex_local_run` instead
 3. Delete `local_task_registry.ts` file
@@ -211,17 +226,21 @@ $ sqlite3 tasks.db "SELECT id FROM tasks WHERE id LIKE 'local-%';"
 #### Option 2: Migrate Historical Data (OPTIONAL)
 
 **Pros**:
+
 - ✅ Preserves historical task data
 - ✅ Complete audit trail
 
 **Cons**:
+
 - ⚠️ Requires data transformation (different ID formats)
 - ⚠️ Only 7 tasks (minimal value)
 - ⚠️ All tasks completed 2+ days ago
 
 **Steps**:
+
 1. Read JSON registry
 2. Transform tasks to SQLite schema:
+
    ```typescript
    JSON taskId: "local-1762932699034-aacoxi"
      → SQLite id: "T-local-migrated-aacoxi"
@@ -233,6 +252,7 @@ $ sqlite3 tasks.db "SELECT id FROM tasks WHERE id LIKE 'local-%';"
      → SQLite createdAt: 1699932044250
      → SQLite completedAt: 1699932044250 (approx)
    ```
+
 3. Insert into SQLite database
 4. Archive JSON file
 5. Delete `local_task_registry.ts`
@@ -245,20 +265,21 @@ $ sqlite3 tasks.db "SELECT id FROM tasks WHERE id LIKE 'local-%';"
 
 **YES** - SQLite has superset of JSON fields:
 
-| JSON Field | SQLite Equivalent | Notes |
-|------------|------------------|-------|
-| `taskId` | `id` | ✅ Same concept |
-| `task` | `instruction` | ✅ Same concept |
-| `mode` | `mode` | ✅ Identical |
-| `model` | `model` | ✅ Identical |
-| `workingDir` | `working_dir` | ✅ Identical (snake_case) |
-| `submittedAt` | `created_at` | ✅ ISO string → Unix ms |
-| `status` | `status` | ✅ Enhanced (8 values vs 3) |
-| `result` | `result` | ✅ Same (JSON-encoded) |
-| `error` | `error` | ✅ Identical |
-| `progress` | `progress_steps` | ✅ Same (JSON-encoded) |
+| JSON Field    | SQLite Equivalent | Notes                       |
+| ------------- | ----------------- | --------------------------- |
+| `taskId`      | `id`              | ✅ Same concept             |
+| `task`        | `instruction`     | ✅ Same concept             |
+| `mode`        | `mode`            | ✅ Identical                |
+| `model`       | `model`           | ✅ Identical                |
+| `workingDir`  | `working_dir`     | ✅ Identical (snake_case)   |
+| `submittedAt` | `created_at`      | ✅ ISO string → Unix ms     |
+| `status`      | `status`          | ✅ Enhanced (8 values vs 3) |
+| `result`      | `result`          | ✅ Same (JSON-encoded)      |
+| `error`       | `error`           | ✅ Identical                |
+| `progress`    | `progress_steps`  | ✅ Same (JSON-encoded)      |
 
 **Additional SQLite Fields** (not in JSON):
+
 - ✅ `origin` - Track local vs cloud
 - ✅ `external_id` - Cloud task ID or PID
 - ✅ `alias` - Human-friendly name
@@ -328,27 +349,32 @@ $ sqlite3 tasks.db "SELECT id FROM tasks WHERE id LIKE 'local-%';"
  * Migrate historical tasks from JSON to SQLite
  * OPTIONAL - Only needed if preserving 7 old tasks is important
  */
-import { globalTaskRegistry } from './src/state/task_registry.js';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { globalTaskRegistry } from "./src/state/task_registry.js";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 async function migrateJsonToSqlite() {
-  const jsonPath = path.join(os.homedir(), '.config', 'codex-control', 'local-tasks.json');
+  const jsonPath = path.join(
+    os.homedir(),
+    ".config",
+    "codex-control",
+    "local-tasks.json",
+  );
 
   if (!fs.existsSync(jsonPath)) {
-    console.log('No JSON registry found - skipping migration');
+    console.log("No JSON registry found - skipping migration");
     return;
   }
 
-  const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+  const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
   const tasks = data.tasks || [];
 
   console.log(`Migrating ${tasks.length} tasks from JSON to SQLite...`);
 
   for (const task of tasks) {
     // Skip running tasks (can't migrate incomplete state)
-    if (task.status === 'running') {
+    if (task.status === "running") {
       console.warn(`Skipping running task: ${task.taskId}`);
       continue;
     }
@@ -357,8 +383,8 @@ async function migrateJsonToSqlite() {
     const createdAt = new Date(task.submittedAt).getTime();
 
     globalTaskRegistry.registerTask({
-      id: `T-local-migrated-${task.taskId.split('-').pop()}`, // Extract suffix
-      origin: 'local',
+      id: `T-local-migrated-${task.taskId.split("-").pop()}`, // Extract suffix
+      origin: "local",
       status: task.status as any, // 'completed' or 'failed'
       instruction: task.task,
       workingDir: task.workingDir,
@@ -376,7 +402,7 @@ async function migrateJsonToSqlite() {
   }
 
   // Archive JSON file
-  const backupPath = jsonPath + '.backup';
+  const backupPath = jsonPath + ".backup";
   fs.renameSync(jsonPath, backupPath);
   console.log(`\nMigration complete! JSON registry archived to: ${backupPath}`);
 }
@@ -410,12 +436,14 @@ migrateJsonToSqlite().catch(console.error);
 ## Implementation Checklist
 
 ### Phase 1: Preparation (v3.2.2)
+
 - [ ] Add deprecation warnings to `local_task_registry.ts`
 - [ ] Update CLI tools to warn about deprecation
 - [ ] Document migration in CHANGELOG.md
 - [ ] Create migration script (optional)
 
 ### Phase 2: Migration (v3.3.0)
+
 - [ ] Update `cli_run.ts` to use `globalTaskRegistry`
 - [ ] Update `cli_plan.ts` to use `globalTaskRegistry`
 - [ ] Update `cli_apply.ts` to use `globalTaskRegistry`
@@ -423,6 +451,7 @@ migrateJsonToSqlite().catch(console.error);
 - [ ] Archive JSON registry file
 
 ### Phase 3: Cleanup (v4.0.0)
+
 - [ ] Delete `src/state/local_task_registry.ts`
 - [ ] Remove all JSON registry imports
 - [ ] Update documentation
@@ -436,6 +465,7 @@ migrateJsonToSqlite().catch(console.error);
 **Final Recommendation**: ✅ **MIGRATE ENTIRELY TO SQLITE**
 
 **Rationale**:
+
 1. ✅ SQLite has **superset of JSON functionality** (23 fields vs 10 fields)
 2. ✅ SQLite supports **modern features** (threading, progress, granular status)
 3. ✅ SQLite is **actively used** (60 tasks vs 7 tasks)
@@ -446,6 +476,7 @@ migrateJsonToSqlite().catch(console.error);
 **Migration Path**: Hard cutover (Option 1) - archive JSON registry, deprecate tools
 
 **Timeline**:
+
 - v3.2.2 (next patch): Add warnings
 - v3.3.0 (next minor): Migrate CLI tools
 - v4.0.0 (next major): Remove JSON registry entirely

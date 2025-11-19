@@ -25,72 +25,72 @@ export class Redactor {
         return [
             // API Keys (various formats)
             {
-                name: 'openai-api-key',
+                name: "openai-api-key",
                 pattern: /sk-[A-Za-z0-9]{48}/g,
-                replacement: 'sk-***REDACTED***',
+                replacement: "sk-***REDACTED***",
             },
             {
-                name: 'generic-api-key',
+                name: "generic-api-key",
                 pattern: /['"](api[_-]?key|apikey)['"]\s*[:=]\s*['"][^'"]{8,}['"]/gi,
                 replacement: '"api_key": "***REDACTED***"',
             },
             // Bearer tokens
             {
-                name: 'bearer-token',
+                name: "bearer-token",
                 pattern: /Bearer\s+[A-Za-z0-9._-]{20,}/gi,
-                replacement: 'Bearer ***REDACTED***',
+                replacement: "Bearer ***REDACTED***",
             },
             // AWS credentials
             {
-                name: 'aws-access-key',
+                name: "aws-access-key",
                 pattern: /AKIA[0-9A-Z]{16}/g,
-                replacement: 'AKIA***REDACTED***',
+                replacement: "AKIA***REDACTED***",
             },
             {
-                name: 'aws-secret-key',
+                name: "aws-secret-key",
                 pattern: /['"](aws[_-]?secret[_-]?access[_-]?key)['"]\s*[:=]\s*['"][^'"]{20,}['"]/gi,
                 replacement: '"aws_secret_access_key": "***REDACTED***"',
             },
             // GitHub tokens
             {
-                name: 'github-token',
+                name: "github-token",
                 pattern: /ghp_[A-Za-z0-9]{36}/g,
-                replacement: 'ghp_***REDACTED***',
+                replacement: "ghp_***REDACTED***",
             },
             {
-                name: 'github-oauth',
+                name: "github-oauth",
                 pattern: /gho_[A-Za-z0-9]{36}/g,
-                replacement: 'gho_***REDACTED***',
+                replacement: "gho_***REDACTED***",
             },
             // Private keys
             {
-                name: 'private-key',
+                name: "private-key",
                 pattern: /-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(RSA\s+)?PRIVATE\s+KEY-----/gi,
-                replacement: '-----BEGIN PRIVATE KEY-----\n***REDACTED***\n-----END PRIVATE KEY-----',
+                replacement: "-----BEGIN PRIVATE KEY-----\n***REDACTED***\n-----END PRIVATE KEY-----",
             },
             // JWT tokens
             {
-                name: 'jwt-token',
+                name: "jwt-token",
                 pattern: /eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
-                replacement: 'eyJ***REDACTED***.eyJ***REDACTED***.***REDACTED***',
+                replacement: "eyJ***REDACTED***.eyJ***REDACTED***.***REDACTED***",
             },
             // Password patterns
             {
-                name: 'password',
+                name: "password",
                 pattern: /['"](password|passwd|pwd)['"]\s*[:=]\s*['"][^'"]{6,}['"]/gi,
                 replacement: '"password": "***REDACTED***"',
             },
             // Database connection strings
             {
-                name: 'database-url',
+                name: "database-url",
                 pattern: /(postgres|mysql|mongodb):\/\/[^:]+:[^@]+@[^\s'"]+/gi,
-                replacement: '$1://***REDACTED***@***REDACTED***',
+                replacement: "$1://***REDACTED***@***REDACTED***",
             },
             // Generic secrets in environment variables
             {
-                name: 'env-secret',
+                name: "env-secret",
                 pattern: /([A-Z_]+(?:SECRET|TOKEN|KEY|PASSWORD|PASSWD|PWD)[A-Z_]*)\s*=\s*['"]?[^\s'"]{8,}['"]?/gi,
-                replacement: '$1=***REDACTED***',
+                replacement: "$1=***REDACTED***",
             },
         ];
     }
@@ -117,13 +117,13 @@ export class Redactor {
      * Redact secrets from an object (recursive)
      */
     redactObject(obj) {
-        if (typeof obj === 'string') {
+        if (typeof obj === "string") {
             return this.redact(obj);
         }
         if (Array.isArray(obj)) {
             return obj.map((item) => this.redactObject(item));
         }
-        if (obj !== null && typeof obj === 'object') {
+        if (obj !== null && typeof obj === "object") {
             const redacted = {};
             for (const [key, value] of Object.entries(obj)) {
                 redacted[key] = this.redactObject(value);

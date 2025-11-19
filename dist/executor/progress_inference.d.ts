@@ -4,11 +4,11 @@
  * Extracts meaningful progress information from Codex execution events.
  * Tracks turns, items, file changes, and commands to provide real-time status.
  */
-import { CodexEvent } from './jsonl_parser.js';
+import { CodexEvent } from "./jsonl_parser.js";
 export interface ProgressStep {
-    type: 'turn' | 'item' | 'file_change' | 'command';
+    type: "turn" | "item" | "file_change" | "command";
     description: string;
-    status: 'started' | 'completed' | 'failed';
+    status: "started" | "completed" | "failed";
     timestamp?: string;
     details?: any;
 }

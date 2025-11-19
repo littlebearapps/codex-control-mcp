@@ -8,6 +8,7 @@
 ## Executive Summary
 
 All 4 execution primitives have git safety integrated. This document:
+
 1. Lists ALL git operations by tier
 2. Confirms which tools can execute them
 3. Documents Option 3 implementation pattern
@@ -21,12 +22,12 @@ All 4 execution primitives have git safety integrated. This document:
 
 These operations are **ALWAYS BLOCKED** - too destructive for AI agents.
 
-| Operation | Risk | Safer Alternative |
-|-----------|------|-------------------|
-| `git gc --prune=now` | Irreversibly prunes unreachable objects, destroys reflog recovery | Use default gc settings or gc without --prune=now |
-| `git reflog expire --expire-unreachable=now` | Destroys reflog entries, makes recovery impossible | Keep default reflog expiration (90 days) |
-| `git push --force` to main/master/trunk/release | Overwrites history on protected branch, breaks collaborators | Create pull request or push to feature branch |
-| `git filter-repo` on main/master/trunk/release | Rewrites entire repository history on protected branch | Work on separate branch or create backup first |
+| Operation                                       | Risk                                                              | Safer Alternative                                 |
+| ----------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------- |
+| `git gc --prune=now`                            | Irreversibly prunes unreachable objects, destroys reflog recovery | Use default gc settings or gc without --prune=now |
+| `git reflog expire --expire-unreachable=now`    | Destroys reflog entries, makes recovery impossible                | Keep default reflog expiration (90 days)          |
+| `git push --force` to main/master/trunk/release | Overwrites history on protected branch, breaks collaborators      | Create pull request or push to feature branch     |
+| `git filter-repo` on main/master/trunk/release  | Rewrites entire repository history on protected branch            | Work on separate branch or create backup first    |
 
 **Implementation**: MCP tools return blocking error, Claude Code respects it.
 
@@ -36,15 +37,15 @@ These operations are **ALWAYS BLOCKED** - too destructive for AI agents.
 
 These operations are **RISKY BUT RECOVERABLE** with safety checkpoints.
 
-| Operation | Risk | Safer Alternative |
-|-----------|------|-------------------|
-| `git reset --hard` | Permanently discards uncommitted changes | Use git reset --mixed or git stash |
-| `git rebase` | Rewrites commit history, changes all commit hashes | Use git merge to preserve history |
-| `git push --force` (non-protected branches) | Overwrites remote branch history | Coordinate with team or use --force-with-lease |
-| `git commit --amend` | Changes commit hash, problematic if already pushed | Create new commit instead |
-| `git clean -fdx` | Permanently deletes untracked files/directories | Use git clean -n to preview or git stash |
-| `git reset HEAD~N` | Removes commits from branch history | Use git revert to create new undo commits |
-| Delete repository | Permanently removes entire repository | Archive or rename instead |
+| Operation                                   | Risk                                               | Safer Alternative                              |
+| ------------------------------------------- | -------------------------------------------------- | ---------------------------------------------- |
+| `git reset --hard`                          | Permanently discards uncommitted changes           | Use git reset --mixed or git stash             |
+| `git rebase`                                | Rewrites commit history, changes all commit hashes | Use git merge to preserve history              |
+| `git push --force` (non-protected branches) | Overwrites remote branch history                   | Coordinate with team or use --force-with-lease |
+| `git commit --amend`                        | Changes commit hash, problematic if already pushed | Create new commit instead                      |
+| `git clean -fdx`                            | Permanently deletes untracked files/directories    | Use git clean -n to preview or git stash       |
+| `git reset HEAD~N`                          | Removes commits from branch history                | Use git revert to create new undo commits      |
+| Delete repository                           | Permanently removes entire repository              | Archive or rename instead                      |
 
 **Implementation**: MCP tools detect operation, Claude Code uses `AskUserQuestion`, then calls tool with `allow_destructive_git: true` if approved.
 
@@ -55,6 +56,7 @@ These operations are **RISKY BUT RECOVERABLE** with safety checkpoints.
 These operations are **ALWAYS ALLOWED** - normal git workflow.
 
 **Examples**:
+
 - `git status`, `git log`, `git diff`, `git show`, `git blame`
 - `git add`, `git commit` (without --amend)
 - `git push` (fast-forward only)
@@ -72,12 +74,12 @@ These operations are **ALWAYS ALLOWED** - normal git workflow.
 
 Only these 4 tools can execute git operations:
 
-| Tool | Purpose | Git Safety Status |
-|------|---------|-------------------|
-| `_codex_local_run` | Simple one-shot local execution | ✅ Implemented |
-| `_codex_local_exec` | SDK execution with threading | ✅ Implemented |
-| `_codex_local_resume` | Resume threaded conversations | ✅ Implemented |
-| `_codex_cloud_submit` | Background cloud execution | ✅ Implemented |
+| Tool                  | Purpose                         | Git Safety Status |
+| --------------------- | ------------------------------- | ----------------- |
+| `_codex_local_run`    | Simple one-shot local execution | ✅ Implemented    |
+| `_codex_local_exec`   | SDK execution with threading    | ✅ Implemented    |
+| `_codex_local_resume` | Resume threaded conversations   | ✅ Implemented    |
+| `_codex_cloud_submit` | Background cloud execution      | ✅ Implemented    |
 
 ### Non-Execution Tools (10 tools)
 
@@ -136,6 +138,7 @@ These tools CANNOT execute git operations (status/management only):
 ### ✅ What's Working
 
 **All 4 execution primitives have:**
+
 1. RiskyOperationDetector integration
 2. Three-tier classification system
 3. Tier 1 blocking (tested ✅)
@@ -144,6 +147,7 @@ These tools CANNOT execute git operations (status/management only):
 6. Safety checkpointing system
 
 **Files verified:**
+
 - `src/security/risky_operation_detector.ts` - Pattern detection ✅
 - `src/security/safety_checkpointing.ts` - Checkpoint creation ✅
 - `src/tools/local_run.ts` - Git safety integrated ✅
@@ -154,6 +158,7 @@ These tools CANNOT execute git operations (status/management only):
 ### ❌ What's Not Working (Discovered in UAT)
 
 **Tier 2 Dialog Flow:**
+
 - MCP tools return error message ✅
 - Claude Code sees error ✅
 - **Claude Code does NOT automatically use AskUserQuestion** ❌
@@ -170,11 +175,13 @@ These tools CANNOT execute git operations (status/management only):
 **Approach**: Trust that Claude Code (me) will use `AskUserQuestion` when seeing Tier 2 errors.
 
 **Pros:**
+
 - No code changes needed
 - Already works (demonstrated in UAT)
 - Flexible
 
 **Cons:**
+
 - Depends on Claude Code's behavior
 - Not guaranteed for all LLM agents
 - No technical enforcement
@@ -184,6 +191,7 @@ These tools CANNOT execute git operations (status/management only):
 **Approach**: Update MCP tool responses to include structured metadata that Claude Code can use.
 
 **Current Tier 2 response:**
+
 ```typescript
 {
   content: [{ type: 'text', text: '⚠️ RISKY GIT OPERATION...' }],
@@ -192,6 +200,7 @@ These tools CANNOT execute git operations (status/management only):
 ```
 
 **Proposed Tier 2 response:**
+
 ```typescript
 {
   content: [{ type: 'text', text: '⚠️ RISKY GIT OPERATION...' }],
@@ -218,6 +227,7 @@ These tools CANNOT execute git operations (status/management only):
 ```
 
 **Benefits:**
+
 - ✅ Structured data for AI agents to parse
 - ✅ Clear signal that confirmation is needed
 - ✅ Pre-formatted prompt for `AskUserQuestion`
@@ -225,6 +235,7 @@ These tools CANNOT execute git operations (status/management only):
 - ✅ Backward compatible (error message still shows)
 
 **Changes Required:**
+
 1. Update `RiskyOperationDetector.formatConfirmationMessage()` to return metadata
 2. Update all 4 execution primitives to include metadata in Tier 2 responses
 3. Rebuild and redeploy
@@ -235,6 +246,7 @@ These tools CANNOT execute git operations (status/management only):
 **Approach**: MCP server calls back to Claude Code requesting confirmation.
 
 **Cons:**
+
 - Complex implementation
 - May not be supported by MCP protocol
 - Breaks one-way request/response pattern
@@ -246,6 +258,7 @@ These tools CANNOT execute git operations (status/management only):
 **Use Option 2: Add Metadata to Tier 2 Responses**
 
 This provides:
+
 1. Clear signal to AI agents that confirmation is needed
 2. Structured data for reliable parsing
 3. Pre-formatted prompts for `AskUserQuestion`

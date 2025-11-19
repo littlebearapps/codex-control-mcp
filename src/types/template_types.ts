@@ -56,16 +56,16 @@ export interface TemplateValidationResult {
  */
 export enum TemplateCategory {
   /** GitHub-integrated templates with PR workflow support */
-  GITHUB = 'github',
+  GITHUB = "github",
 
   /** Basic Codex Cloud templates without GitHub integration */
-  BASIC = 'basic',
+  BASIC = "basic",
 
   /** CI/CD pipeline templates */
-  CICD = 'cicd',
+  CICD = "cicd",
 
   /** Testing framework templates */
-  TESTING = 'testing',
+  TESTING = "testing",
 }
 
 /**

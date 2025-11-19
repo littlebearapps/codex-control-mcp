@@ -16,6 +16,7 @@
 When using SDK-based tools, Codex may use the system Python instead of a project's virtual environment Python. This causes test failures and dependency errors.
 
 **Symptoms**:
+
 ```
 ModuleNotFoundError: No module named 'boto3'
 ModuleNotFoundError: No module named 'typer'
@@ -23,11 +24,13 @@ ModuleNotFoundError: No module named 'google.ads'
 ```
 
 **Root Cause**:
+
 - Codex SDK spawns processes that inherit the MCP server's environment
 - MCP server may be running with system Python in PATH
 - Project's `.venv` Python not activated for SDK processes
 
 **Example from auditor-toolkit**:
+
 ```
 # Project has .venv with Python 3.12 + all dependencies
 # But Codex used system Python 3.13 (no dependencies)
@@ -52,6 +55,7 @@ E   ModuleNotFoundError: No module named 'boto3'
 ### Workarounds
 
 **Option 1: Kill Stuck Process and Finish Manually** (Fastest - 5-10 min)
+
 ```bash
 # Find the stuck process
 ps aux | grep "codex exec"
@@ -63,6 +67,7 @@ kill -9 <PID>
 ```
 
 **Option 2: Ensure Virtual Environment is Activated**
+
 ```bash
 # Before starting Claude Code session
 cd /path/to/project
@@ -73,12 +78,13 @@ source .venv/bin/activate
 ```
 
 **Option 3: Use CLI Tools Instead of SDK Tools**
+
 ```typescript
 // Instead of:
-codex_local_exec({ task: "Run tests" })
+codex_local_exec({ task: "Run tests" });
 
 // Use:
-codex_run({ task: "Run tests", mode: "read-only" })
+codex_run({ task: "Run tests", mode: "read-only" });
 ```
 
 **Limitation**: CLI tools don't have thread persistence or token tracking.
@@ -94,6 +100,7 @@ For projects with virtual environments:
 ### Long-Term Fix (Future)
 
 **Possible Solutions**:
+
 1. Add `pythonPath` parameter to SDK tools
 2. Detect and activate `.venv` automatically in SDK tools
 3. Document environment requirements in tool schemas
@@ -115,6 +122,7 @@ For projects with virtual environments:
 `codex_status` only showed ProcessManager-tracked processes (CLI tools), not SDK-spawned processes.
 
 **Before Fix**:
+
 ```
 ps aux | grep "codex exec"  # Shows PID 70565
 codex_status                # Shows 0 active processes
@@ -131,6 +139,7 @@ Added system-wide process detection to `codex_status`:
 ```
 
 Now shows:
+
 - Total processes (system-wide)
 - CLI-tracked vs SDK-spawned breakdown
 - Process details (PID, CPU, memory, start time)

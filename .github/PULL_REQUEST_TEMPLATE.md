@@ -67,6 +67,7 @@ Related to #
 <!-- Ensure your commit messages follow the Conventional Commits format -->
 
 Example:
+
 - `feat: add new cloud execution timeout detection`
 - `fix: resolve race condition in process manager`
 - `docs: update README with new configuration options`

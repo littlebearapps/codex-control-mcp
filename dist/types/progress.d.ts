@@ -15,8 +15,8 @@
  *
  * @module types/progress
  */
-import type { Request, Notification } from '@modelcontextprotocol/sdk/types.js';
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type { Request, Notification } from "@modelcontextprotocol/sdk/types.js";
+import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 /**
  * Extended tool execute signature with MCP notification support.
  *

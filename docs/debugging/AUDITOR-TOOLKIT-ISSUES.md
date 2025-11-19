@@ -24,12 +24,14 @@ Multiple critical and non-critical issues discovered during real-world usage of 
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - `codex_local_exec` returns task ID
 - Task never appears in registry (showAll: true)
 - `codex_local_wait` returns without output
 - No evidence of execution (no logs, no files created)
 
 **Evidence**:
+
 ```typescript
 Task ID: T-local-mi1h3c6tric3yw
 Expected: Task appears in registry as "running" or "completed"
@@ -48,12 +50,14 @@ Actual: Task not found in any section (running/completed/failed)
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - `codex_local_results` returns "Status: ✅ Success"
 - Git status shows clean working tree (no changes)
 - Expected files don't exist on disk
 - Output shows truncated file listing instead of implementation results
 
 **Evidence**:
+
 ```bash
 Task: T-local-mi1gob5gxgdvar
 Status: ✅ Success (claimed)
@@ -79,12 +83,14 @@ nothing to commit, working tree clean
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - 9 tasks stuck in "running" state for 8+ hours
 - Tasks from different working directories
 - All git-related operations (log, rebase)
 - Registry cleanup not functioning
 
 **Evidence**:
+
 ```
 Running Tasks: 9
 
@@ -106,6 +112,7 @@ T-local-mi126umnoks0g4:
 **Impact**: Registry pollution, potential resource leaks, confusing status output
 
 **Root Cause Hypotheses**:
+
 1. Registry cleanup not running
 2. Tasks timeout but registry not updated
 3. Processes killed but registry state not updated
@@ -119,6 +126,7 @@ T-local-mi126umnoks0g4:
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - Documentation doesn't specify registry location
 - Can't manually inspect registry
 - Can't verify integrity
@@ -129,6 +137,7 @@ T-local-mi126umnoks0g4:
 **Impact**: Unable to diagnose or fix registry issues
 
 **Investigation Needed**:
+
 ```bash
 # Where is the registry?
 ~/.codex/?
@@ -150,6 +159,7 @@ Binary format?
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - No stderr/stdout from Codex execution
 - No MCP server logs
 - Can't diagnose execution failures
@@ -160,6 +170,7 @@ Binary format?
 **Impact**: Impossible to debug execution failures
 
 **Investigation Needed**:
+
 ```bash
 # Where should logs be?
 /tmp/mcp-delegator.log?
@@ -178,12 +189,14 @@ Process-specific logs?
 **Status**: 🟡 Known Limitation
 
 **Symptom**:
+
 - Branch creation fails if working directory has uncommitted changes
 - Task marked as "Failed" despite successful implementation
 - No option to allow dirty working directory
 - No auto-stash support
 
 **Evidence**:
+
 ```
 Git Verification Results:
 ❌ Branch not created: Expected `feature/google-platforms-phase0-foundation`,
@@ -203,6 +216,7 @@ Recommendation:
 **Impact**: Task fails despite 100% successful implementation
 
 **Actual Success Rate**:
+
 - Implementation: 100% (9/9 files, 714 lines, 10/10 tests passing)
 - Git workflow: 0% (branch creation failed)
 - Overall status: "Failed" (misleading)
@@ -215,6 +229,7 @@ Recommendation:
 **Status**: 🟡 Enhancement Request
 
 **Symptom**:
+
 - Can't stash uncommitted changes before branch creation
 - Must manually clean working directory
 - No offer to stash/apply workflow
@@ -222,6 +237,7 @@ Recommendation:
 **Source**: `auditor-toolkit/main/docs/codex-git-workflow-issue.md` lines 88-93
 
 **Suggested Workflow**:
+
 ```bash
 # What Codex could do automatically:
 git stash push -m "Auto-stash before branch creation"
@@ -239,6 +255,7 @@ git stash pop
 **Status**: 🟡 Enhancement Request
 
 **Symptom**:
+
 - Only "Success" or "Failed" status
 - No "Partial Success" or "Succeeded with Warnings"
 - Implementation success + git failure = "Failed" (misleading)
@@ -246,6 +263,7 @@ git stash pop
 **Source**: `auditor-toolkit/main/docs/codex-git-workflow-issue.md` lines 88-93
 
 **Suggested Statuses**:
+
 - ✅ Success (all aspects succeeded)
 - ⚠️ Succeeded with Warnings (implementation OK, workflow needs attention)
 - ⚠️ Partial Success (some parts failed)
@@ -261,6 +279,7 @@ git stash pop
 **Status**: 🟡 Enhancement Request
 
 **Symptom**:
+
 - Can't opt-in to branch creation with uncommitted changes
 - No flexibility for advanced users
 - Forces clean working directory even for unrelated changes
@@ -268,6 +287,7 @@ git stash pop
 **Source**: `auditor-toolkit/main/docs/codex-git-workflow-issue.md` lines 117-123
 
 **Suggested API**:
+
 ```typescript
 {
   task: "Create branch and implement feature",
@@ -288,6 +308,7 @@ git stash pop
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - `codex_local_results` returns file listing instead of implementation output
 - Output appears truncated
 - Can't see actual work performed
@@ -296,6 +317,7 @@ git stash pop
 **Source**: `auditor-toolkit/main/docs/codex-control-mcp-debugging.md` lines 42-65
 
 **Expected Output**:
+
 ```
 Status: ✅ Success
 Files Created:
@@ -310,6 +332,7 @@ Implementation Summary:
 ```
 
 **Actual Output**:
+
 ```
 Status: ✅ Success
 [Truncated file listing]
@@ -325,6 +348,7 @@ Status: ✅ Success
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - Tasks from different working directories appear in same registry
 - `showAll: false` should filter by current directory
 - Stuck tasks from unrelated projects pollute output
@@ -332,17 +356,19 @@ Status: ✅ Success
 **Source**: `auditor-toolkit/main/docs/codex-control-mcp-debugging.md` lines 68-93
 
 **Expected Behavior**:
+
 ```typescript
 // In /project-a/
-codex_local_status({ showAll: false })
+codex_local_status({ showAll: false });
 // Should show only tasks from /project-a/
 
 // In /project-b/
-codex_local_status({ showAll: false })
+codex_local_status({ showAll: false });
 // Should show only tasks from /project-b/
 ```
 
 **Actual Behavior**:
+
 - Both projects see each other's tasks
 - Filtering by working directory doesn't work correctly
 
@@ -356,6 +382,7 @@ codex_local_status({ showAll: false })
 **Status**: 🔴 Unresolved
 
 **Symptom**:
+
 - Task execution fails silently
 - No error messages
 - No stderr output
@@ -364,6 +391,7 @@ codex_local_status({ showAll: false })
 **Source**: `auditor-toolkit/main/docs/codex-control-mcp-debugging.md` lines 308-319
 
 **Root Cause Hypotheses**:
+
 1. Sandbox mode blocking file writes
 2. Permission errors not reported
 3. Codex CLI failing without stderr
@@ -376,16 +404,19 @@ codex_local_status({ showAll: false })
 ## Summary Statistics
 
 ### By Severity
+
 - **CRITICAL**: 2 issues (1.1, 1.2)
 - **HIGH**: 1 issue (1.3)
 - **MEDIUM**: 4 issues (1.4, 1.5, 3.1, 3.2, 3.3)
 - **LOW**: 4 issues (2.1, 2.2, 2.3, 2.4)
 
 ### By Status
+
 - **🔴 Unresolved**: 8 issues
 - **🟡 Known Limitation/Enhancement**: 4 issues
 
 ### By Category
+
 - **Task Execution & Registry**: 5 issues
 - **Git Workflow**: 4 issues
 - **Output & Communication**: 3 issues
@@ -397,6 +428,7 @@ codex_local_status({ showAll: false })
 **Evidence that mcp-delegator worked before**:
 
 From task registry in auditor-toolkit:
+
 - ✅ T-local-mi1g1ab0n43qet: Enhanced Measurement Settings (27m ago, COMPLETED, files created)
 - ✅ T-local-mi1flcoqcp6zue: Phase 1 GA4 Gap Implementation (39m ago, COMPLETED, files created)
 - ✅ T-local-mhyl9ch7r44jsw: GBP Registry Integration (2d ago, COMPLETED, files created)

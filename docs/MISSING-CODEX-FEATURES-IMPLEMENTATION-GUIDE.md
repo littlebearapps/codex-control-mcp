@@ -19,6 +19,7 @@ This document provides complete implementation specifications for 6 Codex CLI fe
 6. **Configuration Profiles** - MEDIUM PRIORITY 🟡
 
 Each feature includes:
+
 - ✅ Tool specification with MCP schema
 - ✅ Input/output examples
 - ✅ Implementation notes
@@ -34,6 +35,7 @@ Each feature includes:
 ### Current Gap
 
 **Codex CLI capability**:
+
 ```bash
 codex --image diagram.png "Analyze this architecture diagram"
 codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
@@ -57,6 +59,7 @@ codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
 **Description**: Execute Codex task with image attachments (multimodal support)
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_local_run_with_images',
@@ -95,6 +98,7 @@ codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
 ```
 
 **Input Example**:
+
 ```typescript
 {
   task: "Analyze this UI mockup and suggest improvements for accessibility",
@@ -108,6 +112,7 @@ codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
 ```
 
 **Output Example**:
+
 ```typescript
 {
   success: true,
@@ -128,62 +133,73 @@ codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
 **Implementation Notes**:
 
 1. **Image Validation**:
+
    ```typescript
    async function validateImages(images: string[]): Promise<void> {
      for (const image of images) {
        // Check if local file exists
-       if (!image.startsWith('http') && !image.startsWith('data:')) {
+       if (!image.startsWith("http") && !image.startsWith("data:")) {
          if (!fs.existsSync(image)) {
            throw new Error(`Image not found: ${image}`);
          }
        }
 
        // Validate file extensions
-       const validExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
+       const validExtensions = [
+         ".png",
+         ".jpg",
+         ".jpeg",
+         ".gif",
+         ".webp",
+         ".bmp",
+       ];
        const ext = path.extname(image).toLowerCase();
-       if (!validExtensions.includes(ext) && !image.startsWith('http') && !image.startsWith('data:')) {
-         throw new Error(`Invalid image format: ${ext}. Supported: ${validExtensions.join(', ')}`);
+       if (
+         !validExtensions.includes(ext) &&
+         !image.startsWith("http") &&
+         !image.startsWith("data:")
+       ) {
+         throw new Error(
+           `Invalid image format: ${ext}. Supported: ${validExtensions.join(", ")}`,
+         );
        }
      }
    }
    ```
 
 2. **Model Capability Check**:
+
    ```typescript
    const VISION_CAPABLE_MODELS = [
-     'gpt-4o',
-     'gpt-4o-mini',
-     'gpt-5',
-     'claude-3-5-sonnet-20241022',
-     'claude-3-opus-20240229'
+     "gpt-4o",
+     "gpt-4o-mini",
+     "gpt-5",
+     "claude-3-5-sonnet-20241022",
+     "claude-3-opus-20240229",
    ];
 
    function validateVisionModel(model: string): void {
      if (!VISION_CAPABLE_MODELS.includes(model)) {
        throw new Error(
-         `Model ${model} does not support vision. Use one of: ${VISION_CAPABLE_MODELS.join(', ')}`
+         `Model ${model} does not support vision. Use one of: ${VISION_CAPABLE_MODELS.join(", ")}`,
        );
      }
    }
    ```
 
 3. **Codex CLI Integration**:
+
    ```typescript
-   const args = [
-     'exec',
-     '--json',
-     '--mode', mode,
-     '--model', model,
-   ];
+   const args = ["exec", "--json", "--mode", mode, "--model", model];
 
    // Add each image with --image flag
    for (const image of images) {
-     args.push('--image', image);
+     args.push("--image", image);
    }
 
    args.push(task);
 
-   const process = spawn('codex', args, { cwd: workingDir });
+   const process = spawn("codex", args, { cwd: workingDir });
    ```
 
 4. **Error Handling**:
@@ -196,12 +212,14 @@ codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
      return {
        success: false,
        error: error.message,
-       recommendation: 'Use vision-capable model (gpt-4o, gpt-5) and valid image paths'
+       recommendation:
+         "Use vision-capable model (gpt-4o, gpt-5) and valid image paths",
      };
    }
    ```
 
 **Testing Criteria**:
+
 - ✅ Accepts local file paths
 - ✅ Accepts HTTP/HTTPS URLs
 - ✅ Accepts base64 data URIs
@@ -219,6 +237,7 @@ codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
 **Description**: SDK execution with image attachments and thread persistence
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_local_exec_with_images',
@@ -255,6 +274,7 @@ codex -i ui-mockup.jpg,screenshot.png "Compare these two UI designs"
 ### Current Gap
 
 **Codex CLI capability**:
+
 ```bash
 codex --model gpt-5-codex "Optimize this function"
 codex --model gpt-5 "Deep architectural analysis"
@@ -279,6 +299,7 @@ codex --model gpt-5 "Deep architectural analysis"
 **Description**: List all available Codex models with capabilities and metadata
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_list_models',
@@ -303,86 +324,88 @@ codex --model gpt-5 "Deep architectural analysis"
 ```
 
 **Output Example**:
+
 ```typescript
 {
   models: [
     {
-      id: 'gpt-5-codex',
-      provider: 'openai',
-      name: 'GPT-5 Codex',
-      description: 'Optimized for coding tasks with fast execution',
-      capabilities: ['text', 'vision', 'code'],
+      id: "gpt-5-codex",
+      provider: "openai",
+      name: "GPT-5 Codex",
+      description: "Optimized for coding tasks with fast execution",
+      capabilities: ["text", "vision", "code"],
       contextWindow: 200000,
       maxOutputTokens: 16000,
       pricing: {
         inputPer1k: 0.003,
         outputPer1k: 0.012,
-        cachedInputPer1k: 0.0015
+        cachedInputPer1k: 0.0015,
       },
       supportsReasoning: false,
-      default: true
+      default: true,
     },
     {
-      id: 'gpt-5',
-      provider: 'openai',
-      name: 'GPT-5',
-      description: 'General purpose model with deep reasoning capabilities',
-      capabilities: ['text', 'vision', 'reasoning'],
+      id: "gpt-5",
+      provider: "openai",
+      name: "GPT-5",
+      description: "General purpose model with deep reasoning capabilities",
+      capabilities: ["text", "vision", "reasoning"],
       contextWindow: 200000,
       maxOutputTokens: 16000,
       pricing: {
         inputPer1k: 0.003,
         outputPer1k: 0.012,
-        cachedInputPer1k: 0.0015
+        cachedInputPer1k: 0.0015,
       },
       supportsReasoning: true,
-      reasoningLevels: ['low', 'medium', 'high', 'max'],
-      defaultReasoningLevel: 'medium'
+      reasoningLevels: ["low", "medium", "high", "max"],
+      defaultReasoningLevel: "medium",
     },
     {
-      id: 'gpt-5.1-codex',
-      provider: 'openai',
-      name: 'GPT-5.1 Codex',
-      description: 'Latest Codex with improved performance',
-      capabilities: ['text', 'vision', 'code'],
+      id: "gpt-5.1-codex",
+      provider: "openai",
+      name: "GPT-5.1 Codex",
+      description: "Latest Codex with improved performance",
+      capabilities: ["text", "vision", "code"],
       contextWindow: 200000,
       maxOutputTokens: 16000,
       pricing: {
         inputPer1k: 0.0035,
         outputPer1k: 0.014,
-        cachedInputPer1k: 0.00175
+        cachedInputPer1k: 0.00175,
       },
-      supportsReasoning: false
+      supportsReasoning: false,
     },
     {
-      id: 'o3-mini',
-      provider: 'openai',
-      name: 'O3 Mini',
-      description: 'Reasoning model (cloud-only)',
-      capabilities: ['text', 'reasoning'],
+      id: "o3-mini",
+      provider: "openai",
+      name: "O3 Mini",
+      description: "Reasoning model (cloud-only)",
+      capabilities: ["text", "reasoning"],
       contextWindow: 128000,
       maxOutputTokens: 8000,
       pricing: {
         inputPer1k: 0.002,
-        outputPer1k: 0.008
+        outputPer1k: 0.008,
       },
       supportsReasoning: true,
-      reasoningLevels: ['low', 'medium', 'high'],
-      cloudOnly: true
-    }
-  ]
+      reasoningLevels: ["low", "medium", "high"],
+      cloudOnly: true,
+    },
+  ];
 }
 ```
 
 **Implementation**:
+
 ```typescript
 const MODEL_REGISTRY: ModelMetadata[] = [
   {
-    id: 'gpt-5-codex',
-    provider: 'openai',
-    name: 'GPT-5 Codex',
-    description: 'Optimized for coding tasks with fast execution',
-    capabilities: ['text', 'vision', 'code'],
+    id: "gpt-5-codex",
+    provider: "openai",
+    name: "GPT-5 Codex",
+    description: "Optimized for coding tasks with fast execution",
+    capabilities: ["text", "vision", "code"],
     contextWindow: 200000,
     maxOutputTokens: 16000,
     pricing: {
@@ -396,17 +419,20 @@ const MODEL_REGISTRY: ModelMetadata[] = [
   // Add more models...
 ];
 
-export async function listModels(input: { provider?: string; capability?: string }) {
+export async function listModels(input: {
+  provider?: string;
+  capability?: string;
+}) {
   let models = MODEL_REGISTRY;
 
   // Filter by provider
-  if (input.provider && input.provider !== 'all') {
-    models = models.filter(m => m.provider === input.provider);
+  if (input.provider && input.provider !== "all") {
+    models = models.filter((m) => m.provider === input.provider);
   }
 
   // Filter by capability
   if (input.capability) {
-    models = models.filter(m => m.capabilities.includes(input.capability));
+    models = models.filter((m) => m.capabilities.includes(input.capability));
   }
 
   return { models };
@@ -414,6 +440,7 @@ export async function listModels(input: { provider?: string; capability?: string
 ```
 
 **Testing Criteria**:
+
 - ✅ Returns all models by default
 - ✅ Filters by provider correctly
 - ✅ Filters by capability correctly
@@ -428,6 +455,7 @@ export async function listModels(input: { provider?: string; capability?: string
 **Description**: Set default model for current session
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_set_default_model',
@@ -446,20 +474,21 @@ export async function listModels(input: { provider?: string; capability?: string
 ```
 
 **Implementation**:
+
 ```typescript
 // In-memory session state
 const sessionState = {
-  defaultModel: 'gpt-5-codex',
-  defaultReasoningLevel: 'medium',
+  defaultModel: "gpt-5-codex",
+  defaultReasoningLevel: "medium",
   defaultProfile: null,
 };
 
 export async function setDefaultModel(input: { model: string }) {
   // Validate model exists
-  const model = MODEL_REGISTRY.find(m => m.id === input.model);
+  const model = MODEL_REGISTRY.find((m) => m.id === input.model);
   if (!model) {
     throw new Error(
-      `Unknown model: ${input.model}. Use _codex_list_models to see available models.`
+      `Unknown model: ${input.model}. Use _codex_list_models to see available models.`,
     );
   }
 
@@ -477,6 +506,7 @@ export async function setDefaultModel(input: { model: string }) {
 ```
 
 **Testing Criteria**:
+
 - ✅ Validates model ID exists
 - ✅ Updates session state
 - ✅ Returns model capabilities
@@ -489,6 +519,7 @@ export async function setDefaultModel(input: { model: string }) {
 **Description**: Get current active model configuration
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_get_active_model',
@@ -498,6 +529,7 @@ export async function setDefaultModel(input: { model: string }) {
 ```
 
 **Output Example**:
+
 ```typescript
 {
   model: 'gpt-5-codex',
@@ -521,6 +553,7 @@ export async function setDefaultModel(input: { model: string }) {
 ### Current Gap
 
 **Codex CLI capability**:
+
 ```bash
 # Interactive session
 /model  # Select GPT-5, then choose reasoning level (low/medium/high)
@@ -553,12 +586,12 @@ SAVINGS: 81% cheaper with LOW vs HIGH for simple tasks!
 
 ### Reasoning Levels Explained
 
-| Level | Thinking Budget | Use Case | Cost |
-|-------|----------------|----------|------|
-| **Low** | ~0.5% of max | Simple tasks, syntax fixes, quick queries | 💰 Cheapest |
-| **Medium** | ~33% of max | Standard coding tasks, moderate complexity | 💰💰 Default |
-| **High** | ~67% of max | Complex refactoring, architectural decisions | 💰💰💰 Expensive |
-| **Max** | ~100% of max | Extremely complex problems, full analysis | 💰💰💰💰 Most expensive |
+| Level      | Thinking Budget | Use Case                                     | Cost                    |
+| ---------- | --------------- | -------------------------------------------- | ----------------------- |
+| **Low**    | ~0.5% of max    | Simple tasks, syntax fixes, quick queries    | 💰 Cheapest             |
+| **Medium** | ~33% of max     | Standard coding tasks, moderate complexity   | 💰💰 Default            |
+| **High**   | ~67% of max     | Complex refactoring, architectural decisions | 💰💰💰 Expensive        |
+| **Max**    | ~100% of max    | Extremely complex problems, full analysis    | 💰💰💰💰 Most expensive |
 
 ### New Tools Required
 
@@ -567,6 +600,7 @@ SAVINGS: 81% cheaper with LOW vs HIGH for simple tasks!
 **Description**: Set GPT-5 reasoning level for cost/performance optimization
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_set_reasoning_level',
@@ -590,13 +624,15 @@ SAVINGS: 81% cheaper with LOW vs HIGH for simple tasks!
 ```
 
 **Input Example**:
+
 ```typescript
 {
-  level: "low"  // For simple tasks
+  level: "low"; // For simple tasks
 }
 ```
 
 **Output Example**:
+
 ```typescript
 {
   success: true,
@@ -609,45 +645,57 @@ SAVINGS: 81% cheaper with LOW vs HIGH for simple tasks!
 ```
 
 **Implementation**:
+
 ```typescript
 const REASONING_LEVELS = {
   low: {
-    description: 'Fast and cheap - for simple tasks',
-    useCases: ['Syntax fixes', 'Quick queries', 'Simple refactoring'],
-    estimatedThinkingTokens: '~1000',
+    description: "Fast and cheap - for simple tasks",
+    useCases: ["Syntax fixes", "Quick queries", "Simple refactoring"],
+    estimatedThinkingTokens: "~1000",
     costMultiplier: 0.3,
   },
   medium: {
-    description: 'Balanced - default for most tasks',
-    useCases: ['Standard coding', 'Moderate complexity', 'Code review'],
-    estimatedThinkingTokens: '~3000',
+    description: "Balanced - default for most tasks",
+    useCases: ["Standard coding", "Moderate complexity", "Code review"],
+    estimatedThinkingTokens: "~3000",
     costMultiplier: 1.0,
   },
   high: {
-    description: 'Deep reasoning - for complex problems',
-    useCases: ['Complex refactoring', 'Architectural decisions', 'Security analysis'],
-    estimatedThinkingTokens: '~6000',
+    description: "Deep reasoning - for complex problems",
+    useCases: [
+      "Complex refactoring",
+      "Architectural decisions",
+      "Security analysis",
+    ],
+    estimatedThinkingTokens: "~6000",
     costMultiplier: 2.0,
   },
   max: {
-    description: 'Maximum reasoning - for extremely complex tasks',
-    useCases: ['Full system analysis', 'Complex algorithms', 'Critical decisions'],
-    estimatedThinkingTokens: '~10000',
+    description: "Maximum reasoning - for extremely complex tasks",
+    useCases: [
+      "Full system analysis",
+      "Complex algorithms",
+      "Critical decisions",
+    ],
+    estimatedThinkingTokens: "~10000",
     costMultiplier: 3.5,
   },
 };
 
-export async function setReasoningLevel(input: { level: string; model?: string }) {
+export async function setReasoningLevel(input: {
+  level: string;
+  model?: string;
+}) {
   const targetModel = input.model || sessionState.defaultModel;
 
   // Validate model supports reasoning
-  const model = MODEL_REGISTRY.find(m => m.id === targetModel);
+  const model = MODEL_REGISTRY.find((m) => m.id === targetModel);
   if (!model?.supportsReasoning) {
     return {
       success: false,
       error: `Model ${targetModel} does not support reasoning levels`,
       supportsReasoning: false,
-      recommendation: 'Use gpt-5, gpt-5.1, or o3-mini for reasoning support',
+      recommendation: "Use gpt-5, gpt-5.1, or o3-mini for reasoning support",
     };
   }
 
@@ -667,24 +715,26 @@ export async function setReasoningLevel(input: { level: string; model?: string }
 ```
 
 **Codex CLI Integration**:
+
 ```typescript
 // When executing with reasoning level
-const args = ['exec', '--json', '--model', 'gpt-5'];
+const args = ["exec", "--json", "--model", "gpt-5"];
 
 // Map reasoning level to Codex CLI parameters
 // Note: Exact parameter name depends on Codex CLI version
 // Check with: codex exec --help
 if (sessionState.defaultReasoningLevel) {
-  args.push('--reasoning', sessionState.defaultReasoningLevel);
+  args.push("--reasoning", sessionState.defaultReasoningLevel);
   // OR (depending on CLI version):
   // args.push('--thinking-level', sessionState.defaultReasoningLevel);
 }
 
 args.push(task);
-const process = spawn('codex', args);
+const process = spawn("codex", args);
 ```
 
 **Testing Criteria**:
+
 - ✅ Validates model supports reasoning
 - ✅ Returns error if model doesn't support reasoning
 - ✅ Updates session state
@@ -699,6 +749,7 @@ const process = spawn('codex', args);
 **Description**: Get current reasoning level configuration
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_get_reasoning_level',
@@ -708,6 +759,7 @@ const process = spawn('codex', args);
 ```
 
 **Output Example**:
+
 ```typescript
 {
   level: 'medium',
@@ -728,6 +780,7 @@ const process = spawn('codex', args);
 ### Current Gap
 
 **Codex CLI capability**:
+
 ```bash
 codex --search "Research latest React best practices and update components"
 codex exec --search "Find security vulnerabilities in dependencies"
@@ -749,6 +802,7 @@ codex exec --search "Find security vulnerabilities in dependencies"
 **Description**: Execute Codex task with web search enabled
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_local_run_with_search',
@@ -781,8 +835,9 @@ codex exec --search "Find security vulnerabilities in dependencies"
 ```
 
 **Implementation**:
+
 ```typescript
-const args = ['exec', '--json', '--search'];
+const args = ["exec", "--json", "--search"];
 
 // Add domain restrictions if specified
 if (input.searchDomains && input.searchDomains.length > 0) {
@@ -791,37 +846,41 @@ if (input.searchDomains && input.searchDomains.length > 0) {
   // task += `\n\nOnly search these domains: ${input.searchDomains.join(', ')}`;
 }
 
-args.push('--mode', input.mode);
-if (input.model) args.push('--model', input.model);
+args.push("--mode", input.mode);
+if (input.model) args.push("--model", input.model);
 args.push(input.task);
 
-const process = spawn('codex', args, { cwd: input.workingDir });
+const process = spawn("codex", args, { cwd: input.workingDir });
 ```
 
 **Safety Guardrails**:
+
 ```typescript
 // Rate limiting
 const searchRateLimiter = new Map<string, number>(); // taskId -> timestamp
 
 function checkRateLimit(): boolean {
   const now = Date.now();
-  const lastSearch = searchRateLimiter.get('last');
+  const lastSearch = searchRateLimiter.get("last");
 
-  if (lastSearch && now - lastSearch < 5000) { // 5 second cooldown
-    throw new Error('Search rate limit exceeded. Wait 5 seconds between searches.');
+  if (lastSearch && now - lastSearch < 5000) {
+    // 5 second cooldown
+    throw new Error(
+      "Search rate limit exceeded. Wait 5 seconds between searches.",
+    );
   }
 
-  searchRateLimiter.set('last', now);
+  searchRateLimiter.set("last", now);
   return true;
 }
 
 // Domain allowlist (if strict mode enabled)
 const TRUSTED_DOMAINS = [
-  'docs.python.org',
-  'docs.openai.com',
-  'developer.mozilla.org',
-  'stackoverflow.com',
-  'github.com',
+  "docs.python.org",
+  "docs.openai.com",
+  "developer.mozilla.org",
+  "stackoverflow.com",
+  "github.com",
   // Add more...
 ];
 
@@ -830,13 +889,16 @@ function validateSearchDomains(domains?: string[]): void {
 
   for (const domain of domains) {
     if (!TRUSTED_DOMAINS.includes(domain)) {
-      console.warn(`Domain ${domain} not in trusted list. Proceeding with caution.`);
+      console.warn(
+        `Domain ${domain} not in trusted list. Proceeding with caution.`,
+      );
     }
   }
 }
 ```
 
 **Testing Criteria**:
+
 - ✅ Executes with --search flag
 - ✅ Returns search results in output
 - ✅ Respects rate limits
@@ -852,6 +914,7 @@ function validateSearchDomains(domains?: string[]): void {
 ### Current Gap
 
 **Codex CLI interactive commands**:
+
 ```bash
 /init       # Create AGENTS.md file with instructions
 /review     # Review changes and find issues
@@ -868,6 +931,7 @@ function validateSearchDomains(domains?: string[]): void {
 **Description**: Initialize Codex session with AGENTS.md file
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_session_init',
@@ -897,6 +961,7 @@ function validateSearchDomains(domains?: string[]): void {
 ```
 
 **Implementation**:
+
 ```typescript
 export async function sessionInit(input: {
   workingDir: string;
@@ -907,13 +972,13 @@ export async function sessionInit(input: {
   const agentsContent = `# Project Context for AI Agents
 
 ## Objective
-${input.objective || 'To be defined'}
+${input.objective || "To be defined"}
 
 ## Technologies
-${input.technologies?.map(t => `- ${t}`).join('\n') || '- To be defined'}
+${input.technologies?.map((t) => `- ${t}`).join("\n") || "- To be defined"}
 
 ## Constraints
-${input.constraints?.map(c => `- ${c}`).join('\n') || '- To be defined'}
+${input.constraints?.map((c) => `- ${c}`).join("\n") || "- To be defined"}
 
 ## Instructions for AI Agents
 - Follow project coding standards
@@ -928,13 +993,13 @@ ${input.constraints?.map(c => `- ${c}`).join('\n') || '- To be defined'}
 - [ ] Documentation: Updated README and inline comments
 `;
 
-  const agentsPath = path.join(input.workingDir, 'AGENTS.md');
+  const agentsPath = path.join(input.workingDir, "AGENTS.md");
   await fs.writeFile(agentsPath, agentsContent);
 
   return {
     success: true,
     filePath: agentsPath,
-    message: 'AGENTS.md created successfully',
+    message: "AGENTS.md created successfully",
     content: agentsContent,
   };
 }
@@ -947,6 +1012,7 @@ ${input.constraints?.map(c => `- ${c}`).join('\n') || '- To be defined'}
 **Description**: Review recent changes and find issues
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_session_review',
@@ -975,6 +1041,7 @@ ${input.constraints?.map(c => `- ${c}`).join('\n') || '- To be defined'}
 ```
 
 **Implementation**:
+
 ```typescript
 export async function sessionReview(input: {
   scope?: string;
@@ -982,29 +1049,32 @@ export async function sessionReview(input: {
   workingDir?: string;
 }) {
   // Build review task
-  let reviewTask = 'Review the following changes:\n\n';
+  let reviewTask = "Review the following changes:\n\n";
 
   // Get changes based on scope
   const { stdout } = await execAsync(
-    input.scope === 'uncommitted' ? 'git diff' :
-    input.scope === 'last-commit' ? 'git show HEAD' :
-    input.scope === 'branch' ? 'git diff main...HEAD' :
-    'git diff --cached',
-    { cwd: input.workingDir }
+    input.scope === "uncommitted"
+      ? "git diff"
+      : input.scope === "last-commit"
+        ? "git show HEAD"
+        : input.scope === "branch"
+          ? "git diff main...HEAD"
+          : "git diff --cached",
+    { cwd: input.workingDir },
   );
 
   reviewTask += stdout;
 
   // Add focus areas
   if (input.focus && input.focus.length > 0) {
-    reviewTask += `\n\nFocus areas: ${input.focus.join(', ')}`;
+    reviewTask += `\n\nFocus areas: ${input.focus.join(", ")}`;
   }
 
   // Execute review via Codex
   const result = await codexRun({
     task: reviewTask,
-    mode: 'read-only',
-    model: 'gpt-5', // Use reasoning for deep review
+    mode: "read-only",
+    model: "gpt-5", // Use reasoning for deep review
   });
 
   return result;
@@ -1018,6 +1088,7 @@ export async function sessionReview(input: {
 **Description**: Get current session configuration
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_session_status',
@@ -1027,6 +1098,7 @@ export async function sessionReview(input: {
 ```
 
 **Output Example**:
+
 ```typescript
 {
   model: 'gpt-5-codex',
@@ -1050,6 +1122,7 @@ export async function sessionReview(input: {
 ### Current Gap
 
 **Codex CLI capability**:
+
 ```bash
 codex --profile security "Audit codebase"
 codex --profile fast "Quick syntax check"
@@ -1089,6 +1162,7 @@ limits:
 #### Tool 1: `_codex_list_profiles`
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_list_profiles',
@@ -1098,31 +1172,32 @@ limits:
 ```
 
 **Output Example**:
+
 ```typescript
 {
   profiles: [
     {
-      name: 'security',
-      model: 'gpt-5',
-      reasoning: 'high',
-      sandbox: 'read-only',
-      description: 'Security audit mode with strict sandbox'
+      name: "security",
+      model: "gpt-5",
+      reasoning: "high",
+      sandbox: "read-only",
+      description: "Security audit mode with strict sandbox",
     },
     {
-      name: 'fast',
-      model: 'gpt-5-codex',
-      reasoning: 'low',
-      sandbox: 'read-only',
-      description: 'Fast execution for simple tasks'
+      name: "fast",
+      model: "gpt-5-codex",
+      reasoning: "low",
+      sandbox: "read-only",
+      description: "Fast execution for simple tasks",
     },
     {
-      name: 'production',
-      model: 'gpt-5',
-      reasoning: 'high',
-      sandbox: 'workspace-write',
-      description: 'Production deployment mode'
-    }
-  ]
+      name: "production",
+      model: "gpt-5",
+      reasoning: "high",
+      sandbox: "workspace-write",
+      description: "Production deployment mode",
+    },
+  ];
 }
 ```
 
@@ -1131,6 +1206,7 @@ limits:
 #### Tool 2: `_codex_set_profile`
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_set_profile',
@@ -1153,6 +1229,7 @@ limits:
 #### Tool 3: `_codex_create_profile`
 
 **MCP Schema**:
+
 ```typescript
 {
   name: '_codex_create_profile',
@@ -1187,11 +1264,12 @@ limits:
 ```
 
 **Implementation**:
+
 ```typescript
 interface Profile {
   name: string;
   model: string;
-  reasoning?: 'low' | 'medium' | 'high' | 'max';
+  reasoning?: "low" | "medium" | "high" | "max";
   sandbox: string;
   approvals: string;
   tools?: {
@@ -1206,30 +1284,30 @@ interface Profile {
 
 const DEFAULT_PROFILES: Profile[] = [
   {
-    name: 'security',
-    model: 'gpt-5',
-    reasoning: 'high',
-    sandbox: 'read-only',
-    approvals: 'untrusted',
+    name: "security",
+    model: "gpt-5",
+    reasoning: "high",
+    sandbox: "read-only",
+    approvals: "untrusted",
   },
   {
-    name: 'fast',
-    model: 'gpt-5-codex',
-    reasoning: 'low',
-    sandbox: 'read-only',
-    approvals: 'on-failure',
+    name: "fast",
+    model: "gpt-5-codex",
+    reasoning: "low",
+    sandbox: "read-only",
+    approvals: "on-failure",
   },
   {
-    name: 'production',
-    model: 'gpt-5',
-    reasoning: 'high',
-    sandbox: 'workspace-write',
-    approvals: 'on-request',
+    name: "production",
+    model: "gpt-5",
+    reasoning: "high",
+    sandbox: "workspace-write",
+    approvals: "on-request",
   },
 ];
 
 // Load custom profiles from disk
-const PROFILES_DIR = path.join(os.homedir(), '.codex-control', 'profiles');
+const PROFILES_DIR = path.join(os.homedir(), ".codex-control", "profiles");
 
 export async function loadProfiles(): Promise<Profile[]> {
   const profiles = [...DEFAULT_PROFILES];
@@ -1237,8 +1315,11 @@ export async function loadProfiles(): Promise<Profile[]> {
   try {
     const files = await fs.readdir(PROFILES_DIR);
     for (const file of files) {
-      if (file.endsWith('.yaml') || file.endsWith('.yml')) {
-        const content = await fs.readFile(path.join(PROFILES_DIR, file), 'utf-8');
+      if (file.endsWith(".yaml") || file.endsWith(".yml")) {
+        const content = await fs.readFile(
+          path.join(PROFILES_DIR, file),
+          "utf-8",
+        );
         const profile = yaml.parse(content);
         profiles.push(profile);
       }
@@ -1272,23 +1353,23 @@ export async function createProfile(input: { name: string; config: any }) {
 ## Implementation Priority Summary
 
 ### Phase 1 (v3.2.0) - 1-2 weeks
+
 **MUST HAVE**:
+
 1. ✅ Model Selection (`_codex_list_models`, `_codex_set_default_model`, `_codex_get_active_model`)
 2. ✅ Reasoning Levels (`_codex_set_reasoning_level`, `_codex_get_reasoning_level`)
 
 **Why**: Immediate cost optimization (50-90% savings on simple tasks)
 
 ### Phase 2 (v3.3.0) - 2-3 weeks
-**SHOULD HAVE**:
-3. ✅ Multimodal Support (`_codex_local_run_with_images`, `_codex_local_exec_with_images`)
-4. ✅ Web Search (`_codex_local_run_with_search`)
+
+**SHOULD HAVE**: 3. ✅ Multimodal Support (`_codex_local_run_with_images`, `_codex_local_exec_with_images`) 4. ✅ Web Search (`_codex_local_run_with_search`)
 
 **Why**: Enables new workflows (visual analysis, current documentation)
 
 ### Phase 3 (v3.4.0) - 1-2 weeks
-**NICE TO HAVE**:
-5. ✅ Session Commands (`_codex_session_init`, `_codex_session_review`, `_codex_session_status`)
-6. ✅ Configuration Profiles (`_codex_list_profiles`, `_codex_set_profile`, `_codex_create_profile`)
+
+**NICE TO HAVE**: 5. ✅ Session Commands (`_codex_session_init`, `_codex_session_review`, `_codex_session_status`) 6. ✅ Configuration Profiles (`_codex_list_profiles`, `_codex_set_profile`, `_codex_create_profile`)
 
 **Why**: Better UX and workflow automation
 
@@ -1297,6 +1378,7 @@ export async function createProfile(input: { name: string; config: any }) {
 ## Testing Checklist
 
 ### Unit Tests
+
 - [ ] Model registry returns all models
 - [ ] Model filtering by capability works
 - [ ] Reasoning level validation works
@@ -1304,6 +1386,7 @@ export async function createProfile(input: { name: string; config: any }) {
 - [ ] Profile loading/merging works
 
 ### Integration Tests
+
 - [ ] Model switching mid-session
 - [ ] Reasoning level changes token usage
 - [ ] Images passed correctly to Codex CLI
@@ -1311,6 +1394,7 @@ export async function createProfile(input: { name: string; config: any }) {
 - [ ] Profiles apply all settings
 
 ### Production Validation
+
 - [ ] Test in Auditor Toolkit project
 - [ ] Verify cost savings with reasoning levels
 - [ ] Validate multimodal with real images

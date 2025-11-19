@@ -11,18 +11,20 @@ export interface GitHubSetupInput {
     /** GitHub repository URL (e.g., https://github.com/user/repo) */
     repoUrl: string;
     /** Technology stack (node, python, go, rust) */
-    stack: 'node' | 'python' | 'go' | 'rust';
+    stack: "node" | "python" | "go" | "rust";
     /** Git user name (optional, defaults to "Codex Agent") */
     gitUserName?: string;
     /** Git user email (optional, defaults to "codex@example.com") */
     gitUserEmail?: string;
+    /** Optional response format */
+    format?: "json" | "markdown";
 }
 /**
  * Tool result interface
  */
 export interface GitHubSetupResult {
     content: Array<{
-        type: 'text';
+        type: "text";
         text: string;
     }>;
     isError?: boolean;
@@ -67,6 +69,12 @@ export declare class GitHubSetupTool {
                 };
                 gitUserEmail: {
                     type: string;
+                    description: string;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
                     description: string;
                 };
             };

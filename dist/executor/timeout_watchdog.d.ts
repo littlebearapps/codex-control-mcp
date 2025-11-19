@@ -1,4 +1,4 @@
-import { ChildProcess } from 'child_process';
+import { ChildProcess } from "child_process";
 export interface WatchdogConfig {
     idleTimeoutMs?: number;
     hardTimeoutMs?: number;
@@ -17,7 +17,7 @@ export interface ProgressUpdate {
     lastActivity: Date;
 }
 export interface TimeoutWarning {
-    level: 'warning';
+    level: "warning";
     logger: string;
     data: {
         message: string;
@@ -27,8 +27,8 @@ export interface TimeoutWarning {
     };
 }
 export interface TimeoutError {
-    code: 'ETIMEDOUT' | 'EIDLE';
-    kind: 'inactivity' | 'deadline' | 'manual';
+    code: "ETIMEDOUT" | "EIDLE";
+    kind: "inactivity" | "deadline" | "manual";
     message: string;
     idleMs?: number;
     wallClockMs?: number;
@@ -89,7 +89,7 @@ export declare class TimeoutWatchdog {
     /**
      * Manually trigger timeout (for testing or external kill)
      */
-    abort(reason: 'inactivity' | 'deadline' | 'manual'): TimeoutError;
+    abort(reason: "inactivity" | "deadline" | "manual"): TimeoutError;
     private startTimers;
     private resetIdleTimer;
     private checkWarning;

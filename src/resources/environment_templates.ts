@@ -5,7 +5,7 @@
  * technology stacks with 4-level fallback error handling.
  */
 
-import { EnvironmentTemplate } from '../types/template_types.js';
+import { EnvironmentTemplate } from "../types/template_types.js";
 
 /**
  * Common GitHub CLI installation function with 4-level fallback
@@ -120,9 +120,10 @@ If successful, your environment is ready for autonomous PR workflows!
 export const templates: EnvironmentTemplate[] = [
   // Template 1: Node.js/TypeScript with GitHub integration
   {
-    name: 'github-node-typescript',
-    description: 'Node.js/TypeScript project with GitHub integration and PR workflow',
-    repoTypes: ['node', 'typescript', 'javascript'],
+    name: "github-node-typescript",
+    description:
+      "Node.js/TypeScript project with GitHub integration and PR workflow",
+    repoTypes: ["node", "typescript", "javascript"],
     setupScript: `#!/bin/bash
 set -e
 
@@ -157,12 +158,12 @@ if [ -f "package.json" ]; then
   npm install
 fi`,
 
-    requiredSecrets: ['GITHUB_TOKEN'],
+    requiredSecrets: ["GITHUB_TOKEN"],
 
     environmentVariables: {
-      GIT_USER_NAME: 'Codex Agent',
-      GIT_USER_EMAIL: 'codex@example.com',
-      NODE_ENV: 'development',
+      GIT_USER_NAME: "Codex Agent",
+      GIT_USER_EMAIL: "codex@example.com",
+      NODE_ENV: "development",
     },
 
     instructions: githubInstructions,
@@ -170,9 +171,9 @@ fi`,
 
   // Template 2: Python with GitHub integration
   {
-    name: 'github-python',
-    description: 'Python project with GitHub integration and PR workflow',
-    repoTypes: ['python'],
+    name: "github-python",
+    description: "Python project with GitHub integration and PR workflow",
+    repoTypes: ["python"],
     setupScript: `#!/bin/bash
 set -e
 
@@ -214,12 +215,12 @@ elif [ -f "pyproject.toml" ]; then
   poetry install
 fi`,
 
-    requiredSecrets: ['GITHUB_TOKEN'],
+    requiredSecrets: ["GITHUB_TOKEN"],
 
     environmentVariables: {
-      GIT_USER_NAME: 'Codex Agent',
-      GIT_USER_EMAIL: 'codex@example.com',
-      PYTHONUNBUFFERED: '1',
+      GIT_USER_NAME: "Codex Agent",
+      GIT_USER_EMAIL: "codex@example.com",
+      PYTHONUNBUFFERED: "1",
     },
 
     instructions: githubInstructions,
@@ -227,9 +228,9 @@ fi`,
 
   // Template 3: Go with GitHub integration
   {
-    name: 'github-go',
-    description: 'Go project with GitHub integration and PR workflow',
-    repoTypes: ['go', 'golang'],
+    name: "github-go",
+    description: "Go project with GitHub integration and PR workflow",
+    repoTypes: ["go", "golang"],
     setupScript: `#!/bin/bash
 set -e
 
@@ -263,12 +264,12 @@ if [ -f "go.mod" ]; then
   go mod download
 fi`,
 
-    requiredSecrets: ['GITHUB_TOKEN'],
+    requiredSecrets: ["GITHUB_TOKEN"],
 
     environmentVariables: {
-      GIT_USER_NAME: 'Codex Agent',
-      GIT_USER_EMAIL: 'codex@example.com',
-      GO111MODULE: 'on',
+      GIT_USER_NAME: "Codex Agent",
+      GIT_USER_EMAIL: "codex@example.com",
+      GO111MODULE: "on",
     },
 
     instructions: githubInstructions,
@@ -276,9 +277,9 @@ fi`,
 
   // Template 4: Rust with GitHub integration
   {
-    name: 'github-rust',
-    description: 'Rust project with GitHub integration and PR workflow',
-    repoTypes: ['rust'],
+    name: "github-rust",
+    description: "Rust project with GitHub integration and PR workflow",
+    repoTypes: ["rust"],
     setupScript: `#!/bin/bash
 set -e
 
@@ -313,12 +314,12 @@ if [ -f "Cargo.toml" ]; then
   cargo build
 fi`,
 
-    requiredSecrets: ['GITHUB_TOKEN'],
+    requiredSecrets: ["GITHUB_TOKEN"],
 
     environmentVariables: {
-      GIT_USER_NAME: 'Codex Agent',
-      GIT_USER_EMAIL: 'codex@example.com',
-      RUST_BACKTRACE: '1',
+      GIT_USER_NAME: "Codex Agent",
+      GIT_USER_EMAIL: "codex@example.com",
+      RUST_BACKTRACE: "1",
     },
 
     instructions: githubInstructions,
@@ -326,9 +327,9 @@ fi`,
 
   // Template 5: Basic Codex Cloud (no GitHub integration)
   {
-    name: 'basic-codex-cloud',
-    description: 'Basic Codex Cloud environment without GitHub integration',
-    repoTypes: ['generic'],
+    name: "basic-codex-cloud",
+    description: "Basic Codex Cloud environment without GitHub integration",
+    repoTypes: ["generic"],
     setupScript: `#!/bin/bash
 set -e
 
@@ -350,8 +351,8 @@ echo "No maintenance tasks for basic template"`,
     requiredSecrets: [],
 
     environmentVariables: {
-      GIT_USER_NAME: 'Codex Agent',
-      GIT_USER_EMAIL: 'codex@example.com',
+      GIT_USER_NAME: "Codex Agent",
+      GIT_USER_EMAIL: "codex@example.com",
     },
 
     instructions: `## Basic Codex Cloud Setup
@@ -401,7 +402,9 @@ export function getTemplate(name: string): EnvironmentTemplate | undefined {
 /**
  * Get templates by repo type
  */
-export function getTemplatesByRepoType(repoType: string): EnvironmentTemplate[] {
+export function getTemplatesByRepoType(
+  repoType: string,
+): EnvironmentTemplate[] {
   return templates.filter((t) => t.repoTypes.includes(repoType));
 }
 
@@ -409,5 +412,5 @@ export function getTemplatesByRepoType(repoType: string): EnvironmentTemplate[] 
  * List all GitHub-integrated templates
  */
 export function getGitHubTemplates(): EnvironmentTemplate[] {
-  return templates.filter((t) => t.name.startsWith('github-'));
+  return templates.filter((t) => t.name.startsWith("github-"));
 }

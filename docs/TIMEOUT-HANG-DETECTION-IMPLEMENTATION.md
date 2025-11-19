@@ -11,6 +11,7 @@
 During UAT testing (Test 2.6), Codex CLI hung for 36 minutes with no output, causing Claude Code to wait indefinitely with no way to detect or recover from the hang.
 
 **Impact**:
+
 - ❌ Poor user experience (AI agent stuck waiting)
 - ❌ Wasted time (36 minutes of no progress)
 - ❌ No visibility into the hang until manual intervention
@@ -78,11 +79,13 @@ Based on official MCP specifications and best practices, we'll implement a **two
 **Specification**: https://spec.modelcontextprotocol.io/specification/2024-11-05/basic/utilities/progress/
 
 **How It Works**:
+
 - Client includes `progressToken` in tool call request metadata
 - Server sends `notifications/progress` updates during execution
 - Progress notifications continue until operation completes
 
 **Message Format**:
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -96,12 +99,14 @@ Based on official MCP specifications and best practices, we'll implement a **two
 ```
 
 **Requirements**:
+
 - ✅ `progress` MUST increase with each notification
 - ✅ Progress notifications MUST stop after completion
 - ✅ Receivers SHOULD implement rate limiting
 - ✅ `total` is optional if unknown
 
 **Usage in mcp-delegator**:
+
 - Send progress updates every 10-30 seconds during Codex execution
 - Show elapsed time and current activity (if available from JSONL events)
 - Stop progress when operation completes or times out
@@ -113,11 +118,13 @@ Based on official MCP specifications and best practices, we'll implement a **two
 **Specification**: https://spec.modelcontextprotocol.io/specification/2024-11-05/server/utilities/logging/
 
 **How It Works**:
+
 - Server sends `notifications/message` for warnings/errors
 - No client request needed (unsolicited notifications)
 - Client controls filtering via `logging/setLevel`
 
 **Message Format**:
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -136,6 +143,7 @@ Based on official MCP specifications and best practices, we'll implement a **two
 ```
 
 **Available Log Levels** (RFC 5424):
+
 - `debug` - Detailed debugging information
 - `info` - General informational messages
 - `notice` - Normal but significant events
@@ -146,6 +154,7 @@ Based on official MCP specifications and best practices, we'll implement a **two
 - `emergency` - System is unusable
 
 **Usage in mcp-delegator**:
+
 - Send `warning` level at T-30s before inactivity timeout
 - Send `error` level when timeout fires
 - Include actionable data (elapsed time, next steps)
@@ -155,6 +164,7 @@ Based on official MCP specifications and best practices, we'll implement a **two
 ### 3. Structured Error Response
 
 **Final Tool Result on Timeout**:
+
 ```typescript
 {
   "content": [
@@ -195,6 +205,7 @@ Based on official MCP specifications and best practices, we'll implement a **two
 ```
 
 **Why This Works**:
+
 - ✅ Claude Code sees `isError: true` and knows the tool failed
 - ✅ AI agent gets structured error data to make decisions
 - ✅ Partial results provide context for next steps
@@ -207,15 +218,15 @@ Based on official MCP specifications and best practices, we'll implement a **two
 ### File: `src/executor/timeout_watchdog.ts` (NEW)
 
 ```typescript
-import { ChildProcess } from 'child_process';
-import treeKill from 'tree-kill';
+import { ChildProcess } from "child_process";
+import treeKill from "tree-kill";
 
 export interface WatchdogConfig {
   // Timeouts
-  idleTimeoutMs?: number;        // Default: 5 minutes (300000)
-  hardTimeoutMs?: number;        // Default: 20 minutes (1200000)
-  warnLeadMs?: number;           // Default: 30 seconds (30000)
-  killGraceMs?: number;          // Default: 5 seconds (5000)
+  idleTimeoutMs?: number; // Default: 5 minutes (300000)
+  hardTimeoutMs?: number; // Default: 20 minutes (1200000)
+  warnLeadMs?: number; // Default: 30 seconds (30000)
+  killGraceMs?: number; // Default: 5 seconds (5000)
 
   // Callbacks
   onProgress?: (progress: ProgressUpdate) => void;
@@ -233,7 +244,7 @@ export interface ProgressUpdate {
 }
 
 export interface TimeoutWarning {
-  level: 'warning';
+  level: "warning";
   logger: string;
   data: {
     message: string;
@@ -244,8 +255,8 @@ export interface TimeoutWarning {
 }
 
 export interface TimeoutError {
-  code: 'ETIMEDOUT' | 'EIDLE';
-  kind: 'inactivity' | 'deadline';
+  code: "ETIMEDOUT" | "EIDLE";
+  kind: "inactivity" | "deadline";
   message: string;
   idleMs?: number;
   wallClockMs?: number;
@@ -287,7 +298,7 @@ export class TimeoutWatchdog {
   constructor(
     private child: ChildProcess,
     private taskId: string,
-    config: WatchdogConfig = {}
+    config: WatchdogConfig = {},
   ) {
     this.startTime = Date.now();
     this.lastActivity = Date.now();
@@ -295,14 +306,14 @@ export class TimeoutWatchdog {
 
     // Default config
     this.config = {
-      idleTimeoutMs: config.idleTimeoutMs ?? 5 * 60 * 1000,      // 5 minutes
-      hardTimeoutMs: config.hardTimeoutMs ?? 20 * 60 * 1000,     // 20 minutes
-      warnLeadMs: config.warnLeadMs ?? 30 * 1000,                // 30 seconds
-      killGraceMs: config.killGraceMs ?? 5 * 1000,               // 5 seconds
+      idleTimeoutMs: config.idleTimeoutMs ?? 5 * 60 * 1000, // 5 minutes
+      hardTimeoutMs: config.hardTimeoutMs ?? 20 * 60 * 1000, // 20 minutes
+      warnLeadMs: config.warnLeadMs ?? 30 * 1000, // 30 seconds
+      killGraceMs: config.killGraceMs ?? 5 * 1000, // 5 seconds
       onProgress: config.onProgress ?? (() => {}),
       onWarning: config.onWarning ?? (() => {}),
       onTimeout: config.onTimeout ?? (() => {}),
-      onActivity: config.onActivity ?? (() => {})
+      onActivity: config.onActivity ?? (() => {}),
     };
 
     this.startTimers();
@@ -315,7 +326,7 @@ export class TimeoutWatchdog {
     if (this.aborted) return;
 
     this.lastActivity = Date.now();
-    this.warned = false;  // Reset warning state
+    this.warned = false; // Reset warning state
     this.config.onActivity();
 
     // Reset inactivity timer
@@ -355,10 +366,10 @@ export class TimeoutWatchdog {
   public getPartialResults(): PartialResults {
     return {
       lastEvents: [...this.lastEvents],
-      stdoutTail: Buffer.concat(this.stdoutChunks).toString('utf8'),
-      stderrTail: Buffer.concat(this.stderrChunks).toString('utf8'),
+      stdoutTail: Buffer.concat(this.stdoutChunks).toString("utf8"),
+      stderrTail: Buffer.concat(this.stderrChunks).toString("utf8"),
       lastActivityAt: new Date(this.lastActivity),
-      eventsCount: this.lastEvents.length
+      eventsCount: this.lastEvents.length,
     };
   }
 
@@ -372,22 +383,24 @@ export class TimeoutWatchdog {
   /**
    * Manually trigger timeout (for testing or external kill)
    */
-  public abort(reason: 'inactivity' | 'deadline' | 'manual'): TimeoutError {
+  public abort(reason: "inactivity" | "deadline" | "manual"): TimeoutError {
     if (this.aborted) {
-      throw new Error('Watchdog already aborted');
+      throw new Error("Watchdog already aborted");
     }
 
     this.aborted = true;
     this.clearAllTimers();
 
     const error: TimeoutError = {
-      code: reason === 'inactivity' ? 'EIDLE' : 'ETIMEDOUT',
-      kind: reason === 'manual' ? 'deadline' : reason,
+      code: reason === "inactivity" ? "EIDLE" : "ETIMEDOUT",
+      kind: reason === "manual" ? "deadline" : reason,
       message: this.getTimeoutMessage(reason),
-      idleMs: reason === 'inactivity' ? Date.now() - this.lastActivity : undefined,
-      wallClockMs: reason === 'deadline' ? Date.now() - this.startTime : undefined,
+      idleMs:
+        reason === "inactivity" ? Date.now() - this.lastActivity : undefined,
+      wallClockMs:
+        reason === "deadline" ? Date.now() - this.startTime : undefined,
       pid: this.child.pid!,
-      killed: false
+      killed: false,
     };
 
     // Kill process
@@ -405,7 +418,7 @@ export class TimeoutWatchdog {
   private startTimers(): void {
     // Hard timeout (wall-clock)
     this.hardTimer = setTimeout(() => {
-      this.abort('deadline');
+      this.abort("deadline");
     }, this.config.hardTimeoutMs);
 
     // Inactivity timer (resets on activity)
@@ -428,7 +441,7 @@ export class TimeoutWatchdog {
     }
 
     this.idleTimer = setTimeout(() => {
-      this.abort('inactivity');
+      this.abort("inactivity");
     }, this.config.idleTimeoutMs);
   }
 
@@ -442,14 +455,14 @@ export class TimeoutWatchdog {
       this.warned = true;
 
       const warning: TimeoutWarning = {
-        level: 'warning',
-        logger: 'codex-timeout-watchdog',
+        level: "warning",
+        logger: "codex-timeout-watchdog",
         data: {
           message: `No output for ${Math.floor(idle / 1000)}s. Will abort in ${Math.floor((this.config.idleTimeoutMs - idle) / 1000)}s unless output resumes.`,
           idleMs: idle,
           willAbortInMs: this.config.idleTimeoutMs - idle,
-          taskId: this.taskId
-        }
+          taskId: this.taskId,
+        },
       };
 
       this.config.onWarning(warning);
@@ -467,7 +480,7 @@ export class TimeoutWatchdog {
       progress: elapsed,
       total: total,
       elapsedMs: elapsed,
-      lastActivity: new Date(this.lastActivity)
+      lastActivity: new Date(this.lastActivity),
     };
 
     this.config.onProgress(progress);
@@ -479,12 +492,12 @@ export class TimeoutWatchdog {
 
     // Try SIGTERM first
     try {
-      if (process.platform !== 'win32') {
-        process.kill(-pid, 'SIGTERM');  // Kill process group
+      if (process.platform !== "win32") {
+        process.kill(-pid, "SIGTERM"); // Kill process group
       } else {
-        treeKill(pid, 'SIGTERM');
+        treeKill(pid, "SIGTERM");
       }
-      onKilled('SIGTERM');
+      onKilled("SIGTERM");
     } catch (err) {
       // Process might already be dead
     }
@@ -492,12 +505,12 @@ export class TimeoutWatchdog {
     // Force kill after grace period
     setTimeout(() => {
       try {
-        if (process.platform !== 'win32') {
-          process.kill(-pid, 'SIGKILL');
+        if (process.platform !== "win32") {
+          process.kill(-pid, "SIGKILL");
         } else {
-          treeKill(pid, 'SIGKILL');
+          treeKill(pid, "SIGKILL");
         }
-        onKilled('SIGKILL');
+        onKilled("SIGKILL");
       } catch (err) {
         // Process definitely dead now
       }
@@ -523,14 +536,14 @@ export class TimeoutWatchdog {
 
   private getTimeoutMessage(reason: string): string {
     switch (reason) {
-      case 'inactivity':
+      case "inactivity":
         return `Codex CLI produced no output within the allowed inactivity window (${this.config.idleTimeoutMs / 1000}s).`;
-      case 'deadline':
+      case "deadline":
         return `Codex CLI exceeded the maximum allowed wall-clock time (${this.config.hardTimeoutMs / 1000}s).`;
-      case 'manual':
-        return 'Codex CLI execution was manually aborted.';
+      case "manual":
+        return "Codex CLI execution was manually aborted.";
       default:
-        return 'Codex CLI execution timed out.';
+        return "Codex CLI execution timed out.";
     }
   }
 }
@@ -681,24 +694,32 @@ Add timeout configuration to all execution tools:
 
 ```typescript
 export const TIMEOUT_LIMITS = {
-  IDLE_MIN: 60 * 1000,          // 1 minute
-  IDLE_MAX: 30 * 60 * 1000,     // 30 minutes
-  IDLE_DEFAULT: 5 * 60 * 1000,  // 5 minutes
+  IDLE_MIN: 60 * 1000, // 1 minute
+  IDLE_MAX: 30 * 60 * 1000, // 30 minutes
+  IDLE_DEFAULT: 5 * 60 * 1000, // 5 minutes
 
-  HARD_MIN: 5 * 60 * 1000,      // 5 minutes
-  HARD_MAX: 60 * 60 * 1000,     // 60 minutes
+  HARD_MIN: 5 * 60 * 1000, // 5 minutes
+  HARD_MAX: 60 * 60 * 1000, // 60 minutes
   HARD_DEFAULT: 20 * 60 * 1000, // 20 minutes
 };
 
-export function validateTimeouts(config: WatchdogConfig): Required<WatchdogConfig> {
+export function validateTimeouts(
+  config: WatchdogConfig,
+): Required<WatchdogConfig> {
   return {
     idleTimeoutMs: Math.max(
       TIMEOUT_LIMITS.IDLE_MIN,
-      Math.min(TIMEOUT_LIMITS.IDLE_MAX, config.idleTimeoutMs ?? TIMEOUT_LIMITS.IDLE_DEFAULT)
+      Math.min(
+        TIMEOUT_LIMITS.IDLE_MAX,
+        config.idleTimeoutMs ?? TIMEOUT_LIMITS.IDLE_DEFAULT,
+      ),
     ),
     hardTimeoutMs: Math.max(
       TIMEOUT_LIMITS.HARD_MIN,
-      Math.min(TIMEOUT_LIMITS.HARD_MAX, config.hardTimeoutMs ?? TIMEOUT_LIMITS.HARD_DEFAULT)
+      Math.min(
+        TIMEOUT_LIMITS.HARD_MAX,
+        config.hardTimeoutMs ?? TIMEOUT_LIMITS.HARD_DEFAULT,
+      ),
     ),
     // ... other config ...
   };
@@ -712,11 +733,13 @@ export function validateTimeouts(config: WatchdogConfig): Required<WatchdogConfi
 ### Claude Code UI
 
 When timeout warning fires:
+
 ```
 ⚠️  Warning: No output for 4m 30s. Will abort in 30s unless output resumes.
 ```
 
 When timeout fires:
+
 ```
 ❌ Error: Codex CLI produced no output within the allowed inactivity window (5 minutes).
 
@@ -810,21 +833,20 @@ Make Decision
 ### Phase 1: Core Watchdog (v3.3.0)
 
 **Files to Create**:
+
 1. ✅ `src/executor/timeout_watchdog.ts` - Core watchdog class
 2. ✅ `src/executor/timeout_watchdog.test.ts` - Unit tests
 
-**Files to Modify**:
-3. ✅ `src/tools/local_run.ts` - Integrate watchdog
-4. ✅ `src/tools/local_exec.ts` - Integrate watchdog
-5. ✅ `src/tools/local_resume.ts` - Integrate watchdog
-6. ✅ `src/tools/cloud.ts` - Integrate watchdog (or skip - cloud has own timeout)
+**Files to Modify**: 3. ✅ `src/tools/local_run.ts` - Integrate watchdog 4. ✅ `src/tools/local_exec.ts` - Integrate watchdog 5. ✅ `src/tools/local_resume.ts` - Integrate watchdog 6. ✅ `src/tools/cloud.ts` - Integrate watchdog (or skip - cloud has own timeout)
 
 **Testing**:
+
 - ✅ Unit tests for watchdog class
 - ✅ Integration test with mock child process
 - ✅ Manual test with real Codex CLI (use sleep command to simulate hang)
 
 **Documentation**:
+
 - ✅ Update `README.md` with timeout parameters
 - ✅ Update `quickrefs/tools.md` with timeout examples
 - ✅ Create `docs/TIMEOUT-HANG-DETECTION.md` (this file)
@@ -834,6 +856,7 @@ Make Decision
 ### Phase 2: Advanced Features (v3.4.0+)
 
 **Optional Enhancements**:
+
 1. **CLI Heartbeats**: Configure Codex CLI to emit JSONL heartbeats every 30s
 2. **Adaptive Timeouts**: Learn typical task durations and adjust defaults
 3. **Timeout Metrics**: Track timeout frequency by reason for tuning
@@ -855,11 +878,11 @@ Make Decision
 ```typescript
 // Recommended defaults based on UAT findings
 const DEFAULTS = {
-  idleTimeoutMs: 5 * 60 * 1000,      // 5 minutes (caught Test 2.6 hang)
-  hardTimeoutMs: 20 * 60 * 1000,     // 20 minutes (reasonable for complex tasks)
-  warnLeadMs: 30 * 1000,             // 30 seconds (enough time to notice)
-  killGraceMs: 5 * 1000,             // 5 seconds (graceful shutdown)
-  progressIntervalMs: 30 * 1000      // 30 seconds (not too spammy)
+  idleTimeoutMs: 5 * 60 * 1000, // 5 minutes (caught Test 2.6 hang)
+  hardTimeoutMs: 20 * 60 * 1000, // 20 minutes (reasonable for complex tasks)
+  warnLeadMs: 30 * 1000, // 30 seconds (enough time to notice)
+  killGraceMs: 5 * 1000, // 5 seconds (graceful shutdown)
+  progressIntervalMs: 30 * 1000, // 30 seconds (not too spammy)
 };
 ```
 
@@ -887,6 +910,7 @@ const DEFAULTS = {
 The **two-tier timeout system with MCP-compliant notifications** provides a simple, reliable, and standard way to detect and recover from hung Codex tasks.
 
 **Key Benefits**:
+
 - ✅ Prevents 36-minute hangs like Test 2.6
 - ✅ Alerts Claude Code via standard MCP notifications
 - ✅ Provides partial results for intelligent recovery

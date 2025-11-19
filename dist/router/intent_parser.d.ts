@@ -13,11 +13,11 @@
 /**
  * Intent type
  */
-export type IntentType = 'execute' | 'status' | 'wait' | 'cancel' | 'fetch' | 'setup';
+export type IntentType = "execute" | "status" | "wait" | "cancel" | "fetch" | "setup";
 /**
  * Setup target
  */
-export type SetupTarget = 'github' | 'environment';
+export type SetupTarget = "github" | "environment";
 /**
  * Parsed intent
  */
@@ -32,9 +32,9 @@ export interface Intent {
  * Structured hints for fast-path routing
  */
 export interface IntentHints {
-    operation?: 'run' | 'check' | 'wait' | 'cancel' | 'setup' | 'results';
+    operation?: "run" | "check" | "wait" | "cancel" | "setup" | "results";
     taskId?: string;
-    mode?: 'auto' | 'local' | 'cloud';
+    mode?: "auto" | "local" | "cloud";
 }
 /**
  * Intent Parser

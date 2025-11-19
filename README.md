@@ -5,9 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/@littlebearapps/mcp-delegator)](https://nodejs.org)
 
-**Version**: 3.5.0
+**Version**: 3.6.0
 **Package**: `@littlebearapps/mcp-delegator`
-**Status**: ✅ Production Ready - MCP Progress Notifications Live
+**Status**: ✅ Production Ready - JSON Format Support (97% Token Reduction)
 **Repository**: [github.com/littlebearapps/mcp-delegator](https://github.com/littlebearapps/mcp-delegator)
 **Purpose**: Delegate AI agent tasks from Claude Code to Codex, Claude Code (Agent SDK), and more - with async execution
 
@@ -17,7 +17,19 @@
 
 **MCP Delegator** enables Claude Code to delegate tasks to multiple AI agents with async execution. Currently supports **14 Codex primitives** with future support for Claude Code (Anthropic Agent SDK) and other agents.
 
+**🚀 v3.6.0 - JSON Format Support (97% Token Reduction)**:
+
+- 📊 **Structured Envelopes**: 5 envelope categories for machine-readable responses
+- 🎯 **Schema Versioning**: All envelopes include `schema_id` for programmatic parsing
+- 💰 **97% Token Savings**: Average 5,250 → 197 tokens (status: 3,500 → 200, results: 18,000 → 300)
+- ✅ **Backward Compatible**: Markdown remains default, JSON opt-in via `format: "json"` parameter
+- 🔍 **Error Standardization**: Unified error envelope with 6 error codes (TIMEOUT, VALIDATION, TOOL_ERROR, NOT_FOUND, UNSUPPORTED, INTERNAL)
+- 🤖 **AI Agent Optimized**: Direct property access, no regex parsing, perfect for autonomous workflows
+- 📈 **Example Savings**: Task completion 18,000 → 300 tokens (98.3% reduction)
+- **See**: [JSON Format Benefits](#-json-format-support-v360) section below
+
 **🚀 v3.5.0 - MCP Progress Notifications**:
+
 - 🔔 **Real-Time Status Bar Updates**: Running Codex tasks now appear in Claude Code's status bar with live progress
 - ⚡ **Non-Blocking Execution**: Claude Code remains responsive while Codex runs in background
 - 📊 **Multiple Update Strategies**:
@@ -29,6 +41,7 @@
 - **Impact**: No more "did it freeze?" confusion - users can see Codex is working
 
 **🚀 v3.2.1 - Timeout Detection + Critical Bug Fixes**:
+
 - ⏱️ **TIMEOUT DETECTION**: All 6 execution tools now protected against indefinite hangs (100% coverage)
   - Process-spawning tools: TimeoutWatchdog with 5 min idle / 20 min hard timeouts
   - SDK background execution: Idle/hard timeout monitoring with registry updates
@@ -41,6 +54,7 @@
 - 🎯 **See**: CHANGELOG.md v3.2.1 for complete details
 
 **🚀 v3.2.0 - Renamed for Multi-Agent Support**:
+
 - 🎯 **NEW NAME**: `mcp-delegator` (was codex-control-mcp)
 - 🤖 **Multi-Agent Ready**: Codex + Claude Code (Agent SDK) + future agents
 - 📦 **Scoped Package**: `@littlebearapps/mcp-delegator` ready for npm publish
@@ -51,6 +65,7 @@
 - ✅ **All Codex Primitives Working**: 14 tools tested and verified (100% functional)
 
 **Delegation Pattern**:
+
 ```
 User: "Use mcp delegator to run tests"
   ↓
@@ -82,6 +97,8 @@ Status returned
 **Pattern**: Claude Code delegates → Agent executes (async) → Claude Code continues → Results when ready
 
 **Version History**:
+
+- ✅ **v3.6.0 - JSON Format Support**: 97% token reduction with structured envelopes
 - ✅ **v3.5.0 - MCP Progress Notifications**: Real-time status bar updates for all Codex executions
 - ✅ **v3.2.1 - Timeout Detection + Bug Fixes**: All 6 tools protected against hangs + sandbox mode fix
 - ✅ **v3.2.0 - Renamed to MCP Delegator**: Multi-agent delegation pattern
@@ -98,6 +115,7 @@ Status returned
 **Claude Code's NLP selects from these primitives based on your natural language instructions**:
 
 **Local Execution**:
+
 - `_codex_local_run` - Simple CLI execution (read-only/write)
 - `_codex_local_exec` - SDK execution with streaming
 - `_codex_local_resume` - Resume SDK threads
@@ -107,6 +125,7 @@ Status returned
 - `_codex_local_results` - Get local task results
 
 **Cloud Execution**:
+
 - `_codex_cloud_submit` - Submit to cloud
 - `_codex_cloud_status` - Check cloud status
 - `_codex_cloud_wait` - Wait for cloud task
@@ -114,13 +133,115 @@ Status returned
 - `_codex_cloud_results` - Get cloud results
 
 **Configuration & Maintenance**:
+
 - `_codex_cloud_list_environments` - List environments
 - `_codex_cloud_github_setup` - GitHub setup guide
 - `_codex_cleanup_registry` - Clean up stuck and old tasks
 
+### 📊 JSON Format Support (v3.6.0)
+
+**97% Token Reduction for AI Agents** - All 15 tools now support optional JSON format output with structured envelopes.
+
+**Key Benefits**:
+
+- ✅ **Massive Token Savings**: 97% average reduction (5,250 → 197 tokens)
+- ✅ **Machine-Readable**: Direct property access, no regex/markdown parsing
+- ✅ **Schema Versioning**: Every envelope includes `schema_id` for programmatic validation
+- ✅ **Backward Compatible**: Markdown remains default, JSON is opt-in
+- ✅ **Error Standardization**: Unified error format with 6 error codes
+- ✅ **AI Agent Optimized**: Perfect for autonomous multi-agent workflows
+
+**5 Envelope Categories**:
+
+| Category            | Schema ID                       | Use Case                  | Token Savings        |
+| ------------------- | ------------------------------- | ------------------------- | -------------------- |
+| **execution_ack**   | `codex/v3.6/execution_ack/v1`   | Task started confirmation | 2,500 → 150 (94%)    |
+| **result_set**      | `codex/v3.6/result_set/v1`      | Task completion results   | 18,000 → 300 (98.3%) |
+| **status_snapshot** | `codex/v3.6/status_snapshot/v1` | Task status query         | 3,500 → 200 (94.3%)  |
+| **wait_result**     | `codex/v3.6/wait_result/v1`     | Wait completion           | 2,800 → 180 (93.6%)  |
+| **registry_info**   | `codex/v3.6/registry_info/v1`   | Configuration data        | 1,200 → 150 (87.5%)  |
+
+**6 Error Codes**:
+
+- `TIMEOUT` - Task exceeded timeout limits (retryable: false)
+- `VALIDATION` - Invalid parameters (retryable: true)
+- `TOOL_ERROR` - Codex CLI execution failed (retryable: false)
+- `NOT_FOUND` - Task/resource not found (retryable: true)
+- `UNSUPPORTED` - Unsupported model/feature (retryable: false)
+- `INTERNAL` - Server error (retryable: true)
+
+**Usage Example**:
+
+```typescript
+// Default markdown format
+{
+  "task": "Run tests"
+}
+// Returns: Markdown formatted output (backward compatible)
+
+// JSON format (opt-in)
+{
+  "task": "Run tests",
+  "format": "json"
+}
+// Returns: Structured JSON envelope with schema_id
+```
+
+**Example JSON Response** (execution_ack):
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/execution_ack/v1",
+  "tool": "_codex_local_exec",
+  "tool_category": "local_execution",
+  "request_id": "req-abc123",
+  "ts": "2025-11-18T12:00:00Z",
+  "status": "success",
+  "data": {
+    "task_id": "T-local-abc123",
+    "status": "working",
+    "message": "Task started successfully"
+  }
+}
+```
+
+**Example Error Response**:
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/error/v1",
+  "tool": "_codex_local_exec",
+  "tool_category": "local_execution",
+  "request_id": "req-def456",
+  "ts": "2025-11-18T12:05:00Z",
+  "status": "error",
+  "error": {
+    "code": "TIMEOUT",
+    "message": "Task exceeded idle timeout (5 minutes)",
+    "retryable": false,
+    "duration_ms": 325000,
+    "partial_results": {
+      "events": ["turn.started", "item.completed"],
+      "stdout": "Last 64KB of output..."
+    }
+  }
+}
+```
+
+**Documentation**:
+
+- **Best Practices**: `docs/AI-AGENT-BEST-PRACTICES.md`
+- **JSON Schemas**: `docs/JSON-SCHEMA-SPECIFICATION.md`
+- **Workflows**: `docs/workflows.md` (JSON format examples)
+
+**See Also**: [JSON Format Benefits](#-json-format-support-v360) section above
+
 ### 🎯 MCP Resources
 
 **Environment Templates** (via MCP resources):
+
 - **`github-node-typescript`** - Node.js/TypeScript projects with GitHub PR workflow
 - **`github-python`** - Python projects with GitHub PR workflow
 - **`github-go`** - Go projects with GitHub PR workflow
@@ -128,6 +249,7 @@ Status returned
 - **`basic-codex-cloud`** - Basic environment without GitHub integration
 
 Access via:
+
 - `ListResourcesRequestSchema` - Discover available templates
 - `ReadResourceRequestSchema` - Read full template configuration
 - URI scheme: `codex://environment-template/{name}`
@@ -144,18 +266,22 @@ Access via:
 **100% Coverage** - All 6 execution tools protected against indefinite hangs:
 
 **Process-Spawning Tools**:
+
 - `_codex_local_run` - TimeoutWatchdog via ProcessManager (5 min idle / 20 min hard)
 - `_codex_cloud_submit` - TimeoutWatchdog via runCodexCloud() (5 min idle / 10 min hard)
 
 **SDK Background Execution**:
+
 - `_codex_local_exec` - Background monitoring with idle/hard timeouts
 - `_codex_local_resume` - Background monitoring with idle/hard timeouts
 
 **Polling/Wait Tools**:
+
 - `_codex_local_wait` - Hard timeout wrapper (11 min max)
 - `_codex_cloud_wait` - Hard timeout wrapper (31 min max)
 
 **Features**:
+
 - **Two-Tier Detection**: Inactivity timeout (resets on output) + hard deadline (wall-clock max)
 - **MCP Notifications**: Progress updates every 30s, warning 30s before timeout, error on timeout
 - **Partial Results**: Last 50 events + 64KB stdout/stderr captured for recovery context
@@ -185,14 +311,15 @@ Access via:
 
 **Comprehensive test suite** validates unified tool routing and error handling:
 
-| Test Suite | Tests | Pass Rate | Coverage |
-|------------|-------|-----------|----------|
-| **Core E2E** | 14 tests | 100% | All 14 primitives |
-| **Natural Language** | 51 tests | **100%** | 50+ variations |
-| **Error Cases** | 26 tests | 100% | Edge cases, errors |
-| **Total** | 91 tests | **100%** | Production ready ✅ |
+| Test Suite           | Tests    | Pass Rate | Coverage            |
+| -------------------- | -------- | --------- | ------------------- |
+| **Core E2E**         | 14 tests | 100%      | All 14 primitives   |
+| **Natural Language** | 51 tests | **100%**  | 50+ variations      |
+| **Error Cases**      | 26 tests | 100%      | Edge cases, errors  |
+| **Total**            | 91 tests | **100%**  | Production ready ✅ |
 
 **Test Coverage**:
+
 - ✅ All 14 primitive routing paths validated
 - ✅ Natural language variations (50+ phrasings)
 - ✅ Task ID extraction (local/cloud formats)
@@ -204,6 +331,7 @@ Access via:
 - ✅ Parameter validation
 
 **Test Files**:
+
 - `test-codex-simple.ts` - Core routing tests (14 tests)
 - `test-codex-comprehensive.ts` - Natural language variations (51 tests)
 - `test-codex-errors.ts` - Error cases and edge conditions (26 tests)
@@ -214,6 +342,7 @@ Access via:
 **Programmatic decision-making for AI agents** - automatically extracts structured metadata from Codex outputs.
 
 **Before** (natural language only):
+
 ```json
 {
   "user_message": "Tests: 2 failed, 45 passed, 47 total\n✗ should handle null input..."
@@ -221,6 +350,7 @@ Access via:
 ```
 
 **After** (with structured metadata):
+
 ```json
 {
   "user_message": "Tests: 2 failed, 45 passed, 47 total\n✗ should handle null input...",
@@ -244,34 +374,38 @@ Access via:
 
 **Extracted Metadata** (automatically from output text):
 
-| Metadata Type | Content | Example |
-|---------------|---------|---------|
-| **Test Results** | Passed/failed/skipped counts, failed test names | Jest, Pytest, Mocha formats |
-| **File Operations** | Files modified/added/deleted, lines changed | Git diff-style output |
-| **Thread Info** | Thread ID, cache hit rate (e.g., 96.8%), token usage | SDK execution data |
-| **Task Status** | Status (pending/completed/failed), task ID | Task tracking |
-| **Error Context** | Error message, type, failed files, locations | Stack traces with suggestions |
-| **Duration** | Execution time in seconds | Test/build durations |
+| Metadata Type       | Content                                              | Example                       |
+| ------------------- | ---------------------------------------------------- | ----------------------------- |
+| **Test Results**    | Passed/failed/skipped counts, failed test names      | Jest, Pytest, Mocha formats   |
+| **File Operations** | Files modified/added/deleted, lines changed          | Git diff-style output         |
+| **Thread Info**     | Thread ID, cache hit rate (e.g., 96.8%), token usage | SDK execution data            |
+| **Task Status**     | Status (pending/completed/failed), task ID           | Task tracking                 |
+| **Error Context**   | Error message, type, failed files, locations         | Stack traces with suggestions |
+| **Duration**        | Execution time in seconds                            | Test/build durations          |
 
 **🎯 Actionable Error Suggestions** - AI agents get specific guidance:
+
 - ✅ "Start investigation at utils.ts:42"
 - ✅ "Check variable types and null/undefined values"
 - ✅ "Run failing tests individually to isolate issues"
 - ✅ "Review command output for specific error messages"
 
 **Benefits for AI Agents**:
+
 - ✅ **No text parsing** - Direct programmatic access to structured data
 - ✅ **Faster decisions** - Immediate access to test counts, file changes, errors
 - ✅ **Better context** - Cache hit rates, token usage, thread IDs preserved
 - ✅ **Actionable guidance** - Specific suggestions for error investigation
 
 **Implementation**:
+
 - 📄 `src/utils/metadata_extractor.ts` - Complete extraction utility (377 lines)
 - 🔧 Automatic extraction in `convertPrimitiveResult()`
 - ✅ 100% test coverage (7/7 tests passing)
 - 🛡️ Graceful failure - metadata is optional, won't break tool if extraction fails
 
 **Pattern Support**:
+
 - Test frameworks: Jest, Pytest, Mocha, and generic formats
 - Error types: TypeError, SyntaxError, ReferenceError with location parsing
 - File operations: Git-style diff output (modified, added, deleted, lines changed)
@@ -284,6 +418,7 @@ Access via:
 **Important**: OpenAI does not provide programmatic API access to Codex Cloud environments.
 
 **What this means**:
+
 - ❌ Cannot automatically discover or list cloud environments
 - ❌ Cannot sync environment changes from ChatGPT settings
 - ✅ **Manual setup required**: Create `~/.config/codex-control/environments.json`
@@ -317,6 +452,7 @@ codex auth
 ### Install MCP Server
 
 **Production Deployment** (Recommended):
+
 ```bash
 # Install published npm package globally
 npm install -g @littlebearapps/mcp-delegator
@@ -330,6 +466,7 @@ mcp-delegator --version
 ```
 
 **Development Workflow** (For contributors):
+
 ```bash
 # Clone and build from source
 cd /path/to/mcp-delegator
@@ -353,6 +490,7 @@ npm link
 Add this configuration to your `.mcp.json` file:
 
 **Using npm Package** (Recommended):
+
 ```json
 {
   "mcpServers": {
@@ -367,14 +505,13 @@ Add this configuration to your `.mcp.json` file:
 ```
 
 **Using Local Build** (Development only):
+
 ```json
 {
   "mcpServers": {
     "mcp-delegator": {
       "command": "node",
-      "args": [
-        "/path/to/mcp-delegator/dist/index.js"
-      ],
+      "args": ["/path/to/mcp-delegator/dist/index.js"],
       "env": {
         "CODEX_MAX_CONCURRENCY": "2"
       }
@@ -385,10 +522,10 @@ Add this configuration to your `.mcp.json` file:
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CODEX_MAX_CONCURRENCY` | `2` | Maximum parallel Codex processes |
-| `CODEX_API_KEY` | (none) | Optional: Override ChatGPT Pro auth |
+| Variable                | Default | Description                         |
+| ----------------------- | ------- | ----------------------------------- |
+| `CODEX_MAX_CONCURRENCY` | `2`     | Maximum parallel Codex processes    |
+| `CODEX_API_KEY`         | (none)  | Optional: Override ChatGPT Pro auth |
 
 ### User Configuration Files
 
@@ -424,6 +561,7 @@ Create this file to enable `codex_cloud_list_environments` tool.
 Execute Codex tasks without file modifications.
 
 **Parameters**:
+
 - `task` (required): Task description for Codex
 - `mode` (optional): Execution mode (`read-only` (default), `workspace-write`, `danger-full-access`)
 - `model` (optional): OpenAI model (`gpt-4o`, `o1`, `o3-mini`, etc.)
@@ -431,8 +569,10 @@ Execute Codex tasks without file modifications.
 - `workingDir` (optional): Absolute path to working directory
 - `envPolicy` (optional): Environment variable policy (`inherit-none` (default), `inherit-all`, `allow-list`)
 - `envAllowList` (optional): List of environment variables to pass (only with `envPolicy='allow-list'`)
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - Analyze Code**:
+
 ```json
 {
   "task": "Analyze main.ts for potential bugs and security issues",
@@ -441,6 +581,7 @@ Execute Codex tasks without file modifications.
 ```
 
 **Example - Run Tests**:
+
 ```json
 {
   "task": "Run the test suite and report any failures",
@@ -450,6 +591,7 @@ Execute Codex tasks without file modifications.
 ```
 
 **Example - With Environment Variables** (Integration Testing):
+
 ```json
 {
   "task": "Run integration tests against the API",
@@ -459,7 +601,18 @@ Execute Codex tasks without file modifications.
 }
 ```
 
-**Output**:
+**Example - JSON Format (v3.6.0)** 🆕:
+
+```json
+{
+  "task": "Analyze main.ts for potential bugs",
+  "mode": "read-only",
+  "format": "json"
+}
+```
+
+**Output (Markdown - Default)**:
+
 ```
 ✅ Codex Task Completed
 
@@ -474,6 +627,44 @@ Execute Codex tasks without file modifications.
 **Exit Code**: 0
 ```
 
+**Output (JSON Format - v3.6.0)** 🆕:
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/result_set/v1",
+  "tool": "_codex_local_run",
+  "tool_category": "local_execution",
+  "request_id": "req-abc123",
+  "ts": "2025-11-18T12:00:00Z",
+  "status": "success",
+  "data": {
+    "task_id": "T-local-xyz789",
+    "status": "completed",
+    "output": "Analyzed main.ts - found 3 potential issues: ...",
+    "metadata": {
+      "exit_code": 0,
+      "events_count": 12,
+      "file_operations": {
+        "modified": [],
+        "added": [],
+        "deleted": []
+      },
+      "commands_executed": ["npm test"],
+      "duration": 5.2
+    }
+  }
+}
+```
+
+**Benefits of JSON Format**:
+
+- ✅ 94% token reduction (2,500 → 150 tokens)
+- ✅ Direct property access: `response.data.metadata.exit_code`
+- ✅ No regex parsing needed
+- ✅ Schema validation via `schema_id`
+- ✅ Perfect for AI agents making decisions
+
 ---
 
 ### Tool 2: `codex_plan` (Preview Changes)
@@ -481,13 +672,16 @@ Execute Codex tasks without file modifications.
 Preview what Codex would do without executing.
 
 **Parameters**:
+
 - `task` (required): Task description to preview
 - `model` (optional): OpenAI model
 - `workingDir` (optional): Working directory
 - `envPolicy` (optional): Environment variable policy (`inherit-none` (default), `inherit-all`, `allow-list`)
 - `envAllowList` (optional): List of environment variables to pass (only with `envPolicy='allow-list'`)
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example**:
+
 ```json
 {
   "task": "Add error handling to API endpoints in server.ts"
@@ -495,6 +689,7 @@ Preview what Codex would do without executing.
 ```
 
 **Output**:
+
 ```
 📋 Codex Task Plan (Preview)
 
@@ -517,6 +712,7 @@ Preview what Codex would do without executing.
 Execute file-modifying tasks with confirmation.
 
 **Parameters**:
+
 - `task` (required): Task description
 - `confirm` (required): Must be `true` to proceed
 - `mode` (optional): `workspace-write` (default) or `danger-full-access`
@@ -525,8 +721,10 @@ Execute file-modifying tasks with confirmation.
 - `workingDir` (optional): Working directory
 - `envPolicy` (optional): Environment variable policy (`inherit-none` (default), `inherit-all`, `allow-list`)
 - `envAllowList` (optional): List of environment variables to pass (only with `envPolicy='allow-list'`)
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - First Call (Without Confirmation)**:
+
 ```json
 {
   "task": "Add TypeScript types to all functions in utils.ts",
@@ -535,6 +733,7 @@ Execute file-modifying tasks with confirmation.
 ```
 
 **Output**:
+
 ```
 ⚠️ Confirmation Required
 
@@ -549,6 +748,7 @@ This operation will modify files in your project.
 ```
 
 **Example - Second Call (With Confirmation)**:
+
 ```json
 {
   "task": "Add TypeScript types to all functions in utils.ts",
@@ -557,6 +757,7 @@ This operation will modify files in your project.
 ```
 
 **Output**:
+
 ```
 ✅ Changes Applied
 
@@ -586,14 +787,18 @@ This operation will modify files in your project.
 
 Get current server status and queue information.
 
-**Parameters**: None
+**Parameters**:
+
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example**:
+
 ```json
 {}
 ```
 
 **Output**:
+
 ```
 📊 Codex Control Status
 
@@ -620,20 +825,21 @@ Get current server status and queue information.
 
 Codex Control MCP provides three execution approaches. Choose based on your needs:
 
-| Feature | Local CLI (Tools 1-4) | Local SDK (Tools 9-10) 🆕 | Cloud (Tools 5-8) |
-|---------|---------------------|----------------------|------------------|
-| **Real-Time Status** | ❌ Blocking | ✅ Event Streaming | ❌ Background |
-| **Thread Resumption** | ❌ No | ✅ Yes | ❌ No |
-| **Token Visibility** | ❌ No | ✅ Yes | ❌ No |
-| **Session Persistence** | ❌ No | ✅ Yes | ✅ Yes |
-| **Execution Location** | Local Mac | Local Mac | Cloud Containers |
-| **Best For** | Quick tasks | Iterative development | Long-running tasks |
-| **Max Duration** | ~5-10 minutes | No hard limit | Hours |
-| **Context Preservation** | ❌ No | ✅ Full thread history | ❌ No |
+| Feature                  | Local CLI (Tools 1-4) | Local SDK (Tools 9-10) 🆕 | Cloud (Tools 5-8)  |
+| ------------------------ | --------------------- | ------------------------- | ------------------ |
+| **Real-Time Status**     | ❌ Blocking           | ✅ Event Streaming        | ❌ Background      |
+| **Thread Resumption**    | ❌ No                 | ✅ Yes                    | ❌ No              |
+| **Token Visibility**     | ❌ No                 | ✅ Yes                    | ❌ No              |
+| **Session Persistence**  | ❌ No                 | ✅ Yes                    | ✅ Yes             |
+| **Execution Location**   | Local Mac             | Local Mac                 | Cloud Containers   |
+| **Best For**             | Quick tasks           | Iterative development     | Long-running tasks |
+| **Max Duration**         | ~5-10 minutes         | No hard limit             | Hours              |
+| **Context Preservation** | ❌ No                 | ✅ Full thread history    | ❌ No              |
 
 **Recommendations**:
 
 **Use Local SDK** (`codex_local_exec` + `codex_local_resume`) when:
+
 - ✅ You want to see real-time progress
 - ✅ You need to ask follow-up questions
 - ✅ You're doing iterative development (analyze → fix → test)
@@ -641,6 +847,7 @@ Codex Control MCP provides three execution approaches. Choose based on your need
 - ✅ Tasks take 5-30 minutes with multiple steps
 
 **Use Cloud** (`codex_cloud_submit`) when:
+
 - ✅ Tasks will take hours (full test suites, comprehensive refactoring)
 - ✅ You want fire-and-forget execution
 - ✅ You need sandboxed environment with specific dependencies
@@ -648,6 +855,7 @@ Codex Control MCP provides three execution approaches. Choose based on your need
 - ✅ Tasks run overnight or across multiple sessions
 
 **Use Local CLI** (Tools 1-4) when:
+
 - ✅ Quick read-only analysis (1-5 minutes)
 - ✅ Simple one-shot tasks
 - ✅ You don't need thread resumption
@@ -660,12 +868,15 @@ Codex Control MCP provides three execution approaches. Choose based on your need
 Submit tasks to Codex Cloud for background execution in sandboxed containers.
 
 **Parameters**:
+
 - `task` (required): Task description for Codex Cloud
 - `envId` (required): Environment ID from Codex Cloud settings
 - `attempts` (optional): Number of assistant attempts (best-of-N), defaults to 1
 - `model` (optional): OpenAI model (`gpt-4o`, `o1`, `o3-mini`, etc.)
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - Submit Security Audit**:
+
 ```json
 {
   "task": "Run comprehensive security audit on all API endpoints and report vulnerabilities",
@@ -674,6 +885,7 @@ Submit tasks to Codex Cloud for background execution in sandboxed containers.
 ```
 
 **Example - Long-Running Build**:
+
 ```json
 {
   "task": "Run full test suite, fix any failures, and create PR with fixes",
@@ -684,6 +896,7 @@ Submit tasks to Codex Cloud for background execution in sandboxed containers.
 ```
 
 **Output**:
+
 ```
 🚀 Task Submitted to Codex Cloud
 
@@ -708,7 +921,41 @@ Submit tasks to Codex Cloud for background execution in sandboxed containers.
 ✅ Task will be tracked even if Claude Code restarts.
 ```
 
+**Example - JSON Format** 🆕 v3.6.0:
+
+```json
+{
+  "task": "Run comprehensive security audit on all API endpoints",
+  "envId": "env_abc123xyz",
+  "format": "json"
+}
+```
+
+**Output (JSON Format)**:
+
+```json
+{
+  "version": "3.6",
+  "schema_id": "codex/v3.6/execution_ack/v1",
+  "tool": "_codex_cloud_submit",
+  "tool_category": "cloud_execution",
+  "request_id": "req-def456",
+  "ts": "2025-11-18T14:00:00Z",
+  "status": "success",
+  "data": {
+    "task_id": "task-2025-11-18-abc123",
+    "status": "submitted",
+    "message": "Task submitted to Codex Cloud",
+    "web_ui_url": "https://chatgpt.com/codex/tasks/task-2025-11-18-abc123",
+    "env_id": "env_abc123xyz"
+  }
+}
+```
+
+**Benefits**: 94% token reduction (2,500 → 150 tokens), direct property access, schema validation
+
 **Key Benefits**:
+
 - ✅ **Background Execution**: Task runs in cloud, doesn't block Claude Code
 - ✅ **Auto-Tracking**: Task ID automatically stored for later retrieval (v1.3.0)
 - ✅ **Persistence**: Continues even if you close Claude Code or restart your machine
@@ -723,18 +970,22 @@ Submit tasks to Codex Cloud for background execution in sandboxed containers.
 List all cloud tasks tracked in persistent storage with filtering options.
 
 **Parameters** (all optional):
+
 - `workingDir` (optional): Filter by working directory (defaults to current directory)
 - `envId` (optional): Filter by Codex Cloud environment ID
 - `status` (optional): Filter by status (`submitted`, `completed`, `failed`, `cancelled`)
 - `limit` (optional): Maximum number of tasks to return (default: 50)
 - `showStats` (optional): Include statistics about all tracked tasks (default: false)
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - List Current Directory's Tasks**:
+
 ```json
 {}
 ```
 
 **Example - Filter by Status**:
+
 ```json
 {
   "status": "submitted",
@@ -743,6 +994,7 @@ List all cloud tasks tracked in persistent storage with filtering options.
 ```
 
 **Example - View All Tasks with Stats**:
+
 ```json
 {
   "showStats": true,
@@ -751,6 +1003,7 @@ List all cloud tasks tracked in persistent storage with filtering options.
 ```
 
 **Output**:
+
 ```
 📋 Codex Cloud Tasks
 
@@ -789,6 +1042,7 @@ List all cloud tasks tracked in persistent storage with filtering options.
 ```
 
 **Key Benefits**:
+
 - ✅ **Automatic Filtering**: Shows only tasks from current working directory
 - ✅ **Multi-Instance Isolation**: Each project sees only its own tasks
 - ✅ **Restart Recovery**: Tasks persist across Claude Code sessions
@@ -802,10 +1056,13 @@ List all cloud tasks tracked in persistent storage with filtering options.
 Check status of Codex Cloud tasks.
 
 **Parameters**:
+
 - `taskId` (optional): Specific task ID to check
 - `showAll` (optional): Show all tasks instead of specific task
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - Check Specific Task**:
+
 ```json
 {
   "taskId": "task-2025-11-11-abc123"
@@ -813,6 +1070,7 @@ Check status of Codex Cloud tasks.
 ```
 
 **Example - View All Tasks**:
+
 ```json
 {
   "showAll": true
@@ -820,6 +1078,7 @@ Check status of Codex Cloud tasks.
 ```
 
 **Output**:
+
 ```
 📊 Codex Cloud Task Status
 
@@ -847,9 +1106,12 @@ Use web UI for programmatic status checks until SDK support is added.
 Get results of completed Codex Cloud tasks.
 
 **Parameters**:
+
 - `taskId` (required): Task ID to get results for
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example**:
+
 ```json
 {
   "taskId": "task-2025-11-11-abc123"
@@ -857,6 +1119,7 @@ Get results of completed Codex Cloud tasks.
 ```
 
 **Output**:
+
 ```
 📄 Codex Cloud Task Results
 
@@ -890,14 +1153,17 @@ Currently, use web UI for complete results.
 Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 
 **Parameters**:
+
 - `task` (required): Task description for Codex
 - `workingDir` (optional): Working directory (defaults to current directory)
 - `mode` (optional): Execution mode (`read-only` (default), `workspace-write`, `danger-full-access`)
 - `outputSchema` (optional): JSON Schema for structured output
 - `skipGitRepoCheck` (optional): Skip Git repository check (default: false)
 - `model` (optional): OpenAI model (`gpt-5-codex`, `gpt-5`, etc.)
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - Analyze with Real-Time Progress**:
+
 ```json
 {
   "task": "Analyze all TypeScript files for potential bugs and performance issues",
@@ -906,6 +1172,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 ```
 
 **Example - With Structured Output**:
+
 ```json
 {
   "task": "Find all TODO comments in the codebase",
@@ -929,6 +1196,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 ```
 
 **Output**:
+
 ```
 ✅ Codex Local Execution Completed
 
@@ -950,6 +1218,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 ```
 
 **Key Benefits**:
+
 - ✅ **Real-Time Visibility**: See exactly what Codex is doing as it happens
 - ✅ **Thread Resumption**: Continue conversations across Claude Code sessions
 - ✅ **Full Event Stream**: Access all turn events, not just final output
@@ -958,6 +1227,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 - ✅ **Local Execution**: Runs on your Mac with local filesystem access
 
 **When to Use Local vs Cloud**:
+
 - **Use Local** when you want real-time progress visibility
 - **Use Cloud** for long-running tasks (tests, builds, complex refactoring)
 - **Use Local** for iterative development with multiple follow-ups
@@ -966,6 +1236,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 **Execution Modes Explained**:
 
 **1. `read-only` (DEFAULT - Safest, Most Common)**
+
 - ✅ Codex ANALYZES code and PROPOSES changes but DOES NOT modify files
 - ✅ Returns: Complete patch/diff with exact code to apply
 - ✅ Use when: You want to review changes before applying, learning what Codex suggests, or unsure about modifications
@@ -974,6 +1245,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 - ✅ Best practice: Start with read-only, review output, then decide on next steps
 
 **2. `workspace-write` (Caution - Direct Modifications)**
+
 - ⚠️ Codex CAN create branches, edit files, run commands, commit changes
 - ⚠️ Returns: Actual filesystem changes + thread ID + event log
 - ⚠️ Use when: You trust Codex to make changes directly, iterative development in safe branches
@@ -982,6 +1254,7 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 - ⚠️ Best practice: Only use in feature branches, never on main/production
 
 **3. `danger-full-access` (High Risk - Unrestricted)**
+
 - 🚨 Codex has UNRESTRICTED access - can modify ANY file, run ANY command
 - 🚨 Returns: Any filesystem modifications + thread ID + event log
 - 🚨 Use when: Codex needs system-level access, infrastructure changes, or you need maximum flexibility
@@ -991,18 +1264,21 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 
 **Recommended Workflows**:
 
-*For Code Improvements:*
+_For Code Improvements:_
+
 1. Start: `codex_local_exec` with `mode='read-only'`
 2. Review: Examine Codex's proposed changes
 3. If approved: Apply manually OR re-run with `mode='workspace-write'` in feature branch
 4. Follow-up: Use `codex_local_resume` with thread ID for refinements
 
-*For Iterative Development:*
+_For Iterative Development:_
+
 1. Start: `codex_local_exec` with `mode='workspace-write'` in feature branch
 2. Iterate: Use `codex_local_resume` for follow-up changes
 3. Benefit: High cache rates (45-93%) reduce costs and latency
 
-*For Analysis Only:*
+_For Analysis Only:_
+
 1. Use: `codex_local_exec` with `mode='read-only'`
 2. Get: Comprehensive analysis, suggestions, patches
 3. No risk: No files modified, safe to run anytime
@@ -1014,12 +1290,15 @@ Execute Codex tasks locally with real-time event streaming via TypeScript SDK.
 Resume a previous local thread with follow-up tasks and full conversation context.
 
 **Parameters**:
+
 - `threadId` (required): Thread ID from previous `codex_local_exec` execution
 - `task` (required): Follow-up task to execute
 - `mode` (optional): Execution mode (defaults to previous thread's mode)
 - `outputSchema` (optional): JSON Schema for structured output
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - Continue Analysis**:
+
 ```json
 {
   "threadId": "thread_abc123xyz",
@@ -1028,6 +1307,7 @@ Resume a previous local thread with follow-up tasks and full conversation contex
 ```
 
 **Example - Iterative Refactoring**:
+
 ```json
 {
   "threadId": "thread_abc123xyz",
@@ -1037,6 +1317,7 @@ Resume a previous local thread with follow-up tasks and full conversation contex
 ```
 
 **Output**:
+
 ```
 ✅ Thread Resumed Successfully
 
@@ -1056,6 +1337,7 @@ Resume a previous local thread with follow-up tasks and full conversation contex
 ```
 
 **Key Benefits**:
+
 - ✅ **Context Preservation**: Codex remembers entire conversation history
 - ✅ **Iterative Development**: Break large tasks into multiple steps
 - ✅ **Session Persistence**: Threads survive Claude Code restarts
@@ -1063,6 +1345,7 @@ Resume a previous local thread with follow-up tasks and full conversation contex
 - ✅ **Follow-Up Questions**: Ask clarifying questions without repeating context
 
 **Use Cases**:
+
 - Multi-step refactoring (analyze → plan → apply)
 - Iterative bug fixes (find → fix → test)
 - Code reviews with follow-ups (review → explain → suggest)
@@ -1076,14 +1359,18 @@ Resume a previous local thread with follow-up tasks and full conversation contex
 
 Check for pending Codex Cloud tasks and get Web UI links for status checking.
 
-**Parameters**: None
+**Parameters**:
+
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example**:
+
 ```json
 {}
 ```
 
 **Output - With Pending Tasks**:
+
 ```
 ⏳ You have 3 pending Cloud tasks
 
@@ -1114,17 +1401,20 @@ Check for pending Codex Cloud tasks and get Web UI links for status checking.
 ```
 
 **Output - No Pending Tasks**:
+
 ```
 ✅ No pending Cloud tasks. All submitted tasks have been checked or completed.
 ```
 
 **Key Benefits**:
+
 - ✅ **Organized Tracking**: See all pending tasks in one place
 - ✅ **Direct Links**: Click to check status without searching
 - ✅ **Time Context**: Know how long tasks have been running
 - ✅ **Persistent Registry**: Survives Claude Code restarts
 
 **Use Cases**:
+
 - Periodic checks during development
 - Morning review of overnight tasks
 - Before submitting new tasks (check queue)
@@ -1140,14 +1430,18 @@ List available Codex Cloud environments from local configuration.
 
 ⚠️ **Important**: This tool reads from `~/.config/codex-control/environments.json` (local file) only. It **cannot** query Codex Cloud directly due to lack of programmatic API. See [Codex Cloud Limitations](#️-important-codex-cloud-limitations).
 
-**Parameters**: None
+**Parameters**:
+
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example**:
+
 ```json
 {}
 ```
 
 **Output - With Environments**:
+
 ```
 ✅ 3 environments configured
 
@@ -1179,6 +1473,7 @@ List available Codex Cloud environments from local configuration.
 ```
 
 **Output - No Environments**:
+
 ```
 ⚠️ Environment config not found. Create ~/.config/codex-control/environments.json to define environments.
 
@@ -1200,18 +1495,21 @@ List available Codex Cloud environments from local configuration.
 ```
 
 **Key Benefits**:
+
 - ✅ **Local Registry**: Track all your Codex Cloud environments
 - ✅ **Quick Reference**: See environment IDs without Web UI
 - ✅ **Metadata**: Store descriptions, repo URLs, and tech stacks
 - ✅ **Discoverable**: Claude Code can see all available environments
 
 **Use Cases**:
+
 - Starting new project (which environment to use?)
 - Reviewing configured environments
 - Planning task submissions
 - Documentation of environment structure
 
 **Setup**:
+
 1. Create config directory: `mkdir -p ~/.config/codex-control`
 2. Create config file: `~/.config/codex-control/environments.json`
 3. Add environment definitions (see example above)
@@ -1226,12 +1524,15 @@ List available Codex Cloud environments from local configuration.
 Generate custom GitHub integration guide for Codex Cloud environments with autonomous setup instructions.
 
 **Parameters**:
+
 - `repoUrl` (required): GitHub repository URL (e.g., `https://github.com/user/repo`)
 - `stack` (required): Technology stack (`node`, `python`, `go`, `rust`)
 - `gitUserName` (optional): Git user name (defaults to "Codex Agent")
 - `gitUserEmail` (optional): Git user email (defaults to "codex@example.com")
+- `format` (optional): Response format (`markdown` (default), `json`) 🆕 v3.6.0
 
 **Example - Node.js Project**:
+
 ```json
 {
   "repoUrl": "https://github.com/myorg/my-project",
@@ -1242,6 +1543,7 @@ Generate custom GitHub integration guide for Codex Cloud environments with auton
 ```
 
 **Example - Python Project**:
+
 ```json
 {
   "repoUrl": "https://github.com/myorg/data-pipeline",
@@ -1253,10 +1555,12 @@ Generate custom GitHub integration guide for Codex Cloud environments with auton
 The tool generates a comprehensive 8-section guide (400+ lines) customized for your repository:
 
 **📝 Repository Configuration**:
+
 - Repository URL and technology stack
 - Template selected based on stack
 
 **🔐 Step 1: Create Fine-Grained GitHub Token**:
+
 - Direct link to token creation page
 - Token name pre-filled with repository name
 - Exact permissions required (Contents, Pull requests, Workflows)
@@ -1264,6 +1568,7 @@ The tool generates a comprehensive 8-section guide (400+ lines) customized for y
 - Security reminders
 
 **⚙️ Step 2: Configure Codex Cloud Environment**:
+
 - Environment name suggestion
 - Repository URL and branch configuration
 - Secrets configuration (GITHUB_TOKEN)
@@ -1272,22 +1577,26 @@ The tool generates a comprehensive 8-section guide (400+ lines) customized for y
 - **Pre-filled Maintenance Script** (from template, ready to copy-paste)
 
 **✅ Step 3: Test GitHub Integration**:
+
 - Test task JSON (ready to use with `codex_cloud_submit`)
 - Expected results checklist
 - Verification steps
 
 **🔧 Troubleshooting**:
+
 - Authentication failed (4 solutions with test commands)
 - GitHub CLI not found (3 solutions with verification)
 - Can't create pull request (5 solutions)
 - Setup script failed (5 common causes)
 
 **📚 Next Steps**:
+
 - Autonomous PR workflow examples (feature dev, bug fixes, refactoring)
 - Best practices for task descriptions
 - Learning resources
 
 **Key Benefits**:
+
 - ✅ **Zero External Documentation**: Everything needed in one guide
 - ✅ **Repository-Specific**: Customized for your project
 - ✅ **Copy-Paste Ready**: Setup scripts pre-filled from templates
@@ -1297,6 +1606,7 @@ The tool generates a comprehensive 8-section guide (400+ lines) customized for y
 - ✅ **Security-First**: Fine-grained permissions, no hardcoded secrets
 
 **Use Case - Complete Autonomous Setup**:
+
 1. User asks Claude Code: "Help me set up GitHub integration for my Node.js project"
 2. Claude Code calls: `codex_cloud_github_setup` with repository URL and stack
 3. User receives complete guide with pre-filled scripts
@@ -1305,6 +1615,7 @@ The tool generates a comprehensive 8-section guide (400+ lines) customized for y
 6. Result: Fully autonomous GitHub PR workflow enabled
 
 **Behind the Scenes**:
+
 - Loads appropriate template (`github-node`, `github-python`, etc.)
 - Extracts repository details (owner, name)
 - Customizes git configuration
@@ -1313,6 +1624,7 @@ The tool generates a comprehensive 8-section guide (400+ lines) customized for y
 - Creates test task with expected results
 
 **Error Handling**:
+
 - Repository URL validation (must be GitHub)
 - Stack validation (must be supported)
 - Template lookup failure (clear error with supported stacks)
@@ -1328,17 +1640,20 @@ Codex Control v2.0.0 enables Claude Code to autonomously guide users through com
 **Three-Phase Approach**:
 
 **Phase 1: Enhanced Tool Schemas** (v1.4.0)
+
 - Comprehensive tool descriptions with PREREQUISITES, WORKFLOW, BEST PRACTICES
 - Token budget: 1,051 / 3,000 tokens (35% usage)
 - All Codex Cloud tools fully documented
 
 **Phase 2: Environment Templates** (v1.5.0)
+
 - 5 pre-configured templates for different technology stacks
 - 4-level fallback error handling for GitHub CLI installation
 - Pre-written setup and maintenance scripts
 - Exposed via MCP resources for discovery
 
 **Phase 3: Setup Helper Tool** (v2.0.0)
+
 - Interactive guide generator (`codex_cloud_github_setup`)
 - Repository-specific configuration
 - Pre-filled scripts from templates
@@ -1347,22 +1662,26 @@ Codex Control v2.0.0 enables Claude Code to autonomously guide users through com
 ### Quick Start: GitHub Integration
 
 **Step 1: Ask Claude Code**:
+
 ```
 "Help me set up GitHub integration for my Node.js project at https://github.com/myorg/my-project"
 ```
 
 **Step 2: Claude Code Responds**:
+
 - Calls `codex_cloud_github_setup` tool
 - Generates complete setup guide
 - Provides pre-filled scripts
 - Includes test task
 
 **Step 3: Follow the Guide**:
+
 - Create fine-grained GitHub token
 - Configure Codex Cloud environment
 - Run test task to verify setup
 
 **Step 4: Start Using Autonomous Workflows**:
+
 ```json
 {
   "task": "Create feature branch 'feature/add-auth', implement JWT authentication with tests, create PR titled 'Add JWT Authentication'",
@@ -1377,24 +1696,28 @@ Codex Control v2.0.0 enables Claude Code to autonomously guide users through com
 All GitHub templates include:
 
 **4-Level Fallback Error Handling**:
+
 - Level 1: Standard APT installation
 - Level 2: Direct binary download
 - Level 3: Graceful degradation (warn and continue)
 - Level 4: Clear manual installation instructions
 
 **Why 4-level fallback?**
+
 - Codex Cloud containers may have network restrictions
 - Different base images may have different package managers
 - Core workflows (clone, commit, push) work even if gh CLI fails
 - Clear instructions help users fix issues manually
 
 **Security**:
+
 - Fine-grained token permissions (repository-scoped)
 - No hardcoded credentials
 - Secrets vs environment variables clearly distinguished
 - Automated validation (CI checks for hardcoded secrets)
 
 **Maintenance**:
+
 - Setup script: Initial environment configuration
 - Maintenance script: Dependency updates for cached containers
 - Version pinning for stability
@@ -1408,6 +1731,7 @@ All GitHub templates include:
 **Critical Finding**: OpenAI does not provide any programmatic API, REST endpoint, GraphQL interface, or SDK method to list, query, or manage Codex Cloud environments.
 
 **What This Means**:
+
 - ❌ Cannot automatically discover your cloud environments
 - ❌ Cannot sync environment changes from ChatGPT settings
 - ❌ Cannot validate environment IDs programmatically before submission
@@ -1415,6 +1739,7 @@ All GitHub templates include:
 - ✅ **Must manually maintain** `~/.config/codex-control/environments.json`
 
 **Investigation Summary** (see `OPENAI-API-INVESTIGATION.md` for full report):
+
 - ❌ **REST API**: No endpoints exist for environment management
 - ❌ **GraphQL**: No interface available
 - ❌ **SDK Methods**: `@openai/codex-sdk` has no `listEnvironments()`, `getEnvironment()`, or similar methods
@@ -1422,6 +1747,7 @@ All GitHub templates include:
 - ✅ **Web UI Only**: https://chatgpt.com/codex/settings/environments is the ONLY way to manage environments
 
 **Impact on Codex Control MCP**:
+
 - Environment creation requires ChatGPT web UI (manual process)
 - Environment IDs must be manually added to local config file
 - One-time setup per environment required
@@ -1433,6 +1759,7 @@ All GitHub templates include:
 After comprehensive investigation of all available OpenAI Codex APIs, SDKs, and CLI tools:
 
 **OpenAI Codex SDK** (`@openai/codex-sdk` v0.58.0-alpha.7):
+
 ```typescript
 // ✅ Available methods
 const codex = new Codex();
@@ -1442,12 +1769,13 @@ thread.run(prompt);
 thread.runStreamed(prompt);
 
 // ❌ NOT available (do not exist)
-codex.listEnvironments();      // No such method
-codex.getEnvironment(id);      // No such method
-codex.getCloudTasks();         // No such method
+codex.listEnvironments(); // No such method
+codex.getEnvironment(id); // No such method
+codex.getCloudTasks(); // No such method
 ```
 
 **Codex CLI Commands**:
+
 ```bash
 # ✅ Works - Interactive TUI (human-only)
 codex cloud
@@ -1462,6 +1790,7 @@ codex cloud --format json       # No such flag
 ```
 
 **Authentication Tokens** (in `~/.codex/auth.json`):
+
 ```json
 {
   "tokens": {
@@ -1471,6 +1800,7 @@ codex cloud --format json       # No such flag
   }
 }
 ```
+
 - ✅ JWT tokens exist and are valid
 - ✅ Account ID and user ID available in token payload
 - ❌ **No API endpoints exist** to use these tokens for environment queries
@@ -1484,6 +1814,7 @@ codex cloud --format json       # No such flag
 ### Prerequisites
 
 Before using Codex Cloud tools, you **must**:
+
 1. Have Codex Cloud environments configured in ChatGPT web UI
 2. Manually create local configuration file with environment IDs
 
@@ -1492,6 +1823,7 @@ Before using Codex Cloud tools, you **must**:
 Codex Cloud environments define the execution context (dependencies, secrets, setup scripts).
 
 **Setup via Web UI**:
+
 1. Visit https://chatgpt.com/codex/settings/environments
 2. Create new environment for your project
 3. Configure:
@@ -1508,11 +1840,13 @@ Codex Cloud environments define the execution context (dependencies, secrets, se
 ⚠️ **Manual Step Required**: Because no API exists to query environments, you must manually create a local configuration file.
 
 **Create config directory**:
+
 ```bash
 mkdir -p ~/.config/codex-control
 ```
 
 **Create `environments.json`**:
+
 ```bash
 cat > ~/.config/codex-control/environments.json << 'EOF'
 {
@@ -1533,6 +1867,7 @@ EOF
 ```
 
 **Or edit manually**:
+
 ```bash
 # Open in your editor
 nano ~/.config/codex-control/environments.json
@@ -1541,6 +1876,7 @@ code ~/.config/codex-control/environments.json
 ```
 
 **Configuration Format**:
+
 ```json
 {
   "env_id_from_chatgpt": {
@@ -1553,6 +1889,7 @@ code ~/.config/codex-control/environments.json
 ```
 
 **Field Descriptions**:
+
 - **Key** (`env_id_from_chatgpt`): The Environment ID from ChatGPT web UI settings
 - **name**: Display name for `codex_cloud_list_environments`
 - **repoUrl**: GitHub repository URL (for reference only)
@@ -1560,9 +1897,11 @@ code ~/.config/codex-control/environments.json
 - **description**: Optional notes about the environment
 
 **Verify Configuration**:
+
 ```typescript
 // Use codex_cloud_list_environments tool in Claude Code
-{} // No parameters needed
+{
+} // No parameters needed
 
 // Should display:
 // ✅ 2 environments configured
@@ -1585,15 +1924,18 @@ Once environments are configured:
 ### 3. Monitor Tasks
 
 **Web UI** (recommended):
+
 - https://chatgpt.com/codex - All tasks
 - https://chatgpt.com/codex/tasks/{taskId} - Specific task
 
 **CLI TUI**:
+
 ```bash
 codex cloud  # Interactive browser
 ```
 
 **Mobile App**:
+
 - ChatGPT app → Codex → Tasks
 
 ---
@@ -1603,6 +1945,7 @@ codex cloud  # Interactive browser
 ### High-Level Flow
 
 **Local Execution via CLI** (blocking, Tools 1-4):
+
 ```
 ┌─────────────────┐
 │  Claude Code    │
@@ -1632,6 +1975,7 @@ codex cloud  # Interactive browser
 ```
 
 **Local Execution via SDK** 🆕 (async streaming, Tools 9-10):
+
 ```
 ┌─────────────────┐
 │  Claude Code    │
@@ -1676,6 +2020,7 @@ codex cloud  # Interactive browser
 ```
 
 **Codex Cloud** (background, Tools 5-8):
+
 ```
 ┌─────────────────┐
 │  Claude Code    │
@@ -1712,15 +2057,18 @@ codex cloud  # Interactive browser
 ### Components
 
 **Executor**:
+
 - `jsonl_parser.ts` - Tolerant JSONL event stream parser
 - `process_manager.ts` - Process spawning, concurrency queue
 - `error_mapper.ts` - Error mapping to MCP format
 
 **Security**:
+
 - `input_validator.ts` - Input validation, sanitization
 - `redactor.ts` - Secret scrubbing (15+ patterns)
 
 **Tools**:
+
 - `run.ts` - Read-only execution (local CLI)
 - `plan.ts` - Preview mode (local CLI)
 - `apply.ts` - Mutation with gating (local CLI)
@@ -1733,6 +2081,7 @@ codex cloud  # Interactive browser
 - `github_setup.ts` - GitHub integration setup guide
 
 **Server**:
+
 - `index.ts` - MCP server entry point
 
 ---
@@ -1750,6 +2099,7 @@ codex cloud  # Interactive browser
 ### Secret Redaction
 
 Automatically scrubs 15+ sensitive patterns:
+
 - OpenAI API keys (`sk-...`)
 - AWS credentials (`AKIA...`)
 - GitHub tokens (`ghp_...`, `gho_...`)
@@ -1759,6 +2109,7 @@ Automatically scrubs 15+ sensitive patterns:
 - Database connection strings
 
 **Example**:
+
 ```typescript
 // Before redaction
 OPENAI_API_KEY=sk-proj-abc123...
@@ -1784,11 +2135,13 @@ File-modifying modes require explicit confirmation:
 Control which environment variables are passed to Codex Cloud execution:
 
 **Three Modes**:
+
 1. **`inherit-none`** (default, most secure) - No environment variables passed
 2. **`inherit-all`** (convenient, less secure) - All environment variables passed
 3. **`allow-list`** (recommended) - Only specified variables passed
 
 **Example - Allow-List (Recommended)**:
+
 ```json
 {
   "task": "Run integration tests",
@@ -1798,6 +2151,7 @@ Control which environment variables are passed to Codex Cloud execution:
 ```
 
 **Example - Inherit All (Use with Caution)**:
+
 ```json
 {
   "task": "Deploy to staging",
@@ -1883,9 +2237,11 @@ nano ~/.config/codex-control/environments.json
 ```
 
 **Example Fix**:
+
 ```json
 {
-  "env_abc123xyz": {  // ✅ Exact ID from ChatGPT
+  "env_abc123xyz": {
+    // ✅ Exact ID from ChatGPT
     "name": "My Project",
     "repoUrl": "https://github.com/user/repo",
     "stack": "node"
@@ -1902,6 +2258,7 @@ nano ~/.config/codex-control/environments.json
 **Why**: See [Important: Codex Cloud Limitations](#️-important-codex-cloud-limitations) section.
 
 **Workaround**:
+
 ```bash
 # Manual setup required
 # 1. Visit https://chatgpt.com/codex/settings/environments
@@ -1916,6 +2273,7 @@ nano ~/.config/codex-control/environments.json
 **Common Causes & Solutions**:
 
 **Cause 1: Not authenticated**
+
 ```bash
 # Check auth status
 codex auth status
@@ -1925,6 +2283,7 @@ codex auth
 ```
 
 **Cause 2: Invalid environment ID**
+
 ```bash
 # Verify environment exists in ChatGPT
 # Visit: https://chatgpt.com/codex/settings/environments
@@ -1934,12 +2293,14 @@ cat ~/.config/codex-control/environments.json
 ```
 
 **Cause 3: ChatGPT Pro subscription required**
+
 ```bash
 # Codex Cloud requires ChatGPT Plus or Team subscription
 # Verify at: https://chatgpt.com/settings
 ```
 
 **Cause 4: Network/connectivity issues**
+
 ```bash
 # Test basic connectivity
 codex cloud  # Should open TUI if connected
@@ -1953,6 +2314,7 @@ codex cloud exec --env YOUR_ENV_ID "echo hello"
 **Error**: Using `codex_cloud_list_environments` returns "No configuration file found"
 
 **Solution**:
+
 ```bash
 # Create config directory
 mkdir -p ~/.config/codex-control
@@ -2031,6 +2393,7 @@ npm start
 ### ✅ Phase 1: Enhanced Tool Schemas (v1.4.0) - Complete
 
 **Delivered**:
+
 - Comprehensive tool descriptions with structured sections
 - PREREQUISITES, WORKFLOW, BEST PRACTICES for all Codex Cloud tools
 - Token budget: 1,051 / 3,000 tokens (35% usage, 65% headroom)
@@ -2041,6 +2404,7 @@ npm start
 ### ✅ Phase 2: Environment Templates (v1.5.0) - Complete
 
 **Delivered**:
+
 - 5 production-ready environment templates
 - 4-level fallback error handling
 - MCP resources for template discovery
@@ -2052,6 +2416,7 @@ npm start
 ### ✅ Phase 3: Setup Helper Tool (v2.0.0) - Complete
 
 **Delivered**:
+
 - Interactive guide generator (`codex_cloud_github_setup`)
 - Repository-specific configuration
 - Pre-filled scripts from templates
@@ -2063,6 +2428,7 @@ npm start
 ### 🎉 Result: Complete Autonomous GitHub Workflow
 
 All three phases complete! Claude Code can now:
+
 1. ✅ Understand complete workflows (enhanced schemas)
 2. ✅ Access pre-configured templates (MCP resources)
 3. ✅ Guide users through setup (interactive tool)
@@ -2082,24 +2448,26 @@ Codex Control MCP v2.1.0 has been comprehensively validated in production git re
 
 **Test Environment**: Real git repository (`lba/infrastructure/tools/seo-ads-expert/main`)
 
-| Test | Status | Key Metrics |
-|------|--------|-------------|
-| **codex_cloud_list_environments** | ✅ PASSED | Found 2 configured environments |
-| **codex_cloud_check_reminder** | ✅ PASSED | Found 1 pending Cloud task |
-| **codex_local_exec** | ✅ PASSED | 93.5% cache rate, 64 events captured |
-| **codex_local_resume** | ✅ PASSED | Thread resumption works perfectly |
+| Test                              | Status    | Key Metrics                          |
+| --------------------------------- | --------- | ------------------------------------ |
+| **codex_cloud_list_environments** | ✅ PASSED | Found 2 configured environments      |
+| **codex_cloud_check_reminder**    | ✅ PASSED | Found 1 pending Cloud task           |
+| **codex_local_exec**              | ✅ PASSED | 93.5% cache rate, 64 events captured |
+| **codex_local_resume**            | ✅ PASSED | Thread resumption works perfectly    |
 
 **Success Rate**: 4/4 tests passed (100%)
 
 ### Performance Highlights
 
 **Test 3: Local Exec**
+
 - Input tokens: 402,875 (376,704 cached = **93.5% cache rate!**)
 - Output tokens: 15,975
 - Events captured: 64 (full real-time visibility)
 - Task: List and count 306 TypeScript files
 
 **Test 4: Thread Resume**
+
 - Input tokens: 24,233 (11,008 cached = **45.4% cache rate**)
 - Output tokens: 199 (efficient follow-up)
 - Thread resumption: ✅ Works in git repos without `skipGitRepoCheck`
@@ -2110,12 +2478,14 @@ Codex Control MCP v2.1.0 has been comprehensively validated in production git re
 **Key Finding**: The documented "thread resumption git limitation" does NOT affect typical Claude Code workflows.
 
 **Proof**:
+
 - ✅ All Claude Code working directories are git repositories
 - ✅ `codex_local_resume` works perfectly in git repos
 - ✅ No `skipGitRepoCheck` needed for normal development
 - ✅ Thread resumption enables iterative workflows
 
 **The limitation only affects**:
+
 - ❌ Non-git directories (e.g., `/tmp/`, `/Downloads/`)
 - ❌ Testing environments without git initialization
 
@@ -2131,6 +2501,7 @@ Codex Control MCP v2.1.0 has been comprehensively validated in production git re
 ### Conclusion
 
 Codex Control MCP v2.1.0 is **production-ready** with:
+
 - ✅ Dual execution modes validated
 - ✅ Real-time event streaming works perfectly
 - ✅ Thread management enables iterative workflows
@@ -2154,10 +2525,12 @@ Codex Control MCP v2.1.0 is **production-ready** with:
 **What is a "Trusted Git Directory"?**
 
 A "trusted directory" means:
+
 1. ✅ The directory contains a `.git` folder (is a git repository)
 2. ✅ It's not in a potentially dangerous location (like `/`, `/usr/bin/`, etc.)
 
 **Quick Check**:
+
 ```bash
 # Check if your directory is trusted:
 ls -la .git
@@ -2169,6 +2542,7 @@ git rev-parse --git-dir
 ```
 
 **For Claude Code Users**: All your project directories are already trusted git repositories! Examples:
+
 - ✅ `/Users/nathanschram/claude-code-tools/` - git repo
 - ✅ `/Users/nathanschram/claude-code-tools/lba/apps/mcp-servers/codex-control/` - git repo
 - ✅ `/Users/nathanschram/claude-code-tools/illustrations/` - git repo
@@ -2181,15 +2555,18 @@ git rev-parse --git-dir
 **Root Cause**: The Codex SDK's `resumeThread()` method doesn't accept a `skipGitRepoCheck` option, unlike `startThread()` which does. This is an SDK limitation, not a bug in our implementation.
 
 **When You WOULD Hit This**:
+
 - ❌ Running in `/Users/yourname/Downloads` (not a git repo)
 - ❌ Running in `/tmp/random-directory` (not a git repo)
 - ❌ Testing in non-git directories without `skipGitRepoCheck`
 
 **Impact**:
+
 - ✅ **Zero impact for git-based workflows** (99% of Claude Code usage)
 - ⚠️ **Medium impact for non-git contexts** (rare edge case)
 
 **Workaround** (only needed if NOT in a git repo):
+
 ```bash
 # Option 1: Initialize git in your directory (recommended)
 cd /path/to/your/project
@@ -2204,22 +2581,26 @@ git init
 ```
 
 **Example Error** (only in non-git directories):
+
 ```
 Codex Exec exited with code 1:
 Not inside a trusted directory and --skip-git-repo-check was not specified.
 ```
 
 **Why This Exists**: Codex CLI has a safety mechanism to prevent accidental command execution in random directories. It requires either:
+
 - A git repository (trusted context), OR
 - Explicit `skipGitRepoCheck: true` flag
 
 **The Problem**:
+
 - ✅ `codex_local_exec` can use `skipGitRepoCheck: true`
 - ❌ `codex_local_resume` cannot (SDK doesn't support it)
 
 **Validation Results** (2025-11-11): ✅ **CONFIRMED - This limitation is non-existent for production use!**
 
 In comprehensive v2.1.0 testing in a real git repository (`seo-ads-expert`):
+
 - ✅ `codex_local_exec` worked WITHOUT `skipGitRepoCheck` in git repo
 - ✅ `codex_local_resume` worked perfectly WITHOUT `skipGitRepoCheck` in git repo
 - ✅ Thread ID: `019a720e-386b-7902-824a-648819f7cef6` successfully resumed
@@ -2238,14 +2619,16 @@ In comprehensive v2.1.0 testing in a real git repository (`seo-ads-expert`):
 **Issue**: No programmatic API exists for polling Codex Cloud task status.
 
 **Impact**:
+
 - ✅ **Mitigated in v2.1.0** by `codex_cloud_check_reminder` tool
 - Users get organized view with Web UI links
 - Still requires manual Web UI checking for detailed status
 
 **Workaround**:
+
 ```typescript
 // Use the reminder tool to see all pending tasks
-await codex_cloud_check_reminder()
+await codex_cloud_check_reminder();
 
 // Output includes:
 // - Task IDs
@@ -2266,11 +2649,13 @@ await codex_cloud_check_reminder()
 **Issue**: No programmatic API exists for listing Codex Cloud environments.
 
 **Impact**:
+
 - ✅ **Mitigated in v2.1.0** by `codex_cloud_list_environments` tool
 - Requires manual config file maintenance
 - Environment creation still requires Web UI
 
 **Workaround**:
+
 ```bash
 # Step 1: Create config directory
 mkdir -p ~/.config/codex-control
@@ -2300,10 +2685,12 @@ EOF
 **Issue**: The `codex cloud` TUI (Terminal User Interface) is interactive-only and not scriptable.
 
 **Impact**:
+
 - ✅ **No impact on MCP usage** - We use `codex cloud exec` for submissions
 - ⚠️ **Cannot parse TUI output** programmatically
 
 **Workaround**:
+
 - Use Web UI links from `codex_cloud_check_reminder`
 - Use `codex cloud exec` for task submission (already implemented)
 - Monitor via Web UI at https://chatgpt.com/codex
@@ -2317,6 +2704,7 @@ EOF
 **Issue**: Requires ChatGPT Pro subscription or `CODEX_API_KEY` environment variable.
 
 **Workaround**:
+
 ```bash
 # Option 1: Use ChatGPT Pro (automatic auth)
 # No setup needed - just log in
@@ -2334,6 +2722,7 @@ export CODEX_API_KEY=sk-proj-...
 **Impact**: Multiple concurrent `codex_local_exec` calls will queue.
 
 **Workaround**:
+
 - Use `CODEX_MAX_CONCURRENCY` environment variable (default: 2)
 - For parallel execution, use multiple Cloud tasks via `codex_cloud_submit`
 
@@ -2343,16 +2732,17 @@ export CODEX_API_KEY=sk-proj-...
 
 When choosing between local and cloud execution, consider these trade-offs:
 
-| Feature | Local SDK | Cloud |
-|---------|-----------|-------|
-| **Git Repo Requirement** | ⚠️ Yes (for resume) | ✅ No |
-| **Real-Time Status** | ✅ Full visibility | ❌ Web UI only |
-| **Long-Running Tasks** | ⚠️ Blocks MCP | ✅ Background |
-| **Thread Resumption** | ✅ Yes (in git repos) | ❌ No |
-| **Token Visibility** | ✅ Full tracking | ❌ No visibility |
-| **Best For** | Iterative dev in repos | Long tasks, any context |
+| Feature                  | Local SDK              | Cloud                   |
+| ------------------------ | ---------------------- | ----------------------- |
+| **Git Repo Requirement** | ⚠️ Yes (for resume)    | ✅ No                   |
+| **Real-Time Status**     | ✅ Full visibility     | ❌ Web UI only          |
+| **Long-Running Tasks**   | ⚠️ Blocks MCP          | ✅ Background           |
+| **Thread Resumption**    | ✅ Yes (in git repos)  | ❌ No                   |
+| **Token Visibility**     | ✅ Full tracking       | ❌ No visibility        |
+| **Best For**             | Iterative dev in repos | Long tasks, any context |
 
 **Recommendation**:
+
 - Use **Local SDK** for iterative development in git repositories
 - Use **Cloud** for long-running tasks or non-git contexts
 - Use `codex_cloud_check_reminder` to monitor Cloud tasks
@@ -2364,16 +2754,19 @@ When choosing between local and cloud execution, consider these trade-offs:
 Potential future enhancements (not planned):
 
 ### GitHub Actions Integration
+
 - Run Codex tasks in GitHub Actions workflows
 - Environment-scoped secrets
 - Scheduled/manual triggers
 
 ### Hybrid Architecture
+
 - Intelligent routing (local vs cloud)
 - Cost optimization with usage tracking
 - Local for quick tasks, cloud for heavy workloads
 
 ### SDK Result Parsing
+
 - Programmatic access to Codex Cloud task results
 - Automated diff parsing and application
 - PR status tracking via API

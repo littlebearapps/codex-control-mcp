@@ -7,10 +7,10 @@
  * - SEP-1391 alignment (state terminology, polling guidance, TTL)
  * - Support for disambiguation and auto-resolution
  */
-import Database from 'better-sqlite3';
-import * as path from 'path';
-import * as os from 'os';
-import * as fs from 'fs';
+import Database from "better-sqlite3";
+import * as path from "path";
+import * as os from "os";
+import * as fs from "fs";
 /**
  * Unified Task Registry using SQLite
  */
@@ -19,29 +19,29 @@ export class TaskRegistry {
     dbPath;
     constructor(dbPath) {
         // Config directory migration: codex-control → mcp-delegator (v3.4.1)
-        const oldConfigDir = path.join(os.homedir(), '.config', 'codex-control');
-        const newConfigDir = path.join(os.homedir(), '.config', 'mcp-delegator');
+        const oldConfigDir = path.join(os.homedir(), ".config", "codex-control");
+        const newConfigDir = path.join(os.homedir(), ".config", "mcp-delegator");
         // Auto-migrate if old directory exists and new doesn't
         let configDir = newConfigDir;
         if (fs.existsSync(oldConfigDir) && !fs.existsSync(newConfigDir)) {
             try {
-                console.error('[TaskRegistry] Migrating config from codex-control to mcp-delegator...');
+                console.error("[TaskRegistry] Migrating config from codex-control to mcp-delegator...");
                 fs.renameSync(oldConfigDir, newConfigDir);
-                console.error('[TaskRegistry] ✅ Migration complete! Config now at:', newConfigDir);
+                console.error("[TaskRegistry] ✅ Migration complete! Config now at:", newConfigDir);
             }
             catch (error) {
-                console.error('[TaskRegistry] ⚠️  Migration failed:', error);
-                console.error('[TaskRegistry] Falling back to old directory for safety');
+                console.error("[TaskRegistry] ⚠️  Migration failed:", error);
+                console.error("[TaskRegistry] Falling back to old directory for safety");
                 configDir = oldConfigDir; // Fallback to old directory
             }
         }
         else if (fs.existsSync(oldConfigDir) && fs.existsSync(newConfigDir)) {
             // Both exist - use new directory, warn about old
-            console.error('[TaskRegistry] ⚠️  Both config directories exist. Using new directory:', newConfigDir);
-            console.error('[TaskRegistry] Old directory still present:', oldConfigDir);
-            console.error('[TaskRegistry] You can manually remove the old directory if migration is complete.');
+            console.error("[TaskRegistry] ⚠️  Both config directories exist. Using new directory:", newConfigDir);
+            console.error("[TaskRegistry] Old directory still present:", oldConfigDir);
+            console.error("[TaskRegistry] You can manually remove the old directory if migration is complete.");
         }
-        this.dbPath = dbPath || path.join(configDir, 'tasks.db');
+        this.dbPath = dbPath || path.join(configDir, "tasks.db");
         // Ensure config directory exists
         if (!fs.existsSync(configDir)) {
             fs.mkdirSync(configDir, { recursive: true });
@@ -55,27 +55,28 @@ export class TaskRegistry {
      */
     migrateSchema() {
         // Get current schema version
-        const versionResult = this.db.prepare(`
+        const versionResult = this.db
+            .prepare(`
       SELECT sql FROM sqlite_master
       WHERE type='table' AND name='tasks'
-    `).get();
+    `)
+            .get();
         if (!versionResult || !versionResult.sql) {
             // Table doesn't exist yet, no migration needed
             return;
         }
         const currentSchema = versionResult.sql;
         // Check if schema has old constraint (missing completed_with_warnings/completed_with_errors)
-        const hasOldConstraint = currentSchema.includes("CHECK(status IN ('pending', 'working', 'completed', 'failed', 'canceled', 'unknown'))") ||
-            !currentSchema.includes('completed_with_warnings');
+        const hasOldConstraint = currentSchema.includes("CHECK(status IN ('pending', 'working', 'completed', 'failed', 'canceled', 'unknown'))") || !currentSchema.includes("completed_with_warnings");
         if (hasOldConstraint) {
-            console.error('[TaskRegistry] Migrating database schema to add new status values...');
+            console.error("[TaskRegistry] Migrating database schema to add new status values...");
             // Create backup table
-            this.db.exec('DROP TABLE IF EXISTS tasks_backup');
-            this.db.exec('CREATE TABLE tasks_backup AS SELECT * FROM tasks');
+            this.db.exec("DROP TABLE IF EXISTS tasks_backup");
+            this.db.exec("CREATE TABLE tasks_backup AS SELECT * FROM tasks");
             // Drop old table
-            this.db.exec('DROP TABLE tasks');
+            this.db.exec("DROP TABLE tasks");
             // Table will be recreated with new schema in initializeSchema()
-            console.error('[TaskRegistry] Schema migration complete. Old data backed up to tasks_backup table.');
+            console.error("[TaskRegistry] Schema migration complete. Old data backed up to tasks_backup table.");
         }
     }
     /**
@@ -83,21 +84,23 @@ export class TaskRegistry {
      */
     restoreFromBackup() {
         // Check if backup table exists
-        const backupExists = this.db.prepare(`
+        const backupExists = this.db
+            .prepare(`
       SELECT name FROM sqlite_master
       WHERE type='table' AND name='tasks_backup'
-    `).get();
+    `)
+            .get();
         if (!backupExists) {
             return;
         }
-        console.error('[TaskRegistry] Restoring data from backup...');
+        console.error("[TaskRegistry] Restoring data from backup...");
         // Copy data from backup to new table
         this.db.exec(`
       INSERT INTO tasks SELECT * FROM tasks_backup
     `);
         // Drop backup table
-        this.db.exec('DROP TABLE tasks_backup');
-        console.error('[TaskRegistry] Data restoration complete.');
+        this.db.exec("DROP TABLE tasks_backup");
+        console.error("[TaskRegistry] Data restoration complete.");
     }
     /**
      * Initialize database schema
@@ -166,7 +169,7 @@ export class TaskRegistry {
             externalId: params.externalId,
             alias: params.alias,
             origin: params.origin,
-            status: 'pending',
+            status: "pending",
             instruction: params.instruction,
             workingDir: params.workingDir || process.cwd(),
             envId: params.envId,
@@ -203,7 +206,11 @@ export class TaskRegistry {
             status,
             updatedAt: now,
         };
-        if (status === 'completed' || status === 'completed_with_warnings' || status === 'completed_with_errors' || status === 'failed' || status === 'canceled') {
+        if (status === "completed" ||
+            status === "completed_with_warnings" ||
+            status === "completed_with_errors" ||
+            status === "failed" ||
+            status === "canceled") {
             updates.completedAt = now;
         }
         return this.updateTask(taskId, updates);
@@ -273,7 +280,7 @@ export class TaskRegistry {
      * Get a specific task by ID
      */
     getTask(taskId) {
-        const stmt = this.db.prepare('SELECT * FROM tasks WHERE id = ?');
+        const stmt = this.db.prepare("SELECT * FROM tasks WHERE id = ?");
         const row = stmt.get(taskId);
         return row ? this.rowToTask(row) : null;
     }
@@ -289,7 +296,7 @@ export class TaskRegistry {
       LIMIT ?
     `);
         const rows = stmt.all(cutoff, limit);
-        return rows.map(row => this.rowToTask(row));
+        return rows.map((row) => this.rowToTask(row));
     }
     /**
      * Get running tasks (for auto-resolution)
@@ -314,64 +321,64 @@ export class TaskRegistry {
       `);
             rows = stmt.all();
         }
-        return rows.map(row => this.rowToTask(row));
+        return rows.map((row) => this.rowToTask(row));
     }
     /**
      * Query tasks with filters
      */
     queryTasks(filter = {}) {
-        let query = 'SELECT * FROM tasks WHERE 1=1';
+        let query = "SELECT * FROM tasks WHERE 1=1";
         const params = [];
         if (filter.origin) {
-            query += ' AND origin = ?';
+            query += " AND origin = ?";
             params.push(filter.origin);
         }
         if (filter.status) {
-            query += ' AND status = ?';
+            query += " AND status = ?";
             params.push(filter.status);
         }
         if (filter.workingDir) {
-            query += ' AND working_dir = ?';
+            query += " AND working_dir = ?";
             params.push(filter.workingDir);
         }
         if (filter.envId) {
-            query += ' AND env_id = ?';
+            query += " AND env_id = ?";
             params.push(filter.envId);
         }
         if (filter.threadId) {
-            query += ' AND thread_id = ?';
+            query += " AND thread_id = ?";
             params.push(filter.threadId);
         }
         if (filter.userId) {
-            query += ' AND user_id = ?';
+            query += " AND user_id = ?";
             params.push(filter.userId);
         }
         if (filter.createdAfter) {
-            query += ' AND created_at >= ?';
+            query += " AND created_at >= ?";
             params.push(filter.createdAfter);
         }
         if (filter.createdBefore) {
-            query += ' AND created_at <= ?';
+            query += " AND created_at <= ?";
             params.push(filter.createdBefore);
         }
-        query += ' ORDER BY created_at DESC';
+        query += " ORDER BY created_at DESC";
         if (filter.limit) {
-            query += ' LIMIT ?';
+            query += " LIMIT ?";
             params.push(filter.limit);
         }
         if (filter.offset) {
-            query += ' OFFSET ?';
+            query += " OFFSET ?";
             params.push(filter.offset);
         }
         const stmt = this.db.prepare(query);
         const rows = stmt.all(...params);
-        return rows.map(row => this.rowToTask(row));
+        return rows.map((row) => this.rowToTask(row));
     }
     /**
      * Delete a task
      */
     deleteTask(taskId) {
-        const stmt = this.db.prepare('DELETE FROM tasks WHERE id = ?');
+        const stmt = this.db.prepare("DELETE FROM tasks WHERE id = ?");
         const result = stmt.run(taskId);
         return result.changes > 0;
     }
@@ -416,28 +423,36 @@ export class TaskRegistry {
      * Get statistics about tasks
      */
     getStats() {
-        const total = this.db.prepare('SELECT COUNT(*) as count FROM tasks').get();
-        const byStatusRows = this.db.prepare(`
+        const total = this.db
+            .prepare("SELECT COUNT(*) as count FROM tasks")
+            .get();
+        const byStatusRows = this.db
+            .prepare(`
       SELECT status, COUNT(*) as count
       FROM tasks
       GROUP BY status
-    `).all();
-        const byOriginRows = this.db.prepare(`
+    `)
+            .all();
+        const byOriginRows = this.db
+            .prepare(`
       SELECT origin, COUNT(*) as count
       FROM tasks
       GROUP BY origin
-    `).all();
-        const running = this.db.prepare(`
+    `)
+            .all();
+        const running = this.db
+            .prepare(`
       SELECT COUNT(*) as count
       FROM tasks
       WHERE status IN ('pending', 'working')
-    `).get();
+    `)
+            .get();
         const byStatus = {};
-        byStatusRows.forEach(row => {
+        byStatusRows.forEach((row) => {
             byStatus[row.status] = row.count;
         });
         const byOrigin = {};
-        byOriginRows.forEach(row => {
+        byOriginRows.forEach((row) => {
             byOrigin[row.origin] = row.count;
         });
         return {

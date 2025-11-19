@@ -7,11 +7,11 @@
  * - Event stream parsing
  * - Error handling and cleanup
  */
-import { CodexEvent } from './jsonl_parser.js';
-import { ProgressUpdate, TimeoutWarning, TimeoutError, PartialResults } from './timeout_watchdog.js';
+import { CodexEvent } from "./jsonl_parser.js";
+import { ProgressUpdate, TimeoutWarning, TimeoutError, PartialResults } from "./timeout_watchdog.js";
 export interface CodexProcessOptions {
     task: string;
-    mode?: 'read-only' | 'workspace-write' | 'danger-full-access';
+    mode?: "read-only" | "workspace-write" | "danger-full-access";
     outputSchema?: any;
     model?: string;
     workingDir?: string;
@@ -21,7 +21,7 @@ export interface CodexProcessOptions {
      * - 'inherit-all': All environment variables (convenient, less secure)
      * - 'allow-list': Only specified variables (recommended)
      */
-    envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
+    envPolicy?: "inherit-all" | "inherit-none" | "allow-list";
     /**
      * Allowed environment variables (only used with envPolicy='allow-list')
      * Example: ['OPENAI_API_KEY', 'DATABASE_URL']

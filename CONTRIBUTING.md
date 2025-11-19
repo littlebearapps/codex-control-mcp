@@ -28,22 +28,26 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
 ### Development Setup
 
 1. **Fork and clone the repository**
+
    ```bash
    git clone https://github.com/littlebearapps/mcp-delegator.git
    cd mcp-delegator
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Build the project**
+
    ```bash
    npm run build
    ```
 
 4. **Run tests**
+
    ```bash
    npm test
    ```
@@ -79,6 +83,7 @@ git checkout -b feature/your-feature-name
 ```
 
 Branch naming conventions:
+
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `docs/` - Documentation updates
@@ -218,25 +223,31 @@ Example:
 
 ```markdown
 ## Summary
+
 Add support for extracting GitHub PR metadata including labels and reviewers.
 
 ## Motivation
+
 Users need access to PR metadata for advanced workflow automation.
 
 ## Changes
+
 - Added `extractPRMetadata` function in `src/github/pr-metadata.ts`
 - Extended `codex_cloud_github_setup` tool with metadata extraction
 - Added tests for metadata extraction
 
 ## Testing
+
 - Unit tests added with 98% coverage
 - Manual testing with live GitHub PRs
 - Verified metadata accuracy
 
 ## Breaking Changes
+
 None
 
 ## Related Issues
+
 Closes #123
 ```
 
@@ -250,6 +261,7 @@ Closes #123
 ### After Approval
 
 Once approved and all checks pass:
+
 - **Maintainer will merge** using squash merge
 - **Automated release** will trigger via semantic-release (if applicable)
 - **Branch will be deleted** automatically
@@ -265,21 +277,21 @@ Once approved and all checks pass:
 ### Writing Tests
 
 ```typescript
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from "@jest/globals";
 
-describe('Feature Name', () => {
-  test('should handle successful case', () => {
+describe("Feature Name", () => {
+  test("should handle successful case", () => {
     // Arrange
-    const input = 'test';
+    const input = "test";
 
     // Act
     const result = functionUnderTest(input);
 
     // Assert
-    expect(result).toBe('expected');
+    expect(result).toBe("expected");
   });
 
-  test('should handle error case', () => {
+  test("should handle error case", () => {
     expect(() => functionUnderTest(null)).toThrow();
   });
 });

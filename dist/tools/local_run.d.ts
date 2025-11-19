@@ -4,23 +4,24 @@
  * Consolidates codex_cli_run, codex_cli_plan, and codex_cli_apply into one tool.
  * Supports all execution modes with safety gating for mutations.
  */
-import { ProcessManager } from '../executor/process_manager.js';
-import { ToolExecuteExtra } from '../types/progress.js';
+import { ProcessManager } from "../executor/process_manager.js";
+import { ToolExecuteExtra } from "../types/progress.js";
 export interface LocalRunToolInput {
     task: string;
-    mode?: 'read-only' | 'preview' | 'workspace-write' | 'danger-full-access';
+    mode?: "read-only" | "preview" | "workspace-write" | "danger-full-access";
     confirm?: boolean;
     outputSchema?: any;
     model?: string;
     workingDir?: string;
-    envPolicy?: 'inherit-all' | 'inherit-none' | 'allow-list';
+    envPolicy?: "inherit-all" | "inherit-none" | "allow-list";
     envAllowList?: string[];
     async?: boolean;
     allow_destructive_git?: boolean;
+    format?: "json" | "markdown";
 }
 export interface LocalRunToolResult {
     content: Array<{
-        type: 'text';
+        type: "text";
         text: string;
     }>;
     isError?: boolean;
@@ -50,6 +51,12 @@ export declare class LocalRunTool {
                 };
                 confirm: {
                     type: string;
+                    description: string;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
                     description: string;
                 };
                 model: {

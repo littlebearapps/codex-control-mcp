@@ -9,6 +9,7 @@
 ## Executive Summary
 
 ### ✅ What Works Perfectly
+
 1. **Natural language routing** - Accurately detects intent from plain English
 2. **Local vs Cloud detection** - Correctly routes based on context keywords
 3. **Threading detection** - Identifies when to use SDK vs one-shot
@@ -18,11 +19,13 @@
 7. **Error handling** - Clear messages for ambiguous requests
 
 ### 🔴 Critical Bug Found
+
 **Result Data Loss** - The unified tool discards all primitive execution results, showing only "Executed successfully" instead of actual output.
 
 **Impact**: Severe UX degradation - users get no useful information from successful operations.
 
 ### 📊 Test Results
+
 - **10/10** routing tests passed (100%)
 - **1/1** critical bug found and documented
 - **0** routing failures
@@ -40,6 +43,7 @@
 **Expected**: Route to `_codex_local_run` with read-only mode
 
 **Result**: ✅ Routing correct
+
 ```json
 {
   "acknowledged": true,
@@ -73,6 +77,7 @@
 **Expected**: Extract task ID and route to `_codex_local_status`
 
 **Result**: ✅ Perfect routing
+
 ```json
 {
   "acknowledged": true,
@@ -102,15 +107,13 @@
 **Expected**: Detect "cloud" keyword and route to `_codex_cloud_submit`
 
 **Result**: ✅ Perfect detection
+
 ```json
 {
   "acknowledged": true,
   "action": "run",
   "user_message": "[Dry Run] Would route to: _codex_cloud_submit",
-  "decision_trace": [
-    "Parsed intent: Execute new task",
-    "Inferred mode: cloud"
-  ]
+  "decision_trace": ["Parsed intent: Execute new task", "Inferred mode: cloud"]
 }
 ```
 
@@ -127,6 +130,7 @@
 **Expected**: Detect "progress" keyword and route to `_codex_local_exec` (SDK with threading)
 
 **Result**: ✅ Perfect detection
+
 ```json
 {
   "acknowledged": true,
@@ -153,6 +157,7 @@
 **Expected**: Extract task ID and route to `_codex_local_wait`
 
 **Result**: ✅ Perfect routing
+
 ```json
 {
   "acknowledged": true,
@@ -181,6 +186,7 @@
 **Expected**: Extract task ID and route to `_codex_local_cancel`
 
 **Result**: ✅ Perfect routing
+
 ```json
 {
   "acknowledged": true,
@@ -209,6 +215,7 @@
 **Expected**: Route to `_codex_cloud_list_environments`
 
 **Result**: ✅ Perfect routing
+
 ```json
 {
   "acknowledged": true,
@@ -234,15 +241,13 @@
 **Expected**: Route to `_codex_cloud_github_setup` with repo URL
 
 **Result**: ✅ Perfect routing
+
 ```json
 {
   "acknowledged": true,
   "action": "setup",
   "user_message": "[Dry Run] Would route to: _codex_cloud_github_setup",
-  "decision_trace": [
-    "Parsed intent: Setup github",
-    "Routing to GitHub setup"
-  ]
+  "decision_trace": ["Parsed intent: Setup github", "Routing to GitHub setup"]
 }
 ```
 
@@ -261,6 +266,7 @@
 **Expected**: Attempt disambiguation or show error
 
 **Result**: ✅ Graceful error handling
+
 ```json
 {
   "acknowledged": false,
@@ -286,19 +292,21 @@
 ## Critical Bug: Result Data Loss
 
 ### Location
+
 **File**: `src/tools/codex.ts`
 **Function**: `convertPrimitiveResult()`
 **Lines**: ~208-210
 
 ### Root Cause
+
 ```typescript
 // Current implementation (BROKEN)
 const response: CodexToolResponse = {
   acknowledged: !isError,
   action: mapIntentToAction(routing.intent.type),
   user_message: isError
-    ? `Primitive execution failed: ${textContent}`  // ✅ Shows error details
-    : `Executed ${routing.primitive} successfully`,  // ❌ DISCARDS results!
+    ? `Primitive execution failed: ${textContent}` // ✅ Shows error details
+    : `Executed ${routing.primitive} successfully`, // ❌ DISCARDS results!
   decision_trace: includeTrace ? routing.decisionTrace : undefined,
 };
 ```
@@ -306,6 +314,7 @@ const response: CodexToolResponse = {
 ### Impact Analysis
 
 **What Users See**:
+
 ```json
 {
   "acknowledged": true,
@@ -320,6 +329,7 @@ const response: CodexToolResponse = {
 ```
 
 **What Users Should See**:
+
 ```json
 {
   "acknowledged": true,
@@ -329,7 +339,9 @@ const response: CodexToolResponse = {
 ```
 
 ### Severity
+
 **🔴 CRITICAL** - Renders unified tool nearly useless
+
 - Users cannot see test results
 - Users cannot see analysis output
 - Users cannot see what files were created/modified
@@ -355,11 +367,13 @@ user_message: textContent,  // Pass through primitive results
 ```
 
 **Pros**:
+
 - ✅ One-line fix
 - ✅ Preserves all primitive output
 - ✅ Works for all primitives
 
 **Cons**:
+
 - ⚠️ Loses unified tool's opportunity to enhance formatting
 - ⚠️ Different primitives have different output formats
 
@@ -373,23 +387,23 @@ Create primitive-specific formatters:
 function convertPrimitiveResult(
   primitiveResult: any,
   routing: any,
-  includeTrace: boolean | undefined
+  includeTrace: boolean | undefined,
 ): CodexToolResponse {
-  const textContent = primitiveResult.content?.[0]?.text || '';
+  const textContent = primitiveResult.content?.[0]?.text || "";
   const isError = primitiveResult.isError === true;
 
   // Route to primitive-specific formatter
   let enhancedMessage = textContent;
 
   switch (routing.primitive) {
-    case '_codex_local_run':
-    case '_codex_local_exec':
+    case "_codex_local_run":
+    case "_codex_local_exec":
       enhancedMessage = formatExecutionResult(textContent, primitiveResult);
       break;
-    case '_codex_local_status':
+    case "_codex_local_status":
       enhancedMessage = formatStatusResult(textContent, primitiveResult);
       break;
-    case '_codex_local_wait':
+    case "_codex_local_wait":
       enhancedMessage = formatWaitResult(textContent, primitiveResult);
       break;
     // ... etc
@@ -400,7 +414,7 @@ function convertPrimitiveResult(
   return {
     acknowledged: !isError,
     action: mapIntentToAction(routing.intent.type),
-    user_message: enhancedMessage,  // Enhanced but complete
+    user_message: enhancedMessage, // Enhanced but complete
     decision_trace: includeTrace ? routing.decisionTrace : undefined,
   };
 }
@@ -414,12 +428,14 @@ function formatExecutionResult(text: string, result: any): string {
 ```
 
 **Pros**:
+
 - ✅ Preserves all data
 - ✅ Adds value with enhanced formatting
 - ✅ Consistent UX across primitives
 - ✅ Can extract structured data (test counts, durations, etc.)
 
 **Cons**:
+
 - ⏳ More implementation work
 - ⚠️ Needs primitive result format knowledge
 
@@ -433,6 +449,7 @@ function formatExecutionResult(text: string, result: any): string {
 **Proposed**: Unified tool extracts key metrics
 
 Example for test execution:
+
 ```json
 {
   "user_message": "✅ Tests Completed\n\nPassed: 15/15\nDuration: 3.2s\nCoverage: 87%",
@@ -536,33 +553,36 @@ Example for test execution:
 
 ### Natural Language Patterns Detected
 
-| User Input | Intent | Mode | Primitive |
-|-----------|--------|------|-----------|
-| "run tests" | Execute | Local | `_codex_local_run` |
-| "analyze code" | Execute | Local | `_codex_local_run` |
-| "analyze with progress" | Execute | Local+Thread | `_codex_local_exec` |
-| "run tests in the cloud" | Execute | Cloud | `_codex_cloud_submit` |
-| "check status of T-..." | Status | N/A | `_codex_local_status` |
-| "wait for T-..." | Wait | N/A | `_codex_local_wait` |
-| "cancel T-..." | Cancel | N/A | `_codex_local_cancel` |
-| "list environments" | Setup | N/A | `_codex_cloud_list_environments` |
-| "setup github for ..." | Setup | N/A | `_codex_cloud_github_setup` |
+| User Input               | Intent  | Mode         | Primitive                        |
+| ------------------------ | ------- | ------------ | -------------------------------- |
+| "run tests"              | Execute | Local        | `_codex_local_run`               |
+| "analyze code"           | Execute | Local        | `_codex_local_run`               |
+| "analyze with progress"  | Execute | Local+Thread | `_codex_local_exec`              |
+| "run tests in the cloud" | Execute | Cloud        | `_codex_cloud_submit`            |
+| "check status of T-..."  | Status  | N/A          | `_codex_local_status`            |
+| "wait for T-..."         | Wait    | N/A          | `_codex_local_wait`              |
+| "cancel T-..."           | Cancel  | N/A          | `_codex_local_cancel`            |
+| "list environments"      | Setup   | N/A          | `_codex_cloud_list_environments` |
+| "setup github for ..."   | Setup   | N/A          | `_codex_cloud_github_setup`      |
 
 ### Keywords That Trigger Routing
 
 **Cloud Mode**:
+
 - "in the cloud"
 - "on cloud"
 - "cloud execution"
 - "background"
 
 **Threading Mode**:
+
 - "with progress"
 - "step by step"
 - "with updates"
 - "real-time"
 
 **Operations**:
+
 - "check" → status
 - "wait" → wait
 - "cancel" → cancel
@@ -572,6 +592,7 @@ Example for test execution:
 ### Task ID Extraction
 
 **Formats Recognized**:
+
 - ✅ `T-local-abc123`
 - ✅ `T-cloud-xyz789`
 - ✅ Embedded in sentences: "check status of T-local-abc123 please"
@@ -581,6 +602,7 @@ Example for test execution:
 ## Test Coverage Summary
 
 ### Routing Tests
+
 - ✅ Local execution (one-shot)
 - ✅ Local execution (threaded)
 - ✅ Cloud execution
@@ -592,11 +614,13 @@ Example for test execution:
 - ✅ Ambiguous reference handling
 
 ### Modes Tested
+
 - ✅ Normal execution
 - ✅ Dry-run mode
 - ✅ Explain mode (decision trace)
 
 ### Not Yet Tested
+
 - ❌ Results retrieval operation
 - ❌ Resume thread operation
 - ❌ Multi-task disambiguation (when multiple tasks found)
@@ -609,16 +633,19 @@ Example for test execution:
 ## Performance Observations
 
 ### Routing Speed
+
 - **Dry-run**: < 50ms (fast, no execution)
 - **With execution**: Depends on primitive (0.5s - 60s+)
 
 ### Decision Trace Quality
+
 - ✅ Clear intent identification
 - ✅ Shows mode inference
 - ✅ Explains routing choice
 - ✅ Useful for debugging
 
 Example trace:
+
 ```
 "Parsed intent: Execute new task"
 "Inferred mode: cloud"
@@ -630,6 +657,7 @@ Example trace:
 ## Conclusions
 
 ### What's Production-Ready ✅
+
 1. **Routing engine** - Intelligent, accurate, well-designed
 2. **Intent parsing** - Handles natural language variations
 3. **Task ID extraction** - Robust pattern matching
@@ -638,12 +666,14 @@ Example trace:
 6. **Explain mode** - Excellent transparency
 
 ### What Needs Immediate Fix 🔴
+
 1. **Result data loss bug** - Critical UX issue
    - **Severity**: HIGH
    - **Effort**: LOW (one-line fix)
    - **Impact**: Makes tool usable
 
 ### What Would Be Nice to Have 🟡
+
 1. Result enrichment (extract metrics)
 2. Progressive updates (streaming)
 3. Smart disambiguation (show options)
@@ -655,11 +685,13 @@ Example trace:
 ## Recommendation
 
 ### For Production Deployment
+
 1. ✅ **Deploy routing engine as-is** - It's excellent
 2. 🔴 **Fix result data loss first** - Blocking issue
 3. 🟡 **Add enhancements later** - Not blocking but valuable
 
 ### Minimal Fix (Ready in 5 minutes)
+
 ```typescript
 // src/tools/codex.ts line ~208
 user_message: textContent,  // One-line fix
@@ -668,6 +700,7 @@ user_message: textContent,  // One-line fix
 Build, test, deploy. The unified tool will be fully functional.
 
 ### Future Enhancements (v3.1.0+)
+
 - Result formatters
 - Streaming updates
 - Context memory
@@ -686,4 +719,4 @@ The v3.0.0 vision is sound. The routing intelligence is exceptional. Fix the res
 
 ---
 
-*End of Unified Tool Test Report*
+_End of Unified Tool Test Report_

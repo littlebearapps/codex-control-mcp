@@ -11,6 +11,7 @@
 ## Issue Summary
 
 **Reported Symptom**:
+
 - `_codex_local_exec` returns task ID
 - Task never appears in registry (even with `showAll: true`)
 - `_codex_local_wait` returns without output
@@ -27,10 +28,11 @@
 ### Task Registration Flow (src/tools/local_exec.ts)
 
 **Lines 206-220**: Task Registration
+
 ```typescript
 // Register task in unified SQLite registry BEFORE execution
 const registeredTask = globalTaskRegistry.registerTask({
-  origin: 'local',
+  origin: "local",
   instruction: validated.task,
   workingDir: validated.workingDir || process.cwd(),
   mode: validated.mode,
@@ -39,19 +41,21 @@ const registeredTask = globalTaskRegistry.registerTask({
 });
 
 const taskId = registeredTask.id;
-console.error('[LocalExec] Registered task in SQLite registry:', taskId);
+console.error("[LocalExec] Registered task in SQLite registry:", taskId);
 
 // Update status to 'working' immediately
-globalTaskRegistry.updateStatus(taskId, 'working');
+globalTaskRegistry.updateStatus(taskId, "working");
 ```
 
 **Expected Behavior**:
+
 1. Task created in database with status='pending' (line 275 in task_registry.ts)
 2. Task ID generated (format: T-local-XXXXX)
 3. Status immediately updated to 'working' (line 220)
 4. Task should be visible in `_codex_local_status` query
 
 **Lines 223-380**: Background Execution
+
 ```typescript
 // Execute in background (fire and forget - updates registry on completion)
 (async () => {
@@ -176,22 +180,27 @@ queryTasks(filter: TaskFilter = {}): Task[] {
 ## Status Tool Analysis (src/tools/local_status.ts)
 
 **Lines 66-69**: Task Query
+
 ```typescript
 const tasks = globalTaskRegistry.queryTasks({
-  origin: 'local',
-  workingDir: showAll ? undefined : workingDir
+  origin: "local",
+  workingDir: showAll ? undefined : workingDir,
 });
 ```
 
 **Expected Behavior**:
+
 - With `showAll: false` (default): Filters by current working directory
 - With `showAll: true`: Returns ALL 'local' tasks regardless of working directory
 
 **Lines 78-84**: Task Grouping
+
 ```typescript
-const runningTasks = tasks.filter((t: Task) => t.status === 'working');
-const completedTasks = tasks.filter((t: Task) => t.status === 'completed').slice(-10);
-const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
+const runningTasks = tasks.filter((t: Task) => t.status === "working");
+const completedTasks = tasks
+  .filter((t: Task) => t.status === "completed")
+  .slice(-10);
+const failedTasks = tasks.filter((t: Task) => t.status === "failed").slice(-5);
 ```
 
 ---
@@ -203,6 +212,7 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 **Hypothesis**: Database insert/update fails silently
 
 **Evidence Against**:
+
 - No try/catch errors in logs
 - SQLite operations are synchronous (immediate failure if error)
 - better-sqlite3 throws errors on failure
@@ -215,6 +225,7 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 **Hypothesis**: Task registered with wrong working directory
 
 **Evidence Against**:
+
 - Issue reports `showAll: true` was used (bypasses workingDir filter)
 - Default is `process.cwd()` if not specified
 - Migration showed tasks from various working directories
@@ -226,11 +237,13 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 **Hypothesis**: Query happens before database write completes
 
 **Evidence For**:
+
 - Background execution is async
 - Task registration is synchronous
 - But updateStatus(taskId, 'working') happens BEFORE async block
 
 **Evidence Against**:
+
 - SQLite writes are synchronous
 - Task should be visible immediately after line 220
 
@@ -241,10 +254,12 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 **Hypothesis**: Multiple SQLite connections not seeing each other's writes
 
 **Evidence For**:
+
 - globalTaskRegistry is a singleton (src/state/task_registry.ts)
 - But if MCP server restarts, new instance created
 
 **Evidence Against**:
+
 - better-sqlite3 uses WAL mode (Write-Ahead Logging) by default
 - WAL supports concurrent readers
 
@@ -255,11 +270,13 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 **Hypothesis**: Tasks written to `~/.config/codex-control/` but query looking at wrong location
 
 **Evidence For**:
+
 - Errors reported BEFORE migration to `~/.config/mcp-delegator/`
 - Migration just completed (2025-11-17 14:34)
 - User had v3.2.1 installed (outdated)
 
 **Evidence Against**:
+
 - Issue reports task not found even with `showAll: true`
 - showAll should find tasks regardless of directory
 
@@ -270,10 +287,12 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 **Hypothesis**: thread.runStreamed() never yields any events
 
 **Evidence For**:
+
 - Background execution could hang silently
 - Task stays in 'working' state forever
 
 **Evidence Against**:
+
 - v3.2.1 has timeout detection (5 min idle / 20 min hard)
 - Should fail with timeout error
 - Issue reports task not even appearing in registry
@@ -285,6 +304,7 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 ## Critical Discovery: Migration Timing
 
 **Timeline**:
+
 - **Errors reported**: During auditor-toolkit testing (date unknown, but before 2025-11-17)
 - **MCP Delegator version at time**: v3.2.1 or earlier
 - **Registry location at time**: `~/.config/codex-control/tasks.db`
@@ -293,6 +313,7 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 - **Current version**: v3.4.1 (via npm link)
 
 **Implication**: The errors occurred with the OLD setup. The issue may have been:
+
 1. Using outdated version (v3.2.1 instead of v3.4.0)
 2. Old registry directory causing issues
 3. Migration resolved the issue
@@ -304,6 +325,7 @@ const failedTasks = tasks.filter((t: Task) => t.status === 'failed').slice(-5);
 ### Test 1: Verify Issue is Resolved (v3.4.1)
 
 **Setup**:
+
 ```bash
 # Ensure using v3.4.1
 which mcp-delegator  # Should be /opt/homebrew/bin/mcp-delegator
@@ -314,6 +336,7 @@ ls -la ~/.config/mcp-delegator/tasks.db  # Should exist
 ```
 
 **Test Case**:
+
 ```typescript
 // Use _codex_local_exec to start a task
 {
@@ -332,6 +355,7 @@ ls -la ~/.config/mcp-delegator/tasks.db  # Should exist
 ```
 
 **Success Criteria**:
+
 - ✅ Task appears in registry with `showAll: true`
 - ✅ Task status shows as 'working'
 - ✅ Task completes or times out (not stuck forever)
@@ -339,6 +363,7 @@ ls -la ~/.config/mcp-delegator/tasks.db  # Should exist
 ### Test 2: Verify Task Execution
 
 **Test Case**:
+
 ```typescript
 // Create a simple test file
 {
@@ -355,6 +380,7 @@ ls -la ~/.config/mcp-delegator/tasks.db  # Should exist
 ```
 
 **Success Criteria**:
+
 - ✅ Task completes with status 'completed'
 - ✅ File exists on disk
 - ✅ codex_local_results shows file creation
@@ -362,6 +388,7 @@ ls -la ~/.config/mcp-delegator/tasks.db  # Should exist
 ### Test 3: Stress Test Registry Query
 
 **Test Case**:
+
 ```bash
 # Direct SQLite query to verify task is actually in database
 sqlite3 ~/.config/mcp-delegator/tasks.db "
@@ -374,6 +401,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 ```
 
 **Success Criteria**:
+
 - ✅ Recently created tasks appear in query
 - ✅ Status is 'working' or 'completed' (not stuck as 'pending')
 
@@ -384,6 +412,7 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 ### Current Logging
 
 **src/tools/local_exec.ts**:
+
 - Line 91: `[LocalExec] Starting execution with: ...`
 - Line 109: `[LocalExec] Input validated: ...`
 - Line 192: `[LocalExec] Starting thread with options: ...`
@@ -393,11 +422,13 @@ sqlite3 ~/.config/mcp-delegator/tasks.db "
 - Line 321: `[LocalExec:taskId] ✅ Execution complete`
 
 **Issues**:
+
 - Logs go to stderr (not captured by MCP)
 - No centralized log file
 - No way for user to see logs without server restart
 
 **Proposed Improvements** (see Issue 1.5):
+
 1. Log to file: `~/.config/mcp-delegator/execution.log`
 2. Add timestamps to all logs
 3. Include task ID in all log lines

@@ -19,6 +19,7 @@ During Tier 2 UAT testing (Test 2.3), discovered that Codex execution produces n
 **Test**: Test 2.3 - `git push --force` to non-protected branch
 
 **Expected Output**:
+
 ```
 🛡️  Creating safety checkpoint before risky operation...
 Created safety branch: safety/git-push---force-2025-11-16T02-53-54-21e6db5
@@ -27,11 +28,13 @@ fatal: 'origin' does not have a remote named 'origin'
 ```
 
 **Actual Output**:
+
 ```
 <system>Tool ran without output or errors</system>
 ```
 
 **Reality** (discovered via branch inspection):
+
 - Safety checkpoint WAS created: `safety/git-push---force-2025-11-16T02-53-54-21e6db5`
 - Operation DID fail (no remote configured)
 - Gates ARE working correctly
@@ -40,6 +43,7 @@ fatal: 'origin' does not have a remote named 'origin'
 ## Impact
 
 ### User Experience Impact - CRITICAL
+
 - ❌ Users can't see safety checkpoints being created
 - ❌ Users can't see if operations succeeded or failed
 - ❌ Makes it appear safety system isn't working
@@ -47,6 +51,7 @@ fatal: 'origin' does not have a remote named 'origin'
 - ❌ Impossible to debug issues without manual inspection
 
 ### AI Agent Impact - CRITICAL
+
 - ❌ Claude Code can't see what happened
 - ❌ Can't parse success/failure status
 - ❌ Can't investigate errors autonomously
@@ -56,18 +61,22 @@ fatal: 'origin' does not have a remote named 'origin'
 ## Root Cause Investigation
 
 ### Question 1: Is Codex producing output?
+
 **Hypothesis**: Codex IS producing output (safety checkpoint messages, error messages), but we're not capturing it.
 
 **Evidence**:
+
 - Safety checkpoints are being created (branch exists)
 - This implies Codex executed our safety checkpoint logic
 - Safety checkpoint creation SHOULD log messages
 - But we see no output
 
 ### Question 2: Is our output capture working?
+
 **Hypothesis**: Output capture mechanism in `local_run.ts` is failing or incomplete.
 
 **Code Path**:
+
 ```typescript
 // local_run.ts
 if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !input.allow_destructive_git) {
@@ -80,12 +89,15 @@ if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !input.allow_destr
 ```
 
 **Need to verify**:
+
 1. Does code actually proceed to Codex execution after Tier 2 check?
 2. Is stdout/stderr being captured from Codex process?
 3. Is output being returned to MCP client (Claude Code)?
 
 ### Question 3: Where should logging appear?
+
 **Current logging locations**:
+
 1. `console.error()` in detector → MCP server stderr (not visible to user)
 2. Codex execution stdout/stderr → Should be captured and returned
 3. MCP tool response → Visible to Claude Code/user
@@ -97,18 +109,22 @@ if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !input.allow_destr
 When a Tier 2 operation executes with `allow_destructive_git: true`:
 
 ### Output Should Include:
+
 1. **Safety checkpoint creation**:
+
    ```
    🛡️  Creating safety checkpoint before risky operation...
    Created safety branch: safety/git-push---force-2025-11-16T02-53-54-21e6db5
    ```
 
 2. **Actual execution**:
+
    ```
    Executing: git push --force origin feature-branch
    ```
 
 3. **Result**:
+
    ```
    fatal: 'origin' does not have a remote named 'origin'
    [OR]
@@ -121,6 +137,7 @@ When a Tier 2 operation executes with `allow_destructive_git: true`:
    ```
 
 ### This Output Should Be:
+
 - ✅ Captured from Codex stdout/stderr
 - ✅ Included in MCP tool response
 - ✅ Visible to Claude Code
@@ -138,6 +155,7 @@ When a Tier 2 operation executes with `allow_destructive_git: true`:
 ## Fix Requirements
 
 ### Must Include in Output:
+
 1. ✅ Safety checkpoint creation messages (from Codex execution)
 2. ✅ Actual command being executed
 3. ✅ Success/failure status
@@ -147,16 +165,19 @@ When a Tier 2 operation executes with `allow_destructive_git: true`:
 ### Implementation Options:
 
 **Option A: Enhance Codex Output** (Preferred)
+
 - Ensure Codex itself logs safety checkpoint creation
 - Capture ALL Codex stdout/stderr
 - Return complete output in MCP response
 
 **Option B: Add MCP-level Logging**
+
 - MCP tool adds its own messages to output
 - Supplement Codex output with checkpoint info
 - Ensures visibility even if Codex output is missing
 
 **Option C: Hybrid Approach** (Recommended)
+
 - Codex logs detailed execution (primary source)
 - MCP adds structured metadata for AI agents
 - Both visible in final output
@@ -174,6 +195,7 @@ When a Tier 2 operation executes with `allow_destructive_git: true`:
 After fix implementation:
 
 ### Test 1: Verify Output Capture
+
 ```typescript
 {
   task: "Force push to feature branch",
@@ -186,6 +208,7 @@ After fix implementation:
 **Expected**: Full output with checkpoint creation, execution, and result
 
 ### Test 2: Verify Error Messages
+
 ```typescript
 {
   task: "Push to non-existent remote",
@@ -198,6 +221,7 @@ After fix implementation:
 **Expected**: Error message from git should be visible
 
 ### Test 3: Verify All 4 Tools
+
 - Test with `_codex_local_run`
 - Test with `_codex_local_exec`
 - Test with `_codex_local_resume`
@@ -214,14 +238,17 @@ After fix implementation:
 ## User Impact Statement
 
 **From user's perspective**:
+
 > "The operation appears to complete silently with no feedback. I can't tell if it worked, if checkpoints were created, or if there were errors. This makes the safety system invisible and unverifiable."
 
 **From AI agent's perspective** (Claude Code):
+
 > "I have no output to analyze. I can't tell the user what happened, debug failures, or verify that safety features are working. This breaks my ability to provide autonomous assistance."
 
 ---
 
 **Next Steps**:
+
 1. Investigate code path in `local_run.ts`
 2. Identify why output isn't being captured/returned
 3. Implement fix across all 4 execution tools
@@ -239,30 +266,39 @@ After fix implementation:
 **Changes Made**:
 
 1. **Added checkpoint info variable** at start of `execute()` method:
+
    ```typescript
    let checkpointInfo: string | null = null; // Store checkpoint info for inclusion in output
    ```
 
 2. **Stored checkpoint recovery instructions** during checkpoint creation:
+
    ```typescript
    checkpointInfo = checkpointing.formatRecoveryInstructions(checkpoint);
    ```
 
 3. **Included checkpoint info in final output** before returning to user:
+
    ```typescript
    // Prepend safety checkpoint info if it exists
    if (checkpointInfo) {
-     message = `🛡️  **GIT SAFETY CHECKPOINT CREATED**\n\n${checkpointInfo}\n\n---\n\n` + message;
+     message =
+       `🛡️  **GIT SAFETY CHECKPOINT CREATED**\n\n${checkpointInfo}\n\n---\n\n` +
+       message;
    }
    ```
 
 4. **Added console.error() logging** for debugging (already existed, enhanced with "will be included in output"):
    ```typescript
-   console.error('[LocalRun] ✅ Safety checkpoint created:', checkpoint.safety_branch);
-   console.error('[LocalRun] Recovery instructions will be included in output');
+   console.error(
+     "[LocalRun] ✅ Safety checkpoint created:",
+     checkpoint.safety_branch,
+   );
+   console.error("[LocalRun] Recovery instructions will be included in output");
    ```
 
 **Cloud Tool Variation**:
+
 - Cloud doesn't create local checkpoints (sandboxed container)
 - Instead, shows notice about risky operation approval
 - Explains Codex Cloud's built-in safety mechanisms
@@ -272,11 +308,13 @@ After fix implementation:
 **Test 2.3 (git push --force to non-protected branch)** - ✅ PASSED
 
 **Before Fix**:
+
 ```
 <system>Tool ran without output or errors</system>
 ```
 
 **After Fix**:
+
 ```
 🛡️  **GIT SAFETY CHECKPOINT CREATED**
 
@@ -315,4 +353,3 @@ To view checkpoint details:
 5. ⏳ Requires MCP server restart (npm link propagation)
 
 **Status**: Ready for production use after restart
-

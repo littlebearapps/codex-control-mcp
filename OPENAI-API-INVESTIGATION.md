@@ -11,11 +11,13 @@
 **Finding**: **OpenAI does not provide any programmatic API, REST endpoint, GraphQL interface, or SDK method to list, query, or manage Codex Cloud environments.**
 
 **Current Access Methods**:
+
 1. ✅ **Web UI Only**: https://chatgpt.com/codex (manual configuration)
 2. ✅ **CLI Interactive**: `codex cloud` (opens TUI picker)
 3. ❌ **Programmatic**: No API available
 
 **Impact on Codex Control MCP**:
+
 - Cannot automatically discover user's cloud environments
 - Must rely on manual local configuration file
 - Cannot sync environment changes from ChatGPT settings
@@ -28,6 +30,7 @@
 ### 1. OpenAI API Documentation Search
 
 **Sources Checked**:
+
 - ✅ https://developers.openai.com/codex/cloud/environments/
 - ✅ https://developers.openai.com/codex/cli/reference/
 - ✅ https://developers.openai.com/codex/sdk/
@@ -39,9 +42,11 @@
 ### 2. REST API Availability
 
 **Quote from milvus.io**:
+
 > "The current OpenAI Codex (2025) does not provide traditional REST API endpoints in the same way that the original 2021 Codex model did."
 
 **Quote from milvus.io**:
+
 > "The modern Codex operates as an integrated service within ChatGPT and through the Codex CLI tool, rather than offering direct programmatic API access that developers can call from their applications."
 
 **Conclusion**: Codex Cloud is **not accessible via REST API**.
@@ -52,8 +57,9 @@
 **Version**: 0.58.0-alpha.7 (latest)
 
 **Available Methods** (from npm documentation):
+
 ```typescript
-import { Codex } from '@openai/codex-sdk';
+import { Codex } from "@openai/codex-sdk";
 
 const codex = new Codex();
 const thread = codex.startThread();
@@ -64,6 +70,7 @@ codex.resumeThread(threadId);
 ```
 
 **Methods Available**:
+
 - `new Codex()` - Constructor
 - `startThread()` - Create conversation thread
 - `resumeThread(threadId)` - Resume previous thread
@@ -71,6 +78,7 @@ codex.resumeThread(threadId);
 - `thread.runStreamed(prompt)` - Execute with event streaming
 
 **Methods NOT Available**:
+
 - ❌ `listEnvironments()` - No such method
 - ❌ `getEnvironment(id)` - No such method
 - ❌ `getCloudTasks()` - No such method
@@ -81,21 +89,25 @@ codex.resumeThread(threadId);
 ### 4. CLI Commands
 
 **Available**:
+
 ```bash
 codex cloud                    # Opens interactive TUI picker
 codex cloud exec --env <ID>    # Requires environment ID (no discovery)
 ```
 
 **Help Text Quote**:
+
 > "Target Codex Cloud environment identifier (required). **Use `codex cloud` to list options**."
 
 **Limitation**: The `codex cloud` command opens an **interactive TUI (Text User Interface)** picker. It is NOT designed for programmatic access:
+
 - No `--list` flag
 - No `--json` output mode
 - No machine-readable output
 - Requires human interaction
 
 **Test Result**:
+
 ```bash
 $ codex cloud 2>&1
 Error: Device not configured (os error 6)
@@ -108,6 +120,7 @@ Error: Device not configured (os error 6)
 **Location**: `~/.codex/auth.json`
 
 **Contents**:
+
 ```json
 {
   "tokens": {
@@ -120,6 +133,7 @@ Error: Device not configured (os error 6)
 ```
 
 **Token Analysis**:
+
 - ✅ JWT tokens present (valid for OpenAI API)
 - ✅ Account ID available
 - ✅ User ID available (from JWT payload)
@@ -132,6 +146,7 @@ Error: Device not configured (os error 6)
 ### 6. Internal/Undocumented APIs
 
 **Checked**:
+
 - ✅ chatgpt.com API endpoints (web scraping/reverse engineering)
 - ✅ OpenAI Platform API (platform.openai.com)
 - ✅ GraphQL endpoints
@@ -139,6 +154,7 @@ Error: Device not configured (os error 6)
 **Finding**: No evidence of documented or stable internal APIs for Codex Cloud environments.
 
 **Risk Assessment**: Even if internal APIs exist, they are:
+
 - Undocumented (subject to change without notice)
 - Unsupported (no guarantees)
 - Potentially violate TOS (reverse engineering)
@@ -153,6 +169,7 @@ Error: Device not configured (os error 6)
 
 **Approach**: Parse output from `codex cloud` TUI
 **Issues**:
+
 - TUI requires interactive terminal
 - Output is ANSI-formatted (complex parsing)
 - Fragile (breaks with UI changes)
@@ -164,12 +181,14 @@ Error: Device not configured (os error 6)
 
 **Approach**: Users maintain `~/.config/codex-control/environments.json`
 **Benefits**:
+
 - ✅ Fully user-controlled
 - ✅ Works offline
 - ✅ No API dependencies
 - ✅ Simple and reliable
 
 **Drawbacks**:
+
 - ⚠️ Manual maintenance required
 - ⚠️ No auto-sync with ChatGPT settings
 - ⚠️ User must know environment IDs
@@ -180,11 +199,13 @@ Error: Device not configured (os error 6)
 
 **Approach**: Use `codex cloud exec --env <ID>` for submission
 **What Works**:
+
 - ✅ Task submission with known environment ID
 - ✅ Background execution
 - ✅ Authentication reused from CLI
 
 **What Doesn't Work**:
+
 - ❌ Environment discovery
 - ❌ Environment listing
 - ❌ Environment details
@@ -195,11 +216,13 @@ Error: Device not configured (os error 6)
 
 **Approach**: `codex_github_setup_guide` generates setup instructions
 **Benefits**:
+
 - ✅ Helps users create environments
 - ✅ Provides pre-filled scripts
 - ✅ Reduces setup friction
 
 **Limitation**:
+
 - User still manually creates environment in ChatGPT
 - User still manually adds to local config
 
@@ -212,6 +235,7 @@ Error: Device not configured (os error 6)
 ### For Codex Control MCP v2.1.1+
 
 **Keep Current Approach** ✅:
+
 1. **Manual Configuration**:
    - Users maintain `~/.config/codex-control/environments.json`
    - Tool reads from this file
@@ -228,6 +252,7 @@ Error: Device not configured (os error 6)
    - Include troubleshooting for "environment not found" errors
 
 **Future Enhancement** (if OpenAI adds API):
+
 - Monitor OpenAI developer docs for API announcements
 - Watch `@openai/codex-sdk` releases for new methods
 - Be ready to add auto-discovery when available
@@ -237,6 +262,7 @@ Error: Device not configured (os error 6)
 **Setup Instructions**:
 
 1. **Create Environment in ChatGPT**:
+
    ```
    Visit: https://chatgpt.com/codex/settings/environments
    Click "Create Environment"
@@ -248,6 +274,7 @@ Error: Device not configured (os error 6)
    ```
 
 2. **Add to Local Config**:
+
    ```bash
    # Edit ~/.config/codex-control/environments.json
    {
@@ -271,12 +298,14 @@ Error: Device not configured (os error 6)
 ## OpenAI API Changelog Monitoring
 
 **Action Items**:
+
 - ⏰ **Monthly**: Check https://developers.openai.com/codex for updates
 - ⏰ **Monthly**: Review `@openai/codex-sdk` releases on npm
 - ⏰ **Quarterly**: Re-investigate API availability
 - 📧 **Subscribe**: OpenAI developer newsletter (if available)
 
 **Watch For**:
+
 - New SDK methods like `listEnvironments()`, `getEnvironment()`
 - REST API endpoints for Codex Cloud management
 - GraphQL schema additions
@@ -313,6 +342,7 @@ Error: Device not configured (os error 6)
 ```
 
 **Potential API Endpoint** (if it existed):
+
 ```
 GET https://api.openai.com/v1/codex/environments
 Authorization: Bearer <access_token>
@@ -327,6 +357,7 @@ Authorization: Bearer <access_token>
 **Behavior**: Opens interactive TUI (requires TTY)
 
 **No Flags For**:
+
 - `--list` (machine-readable list)
 - `--json` (JSON output)
 - `--format` (output format control)
@@ -340,16 +371,19 @@ Authorization: Bearer <access_token>
 ### Other Coding Agents
 
 **GitHub Copilot**:
+
 - API: ✅ REST API available
 - Environments: ✅ Programmatic management
 - CLI: ✅ JSON output modes
 
 **Cursor**:
+
 - API: ⚠️ Limited
 - Environments: ⚠️ Manual configuration
 - CLI: ✅ JSON modes
 
 **Codex (OpenAI)**:
+
 - API: ❌ No programmatic access
 - Environments: ❌ Web UI only
 - CLI: ⚠️ Interactive TUI only
@@ -363,6 +397,7 @@ Authorization: Bearer <access_token>
 ### Summary
 
 **No programmatic access to Codex Cloud environments exists** via:
+
 - ❌ REST API
 - ❌ GraphQL
 - ❌ SDK methods (`@openai/codex-sdk`)
@@ -370,23 +405,27 @@ Authorization: Bearer <access_token>
 - ❌ Undocumented/internal APIs (not recommended)
 
 **Only access method**:
+
 - ✅ Manual configuration via ChatGPT web UI
 - ✅ Manual local config file (`environments.json`)
 
 ### Impact on Codex Control MCP
 
 **Current Implementation** ✅:
+
 - Users manually maintain environment list
 - `codex_list_environments` reads from local config
 - `codex_github_setup_guide` helps with setup
 - Works reliably with known limitations
 
 **Blockers for Auto-Discovery** ❌:
+
 - Cannot automatically fetch user's environments
 - Cannot sync changes from ChatGPT settings
 - Cannot validate environment IDs before submission
 
 **Workaround Success** ✅:
+
 - Manual config is acceptable for MVP
 - Users already manage Codex environments in web UI
 - One-time setup per environment is reasonable

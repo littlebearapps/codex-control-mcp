@@ -1,4 +1,5 @@
 # CI/CD and Security Infrastructure Plan
+
 ## MCP Delegator - Public Release Preparation
 
 **Version**: 1.0
@@ -35,6 +36,7 @@ This document outlines a comprehensive plan to transform **mcp-delegator** from 
 ### Timeline
 
 **4-week phased rollout**:
+
 - **Week 1**: Foundation (CI, basic security)
 - **Week 2**: Security hardening (GHAS, CodeQL)
 - **Week 3**: Automated publishing (semantic-release, Trusted Publisher)
@@ -92,18 +94,21 @@ graph LR
 ### Security Layers
 
 **Layer 1: Free Features (Immediate)**
+
 - ✅ Dependency graph
 - ✅ Dependabot alerts
 - ✅ Dependabot security updates
 - ✅ Security policy (SECURITY.md)
 
 **Layer 2: GitHub Advanced Security (Enterprise)**
+
 - ✅ CodeQL code scanning (JavaScript/TypeScript)
 - ✅ Secret scanning with push protection
 - ✅ Dependency review (PR impact analysis)
 - ✅ Copilot Autofix
 
 **Layer 3: Supply Chain Security**
+
 - ✅ npm Trusted Publisher (OIDC)
 - ✅ npm provenance attestations
 - ✅ Signed commits (optional)
@@ -242,6 +247,7 @@ graph TD
      - Environment: (optional - can leave blank)
 
 2. **Install semantic-release**
+
    ```bash
    npm install --save-dev \
      semantic-release \
@@ -252,25 +258,38 @@ graph TD
    ```
 
 3. **Create Release Configuration** (`.releaserc.json`)
+
    ```json
    {
      "branches": ["main"],
      "plugins": [
        "@semantic-release/commit-analyzer",
        "@semantic-release/release-notes-generator",
-       ["@semantic-release/changelog", {
-         "changelogFile": "CHANGELOG.md"
-       }],
-       ["@semantic-release/npm", {
-         "npmPublish": true
-       }],
-       ["@semantic-release/github", {
-         "assets": []
-       }],
-       ["@semantic-release/git", {
-         "assets": ["CHANGELOG.md", "package.json"],
-         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-       }]
+       [
+         "@semantic-release/changelog",
+         {
+           "changelogFile": "CHANGELOG.md"
+         }
+       ],
+       [
+         "@semantic-release/npm",
+         {
+           "npmPublish": true
+         }
+       ],
+       [
+         "@semantic-release/github",
+         {
+           "assets": []
+         }
+       ],
+       [
+         "@semantic-release/git",
+         {
+           "assets": ["CHANGELOG.md", "package.json"],
+           "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+         }
+       ]
      ]
    }
    ```
@@ -291,6 +310,7 @@ graph TD
    - **No NPM_TOKEN needed** (uses OIDC)
 
 5. **Update package.json**
+
    ```json
    {
      "version": "0.0.0-development",
@@ -345,6 +365,7 @@ graph TD
 
 3. **Create v4.0.0 Release**
    - Create PR with BREAKING CHANGE commit:
+
      ```
      feat!: public release of mcp-delegator
 
@@ -356,6 +377,7 @@ graph TD
      - Enabled automated releases via semantic-release
      - Full CI/CD and security infrastructure
      ```
+
    - Merge PR to trigger release
    - Verify release workflow completes
    - Check npm package page for provenance badge
@@ -410,18 +432,21 @@ docs/
 ### For Maintainers
 
 **Week 1: Get CI Running**
+
 1. Create `.github/workflows/ci.yml` (see `docs/ci-cd.md`)
 2. Enable Dependabot (see `docs/security.md`)
 3. Create SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md
 4. Test CI on a draft PR
 
 **Week 2: Enable Security**
+
 1. Request GHAS enablement (if not already)
 2. Create `.github/workflows/codeql.yml` (see `docs/security.md`)
 3. Configure branch protection (see `docs/branch-protection.md`)
 4. Review and fix security alerts
 
 **Week 3: Setup Publishing**
+
 1. Configure npm Trusted Publisher (see `docs/publishing.md`)
 2. Install semantic-release dependencies
 3. Create `.releaserc.json` and release workflow
@@ -429,6 +454,7 @@ docs/
 5. Merge first PR to test automated release
 
 **Week 4: Go Public**
+
 1. Polish documentation
 2. Run final security audit
 3. Create v4.0.0 breaking change commit
@@ -438,12 +464,14 @@ docs/
 ### For Contributors
 
 **Before Your First PR**:
+
 1. Read CONTRIBUTING.md
 2. Use Conventional Commits format
 3. Ensure tests pass locally: `npm test`
 4. Check coverage: `npm test -- --coverage`
 
 **PR Workflow**:
+
 1. Create feature branch from main
 2. Make changes with conventional commits
 3. Push and open PR
@@ -480,21 +508,21 @@ docs/
 
 ### High Risk Items (Mitigation Required)
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| Breaking change in dependency update | High | Medium | Dependabot PRs reviewed manually; tests catch issues |
-| Accidental major version bump | High | Low | PR review process; conventional commit enforcement |
-| CodeQL false positives | Medium | High | Custom query configuration; manual triage |
-| Failed release workflow | High | Low | Dry run testing; manual release fallback |
-| Secret leaked in commit | Critical | Low | Secret scanning with push protection enabled |
+| Risk                                 | Impact   | Probability | Mitigation                                           |
+| ------------------------------------ | -------- | ----------- | ---------------------------------------------------- |
+| Breaking change in dependency update | High     | Medium      | Dependabot PRs reviewed manually; tests catch issues |
+| Accidental major version bump        | High     | Low         | PR review process; conventional commit enforcement   |
+| CodeQL false positives               | Medium   | High        | Custom query configuration; manual triage            |
+| Failed release workflow              | High     | Low         | Dry run testing; manual release fallback             |
+| Secret leaked in commit              | Critical | Low         | Secret scanning with push protection enabled         |
 
 ### Medium Risk Items (Monitor)
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| npm Trusted Publisher downtime | Medium | Low | Wait for service restoration; no manual workaround |
-| GitHub Actions outage | Medium | Low | Automated retry; manual release if prolonged |
-| Test failures blocking release | Medium | Medium | Robust test suite; clear failure messages |
+| Risk                           | Impact | Probability | Mitigation                                         |
+| ------------------------------ | ------ | ----------- | -------------------------------------------------- |
+| npm Trusted Publisher downtime | Medium | Low         | Wait for service restoration; no manual workaround |
+| GitHub Actions outage          | Medium | Low         | Automated retry; manual release if prolonged       |
+| Test failures blocking release | Medium | Medium      | Robust test suite; clear failure messages          |
 
 ---
 

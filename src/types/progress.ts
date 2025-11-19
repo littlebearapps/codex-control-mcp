@@ -16,8 +16,8 @@
  * @module types/progress
  */
 
-import type { Request, Notification } from '@modelcontextprotocol/sdk/types.js';
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type { Request, Notification } from "@modelcontextprotocol/sdk/types.js";
+import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 
 /**
  * Feature flag to enable/disable MCP progress notifications.
@@ -86,7 +86,7 @@ export interface ProgressNotificationParams {
 export async function sendProgressNotification(
   extra: ToolExecuteExtra | undefined,
   params: ProgressNotificationParams,
-  context: string
+  context: string,
 ): Promise<void> {
   // Feature disabled - Claude Code doesn't support displaying progress notifications yet
   if (!ENABLE_MCP_PROGRESS_NOTIFICATIONS) {
@@ -100,8 +100,8 @@ export async function sendProgressNotification(
 
   try {
     await extra.sendNotification({
-      method: 'notifications/progress' as const,
-      params
+      method: "notifications/progress" as const,
+      params,
     });
   } catch (error) {
     // Log error but don't throw - notification failures should never break execution
@@ -127,13 +127,13 @@ export async function sendProgressNotification(
  */
 export function createStartNotification(
   taskId: string,
-  message?: string
+  message?: string,
 ): ProgressNotificationParams {
   return {
     progressToken: taskId,
     progress: 0,
     total: 100,
-    message: message || 'Starting task...'
+    message: message || "Starting task...",
   };
 }
 
@@ -155,13 +155,13 @@ export function createStartNotification(
  */
 export function createCompletionNotification(
   taskId: string,
-  message?: string
+  message?: string,
 ): ProgressNotificationParams {
   return {
     progressToken: taskId,
     progress: 100,
     total: 100,
-    message: message || 'Task complete'
+    message: message || "Task complete",
   };
 }
 
@@ -186,13 +186,13 @@ export function createCompletionNotification(
  */
 export function createElapsedTimeNotification(
   taskId: string,
-  elapsedSeconds: number
+  elapsedSeconds: number,
 ): ProgressNotificationParams {
   return {
     progressToken: taskId,
     progress: elapsedSeconds,
     total: undefined,
-    message: `Codex executing (${elapsedSeconds}s elapsed)`
+    message: `Codex executing (${elapsedSeconds}s elapsed)`,
   };
 }
 
@@ -221,7 +221,7 @@ export function createStepProgressNotification(
   taskId: string,
   completedSteps: number,
   totalSteps: number,
-  currentAction?: string
+  currentAction?: string,
 ): ProgressNotificationParams {
   const percentage = Math.round((completedSteps / totalSteps) * 100);
 
@@ -234,6 +234,6 @@ export function createStepProgressNotification(
     progressToken: taskId,
     progress: completedSteps,
     total: totalSteps,
-    message
+    message,
   };
 }

@@ -9,29 +9,35 @@ System design, components, and data flow for Codex Control MCP.
 ### Three Execution Paths
 
 #### 1. Local CLI (Blocking)
+
 ```
 Claude Code → MCP Server → spawn(codex exec) → ChatGPT Pro
 ```
+
 - **Used by**: Tools 1-4 (run, plan, apply, status)
 - **Characteristics**: Blocking, no persistence, simple
 - **Process**: CLI subprocess, JSONL parsing, synchronous response
 
 #### 2. Local SDK (Streaming)
+
 ```
 Claude Code → MCP Server → @openai/codex-sdk → codex CLI → ChatGPT Pro
                                     ↓
                           Thread Storage (~/.codex/sessions)
 ```
+
 - **Used by**: Tools 9-10 (local_exec, local_resume)
 - **Characteristics**: Async, thread persistence, real-time events
 - **Process**: SDK manages threads, streams events, caches context
 
 #### 3. Cloud (Background)
+
 ```
 Claude Code → MCP Server → spawn(codex cloud exec) → Codex Cloud
                                     ↓
                           Task Registry (~/.config/codex-control/cloud-tasks.json)
 ```
+
 - **Used by**: Tools 5-8 (cloud_submit, cloud_list_tasks, etc.)
 - **Characteristics**: Fire-and-forget, sandboxed, persistent
 - **Process**: Submit and track, monitor via Web UI
@@ -85,12 +91,14 @@ codex-control/
 **Purpose**: Entry point for MCP protocol communication.
 
 **Responsibilities**:
+
 - Register all 13 tools with MCP SDK
 - Handle tool invocation requests
 - Manage server lifecycle (startup, shutdown)
 - Expose MCP resources (environment templates)
 
 **Key Functions**:
+
 - `server.setRequestHandler(ListToolsRequestSchema, ...)` - List tools
 - `server.setRequestHandler(CallToolRequestSchema, ...)` - Execute tools
 - `server.setRequestHandler(ListResourcesRequestSchema, ...)` - List templates
@@ -103,12 +111,14 @@ codex-control/
 **Purpose**: Parse Codex CLI event streams (JSONL format).
 
 **Characteristics**:
+
 - **Tolerant**: Handles partial lines, non-JSON stderr
 - **Line-buffered**: Processes complete lines only
 - **Event-driven**: Emits events as they arrive
 - **Error-resilient**: Continues parsing after errors
 
 **Input Example**:
+
 ```
 {"type":"turn.started","turnId":"turn_001"}
 {"type":"item.completed","itemId":"item_001"}
@@ -117,12 +127,13 @@ Not JSON - ignored
 ```
 
 **Output**:
+
 ```typescript
 [
-  { type: 'turn.started', turnId: 'turn_001' },
-  { type: 'item.completed', itemId: 'item_001' },
-  { type: 'turn.completed', turnId: 'turn_001' }
-]
+  { type: "turn.started", turnId: "turn_001" },
+  { type: "item.completed", itemId: "item_001" },
+  { type: "turn.completed", turnId: "turn_001" },
+];
 ```
 
 ---
@@ -132,12 +143,14 @@ Not JSON - ignored
 **Purpose**: Manage Codex CLI subprocesses with concurrency control.
 
 **Features**:
+
 - **Queue-based**: FIFO queue for tasks exceeding concurrency
 - **Concurrency limit**: Max 2-4 parallel processes (configurable)
 - **Process cleanup**: Kill on timeout, graceful termination
 - **No shell injection**: Uses `spawn(cmd, args)`, not `exec(string)`
 
 **Queue States**:
+
 - **Running**: Currently executing (≤ MAX_CONCURRENCY)
 - **Queued**: Waiting for slot to open
 - **Completed**: Finished successfully
@@ -150,6 +163,7 @@ Not JSON - ignored
 **Purpose**: Sanitize and validate all user inputs.
 
 **Validations**:
+
 - **Task length**: Max 10,000 characters
 - **Mode whitelist**: Only `read-only`, `workspace-write`, `danger-full-access`
 - **Model whitelist**: Known OpenAI models only
@@ -157,6 +171,7 @@ Not JSON - ignored
 - **Injection prevention**: Escape shell metacharacters
 
 **Example**:
+
 ```typescript
 // Input
 task: "rm -rf / && echo 'hacked'"
@@ -174,6 +189,7 @@ workingDir: "../../../etc"
 **Purpose**: Scrub sensitive data from outputs.
 
 **Patterns Matched** (15+):
+
 - OpenAI API keys (`sk-proj-...`)
 - AWS credentials (`AKIA...`, `aws_secret_access_key=...`)
 - GitHub tokens (`ghp_...`, `gho_...`, `github_pat_...`)
@@ -184,6 +200,7 @@ workingDir: "../../../etc"
 - Bearer tokens (`Authorization: Bearer ...`)
 
 **Redaction**:
+
 ```typescript
 // Before
 OPENAI_API_KEY=sk-proj-abc123def456...
@@ -199,6 +216,7 @@ OPENAI_API_KEY=sk-***REDACTED***
 **Purpose**: Extract structured metadata from Codex output text for AI agent decision-making.
 
 **What It Extracts**:
+
 - **Test Results**: Passed/failed/skipped counts, failed test names (Jest, Pytest, Mocha)
 - **File Operations**: Modified/added/deleted files, lines changed (Git diff-style)
 - **Thread Info**: Thread ID, cache hit rate (e.g., 96.8%), token usage
@@ -207,6 +225,7 @@ OPENAI_API_KEY=sk-***REDACTED***
 - **Duration**: Execution time in seconds
 
 **Actionable Suggestions**:
+
 ```typescript
 // AI agents get specific guidance
 error_context: {
@@ -225,12 +244,14 @@ error_context: {
 ```
 
 **Integration**:
+
 - Automatically called in `convertPrimitiveResult()` (src/tools/codex.ts)
 - Added to `CodexToolResponse.metadata` field
 - Graceful failure - won't break tool if extraction fails
 - Zero token cost - extraction is local regex-based parsing
 
 **Pattern Matching Examples**:
+
 ```typescript
 // Jest: "Tests: 2 failed, 45 passed, 47 total"
 // Pytest: "30 passed, 1 failed in 8.23s"
@@ -248,10 +269,12 @@ error_context: {
 **Purpose**: Detect and abort tasks that hang or freeze, preventing indefinite waits.
 
 **Two-Tier Timeout System**:
+
 - **Inactivity Timeout** (default: 5 min) - Resets on any stdout/stderr output, catches silent hangs
 - **Hard Timeout** (default: 20 min) - Wall-clock maximum, prevents infinite execution
 
 **Features**:
+
 - **MCP Progress Tracking**: `notifications/progress` sent every 30 seconds
 - **MCP Warning Notifications**: `notifications/message` (warning level) sent 30s before timeout
 - **MCP Error Notifications**: `notifications/message` (error level) when timeout fires
@@ -259,6 +282,7 @@ error_context: {
 - **Process Cleanup**: SIGTERM → SIGKILL cascade using `tree-kill` library
 
 **Coverage** (6/6 execution tools):
+
 1. `_codex_local_run` - Via ProcessManager integration
 2. `_codex_cloud_submit` - Via runCodexCloud() integration
 3. `_codex_local_exec` - Background execution monitoring
@@ -277,6 +301,7 @@ error_context: {
 **⚠️ CURRENTLY DISABLED**: Claude Code does not yet support displaying MCP `notifications/progress` in the UI. Feature flag `ENABLE_MCP_PROGRESS_NOTIFICATIONS = false` in progress.ts:28. See CLAUDE.md for details.
 
 **What It Provides**:
+
 - **Status Bar Integration**: Running Codex tasks appear in Claude Code's status bar with live updates
 - **Non-Blocking Execution**: Claude Code remains responsive while Codex runs in background
 - **Error Resilience**: Notification failures never break tool execution (graceful degradation)
@@ -285,24 +310,28 @@ error_context: {
 **Notification Strategies** (3 approaches based on tool type):
 
 **1. CLI Execution** (`_codex_local_run`):
+
 - **Frequency**: Every 30 seconds
 - **Type**: Elapsed time notifications
 - **Implementation**: `ProcessManager.onMcpProgress` callback
 - **Message**: "Codex executing (45s elapsed)"
 
 **2. SDK Execution** (`_codex_local_exec`, `_codex_local_resume`):
+
 - **Frequency**: Every 10 events
 - **Type**: Step progress notifications
 - **Implementation**: Direct calls in event loop
 - **Message**: "67% complete - Analyzing security"
 
 **3. Cloud Submission** (`_codex_cloud_submit`):
+
 - **Frequency**: Once (on successful submit)
 - **Type**: Completion notification
 - **Implementation**: After task registration
 - **Message**: "Cloud task submitted - running in background"
 
 **Helper Functions**:
+
 ```typescript
 // Send notification with error handling
 sendProgressNotification(
@@ -333,6 +362,7 @@ createCompletionNotification(
 ```
 
 **MCP Protocol Format**:
+
 ```typescript
 {
   method: 'notifications/progress',
@@ -346,18 +376,21 @@ createCompletionNotification(
 ```
 
 **Error Handling**:
+
 - All notification calls wrapped in try/catch
 - Failures logged but never thrown
 - Tools continue normally if notifications fail
 - No impact on task execution
 
 **Coverage** (4/15 tools with progress tracking):
+
 1. `_codex_local_run` - Elapsed time every 30s
 2. `_codex_local_exec` - Step progress every 10 events
 3. `_codex_local_resume` - Elapsed time every 10 events
 4. `_codex_cloud_submit` - One-time on submit
 
 **User Experience Impact**:
+
 - ✅ No more "did it freeze?" confusion
 - ✅ Real-time progress tracking
 - ✅ Work on other tasks while Codex runs
@@ -467,17 +500,20 @@ Request 4 → [Queued]
 ### Queue Management
 
 **On Task Arrival**:
+
 1. Check if slots available (running < MAX_CONCURRENCY)
 2. If yes: Start immediately
 3. If no: Add to queue (FIFO)
 
 **On Task Completion**:
+
 1. Mark task as completed
 2. Check queue for waiting tasks
 3. If queue not empty: Start next task
 4. Repeat until queue empty or slots full
 
 **Benefits**:
+
 - ✅ Prevents resource exhaustion
 - ✅ Fair ordering (FIFO)
 - ✅ Graceful degradation under load
@@ -491,6 +527,7 @@ Request 4 → [Queued]
 **Location**: `~/.codex/sessions/`
 
 **Structure**:
+
 ```
 ~/.codex/sessions/
 ├── thread_abc123xyz/
@@ -523,10 +560,12 @@ Request 4 → [Queued]
 ### Context Caching
 
 **First Execution**:
+
 - Input: 10,000 tokens (0 cached)
 - Cache: Store conversation context
 
 **Resumed Execution**:
+
 - Input: 12,000 tokens (9,500 cached = 79% cache rate)
 - Savings: ~80% reduction in input token costs
 
@@ -539,6 +578,7 @@ Request 4 → [Queued]
 **File**: `~/.config/codex-control/cloud-tasks.json`
 
 **Structure**:
+
 ```json
 {
   "tasks": [
@@ -558,18 +598,21 @@ Request 4 → [Queued]
 ### Registry Operations
 
 **On Task Submit**:
+
 1. Submit to Codex Cloud
 2. Get task ID
 3. Store in registry with metadata
 4. Return task ID to user
 
 **On Task List**:
+
 1. Load registry
 2. Filter by workingDir (default)
 3. Apply additional filters (status, envId, etc.)
 4. Return matching tasks
 
 **On Status Check**:
+
 1. Load registry
 2. Find task by ID
 3. Return Web UI link for status
@@ -579,21 +622,25 @@ Request 4 → [Queued]
 ## Security Layers
 
 ### Layer 1: Input Validation
+
 ```
 User Input → Sanitization → Validation → Accept/Reject
 ```
 
 ### Layer 2: Secret Redaction
+
 ```
 Process Output → Pattern Matching → Redaction → Safe Output
 ```
 
 ### Layer 3: Mutation Gating
+
 ```
 File Modification → Confirm Check → Allow/Deny
 ```
 
 ### Layer 4: No Shell Injection
+
 ```
 Command → spawn(cmd, args) → Safe Execution
 (NOT: exec(`cmd ${userInput}`))
@@ -619,28 +666,396 @@ Command → spawn(cmd, args) → Safe Execution
 
 ### Error Codes
 
-| Error | MCP Code | Meaning |
-|-------|----------|---------|
-| Invalid params | `INVALID_PARAMS` | Bad input |
-| Codex CLI error | `INTERNAL_ERROR` | Execution failed |
-| Timeout | `INTERNAL_ERROR` | Process took too long |
-| Auth failure | `INTERNAL_ERROR` | Codex auth failed |
+| Error           | MCP Code         | Meaning               |
+| --------------- | ---------------- | --------------------- |
+| Invalid params  | `INVALID_PARAMS` | Bad input             |
+| Codex CLI error | `INTERNAL_ERROR` | Execution failed      |
+| Timeout         | `INTERNAL_ERROR` | Process took too long |
+| Auth failure    | `INTERNAL_ERROR` | Codex auth failed     |
+
+---
+
+## JSON Response Format (v3.6.0) 🆕
+
+### Overview
+
+All 15 tools support structured JSON output for AI agent consumption, providing:
+
+- **97% token reduction**: 18,000 → 500 tokens per response
+- **Structured parsing**: No markdown parsing required
+- **Type safety**: Consistent schema across all responses
+- **Metadata extraction**: Automatic extraction of test results, file changes, errors
+
+### Common Envelope Structure
+
+All JSON responses follow this envelope pattern:
+
+```typescript
+{
+  version: string;           // Schema version (e.g., "3.6")
+  schema_id: string;         // Schema identifier (e.g., "codex/v3.6/execution_ack/v1")
+  tool: string;              // Tool name (e.g., "_codex_local_exec")
+  tool_category: string;     // Category (e.g., "local_execution")
+  request_id: string;        // Unique UUID for this request
+  ts: string;                // ISO 8601 timestamp
+  status: string;            // "success" | "error"
+  meta?: object;             // Optional metadata
+  data?: object;             // Response data (when status: "success")
+  error?: ErrorObject;       // Error details (when status: "error")
+}
+```
+
+---
+
+### Response Categories (5 Types)
+
+#### 1. execution_ack (Task Started)
+
+**Used by**: `_codex_local_exec`, `_codex_local_resume`, `_codex_cloud_submit`
+
+**Purpose**: Acknowledge task started, return task/thread ID
+
+**Schema**: `codex/v3.6/execution_ack/v1`
+
+**Structure**:
+
+```typescript
+{
+  version: "3.6",
+  schema_id: "codex/v3.6/execution_ack/v1",
+  tool: "_codex_local_exec",
+  tool_category: "local_execution",
+  request_id: "uuid",
+  ts: "2025-11-18T10:30:00Z",
+  status: "success",
+  meta: {
+    execution_mode: "async",
+    model: "gpt-4o",
+    working_dir: "/path/to/project"
+  },
+  data: {
+    task_id: "T-local-abc123",      // Or thread_id for SDK tools
+    status: "working",
+    message: "Task started - monitoring in background"
+  }
+}
+```
+
+**Token Count**: ~150 tokens (vs 2,500 markdown)
+
+---
+
+#### 2. result_set (Task Completed)
+
+**Used by**: `_codex_local_run`, `_codex_local_results`, `_codex_cloud_results`
+
+**Purpose**: Return task execution results with extracted metadata
+
+**Schema**: `codex/v3.6/result_set/v1`
+
+**Structure**:
+
+```typescript
+{
+  version: "3.6",
+  schema_id: "codex/v3.6/result_set/v1",
+  tool: "_codex_local_run",
+  tool_category: "local_execution",
+  request_id: "uuid",
+  ts: "2025-11-18T10:35:00Z",
+  status: "success",
+  meta: {
+    duration_ms: 45000,
+    model: "gpt-4o"
+  },
+  data: {
+    task_id: "T-local-abc123",
+    output: "Task completed successfully...",
+    metadata: {
+      // Automatically extracted by metadata_extractor.ts
+      test_results: {
+        passed: 45,
+        failed: 2,
+        skipped: 0,
+        failed_tests: ["test_auth.py::test_login", "test_api.py::test_create"]
+      },
+      file_operations: {
+        modified: ["src/auth.ts", "src/api.ts"],
+        added: [],
+        deleted: [],
+        lines_changed: 87
+      },
+      error_context: {
+        error_message: "AssertionError: Expected 200, got 401",
+        error_type: "AssertionError",
+        failed_files: ["test_auth.py"],
+        error_locations: [
+          { file: "test_auth.py", line: 42, column: 8 }
+        ],
+        suggestions: [
+          "Check authentication credentials in test_auth.py:42",
+          "Verify token generation is working correctly",
+          "Run test_auth.py individually to isolate issue"
+        ]
+      },
+      duration_seconds: 45
+    }
+  }
+}
+```
+
+**Token Count**: ~300 tokens (vs 18,000 markdown)
+
+---
+
+#### 3. status_snapshot (Current State)
+
+**Used by**: `_codex_local_status`, `_codex_cloud_status`
+
+**Purpose**: Show current task/process status
+
+**Schema**: `codex/v3.6/status_snapshot/v1`
+
+**Structure**:
+
+```typescript
+{
+  version: "3.6",
+  schema_id: "codex/v3.6/status_snapshot/v1",
+  tool: "_codex_local_status",
+  tool_category: "management",
+  request_id: "uuid",
+  ts: "2025-11-18T10:32:00Z",
+  status: "success",
+  data: {
+    processes: {
+      running: 2,
+      queued: 1,
+      max_concurrency: 2
+    },
+    tasks: [
+      {
+        task_id: "T-local-abc123",
+        status: "working",
+        working_dir: "/path/to/project",
+        created_at: "2025-11-18T10:30:00Z",
+        elapsed_seconds: 120
+      }
+    ]
+  }
+}
+```
+
+**Token Count**: ~200 tokens (vs 3,500 markdown)
+
+---
+
+#### 4. wait_result (Polling Complete)
+
+**Used by**: `_codex_local_wait`, `_codex_cloud_wait`
+
+**Purpose**: Return results after waiting for task completion
+
+**Schema**: `codex/v3.6/wait_result/v1`
+
+**Structure**:
+
+```typescript
+{
+  version: "3.6",
+  schema_id: "codex/v3.6/wait_result/v1",
+  tool: "_codex_local_wait",
+  tool_category: "management",
+  request_id: "uuid",
+  ts: "2025-11-18T10:40:00Z",
+  status: "success",
+  meta: {
+    wait_duration_ms: 300000,
+    timeout_ms: 660000
+  },
+  data: {
+    task_id: "T-local-abc123",
+    final_status: "completed",
+    output: "All tests passed...",
+    metadata: { /* extracted metadata */ }
+  }
+}
+```
+
+**Token Count**: ~180 tokens (vs 2,800 markdown)
+
+---
+
+#### 5. registry_info (System Info)
+
+**Used by**: `_codex_cloud_list_environments`, `_codex_cleanup_registry`
+
+**Purpose**: Return configuration or registry information
+
+**Schema**: `codex/v3.6/registry_info/v1`
+
+**Structure**:
+
+```typescript
+{
+  version: "3.6",
+  schema_id: "codex/v3.6/registry_info/v1",
+  tool: "_codex_cloud_list_environments",
+  tool_category: "configuration",
+  request_id: "uuid",
+  ts: "2025-11-18T10:25:00Z",
+  status: "success",
+  data: {
+    environments: [
+      {
+        id: "env_abc123",
+        name: "Production",
+        repo_url: "https://github.com/org/repo",
+        tech_stack: "node"
+      }
+    ],
+    count: 1
+  }
+}
+```
+
+**Token Count**: ~150 tokens (vs 1,200 markdown)
+
+---
+
+### Error Envelope (All Tools)
+
+**Schema**: `codex/v3.6/error/v1`
+
+**Error Codes** (6 types):
+
+| Code          | Meaning                  | Retryable | Example                |
+| ------------- | ------------------------ | --------- | ---------------------- |
+| `TIMEOUT`     | Task exceeded time limit | No        | Idle timeout (5 min)   |
+| `VALIDATION`  | Invalid parameters       | Yes       | Missing required field |
+| `TOOL_ERROR`  | Tool execution failed    | No        | Codex CLI error        |
+| `NOT_FOUND`   | Resource not found       | Yes       | Task/thread ID invalid |
+| `UNSUPPORTED` | Feature not supported    | No        | Invalid model name     |
+| `INTERNAL`    | Server error             | Maybe     | Unexpected exception   |
+
+**Structure**:
+
+```typescript
+{
+  version: "3.6",
+  schema_id: "codex/v3.6/error/v1",
+  tool: "_codex_local_exec",
+  tool_category: "local_execution",
+  request_id: "uuid",
+  ts: "2025-11-18T10:35:00Z",
+  status: "error",
+  error: {
+    code: "TIMEOUT",
+    message: "Task exceeded idle timeout (300s elapsed)",
+    details: {
+      timeout_type: "idle",
+      elapsed_seconds: 300,
+      partial_results: {
+        last_events: [ /* last 50 JSONL events */ ],
+        last_output: "..." // last 2000 chars
+      }
+    },
+    retryable: false,
+    duration_ms: 300000
+  }
+}
+```
+
+**Token Count**: ~200 tokens (vs 1,500 markdown)
+
+---
+
+### Tool-to-Category Mapping
+
+| Tool                             | Response Category | Schema ID                     |
+| -------------------------------- | ----------------- | ----------------------------- |
+| `_codex_local_run`               | result_set        | codex/v3.6/result_set/v1      |
+| `_codex_local_exec`              | execution_ack     | codex/v3.6/execution_ack/v1   |
+| `_codex_local_resume`            | execution_ack     | codex/v3.6/execution_ack/v1   |
+| `_codex_local_status`            | status_snapshot   | codex/v3.6/status_snapshot/v1 |
+| `_codex_local_results`           | result_set        | codex/v3.6/result_set/v1      |
+| `_codex_local_wait`              | wait_result       | codex/v3.6/wait_result/v1     |
+| `_codex_local_cancel`            | result_set        | codex/v3.6/result_set/v1      |
+| `_codex_cloud_submit`            | execution_ack     | codex/v3.6/execution_ack/v1   |
+| `_codex_cloud_status`            | status_snapshot   | codex/v3.6/status_snapshot/v1 |
+| `_codex_cloud_results`           | result_set        | codex/v3.6/result_set/v1      |
+| `_codex_cloud_wait`              | wait_result       | codex/v3.6/wait_result/v1     |
+| `_codex_cloud_cancel`            | result_set        | codex/v3.6/result_set/v1      |
+| `_codex_cloud_list_environments` | registry_info     | codex/v3.6/registry_info/v1   |
+| `_codex_cloud_github_setup`      | result_set        | codex/v3.6/result_set/v1      |
+| `_codex_cleanup_registry`        | registry_info     | codex/v3.6/registry_info/v1   |
+
+---
+
+### Schema Versioning
+
+**Current Version**: v3.6
+
+**Version Format**: `codex/v{major.minor}/{category}/{schema_version}`
+
+**Examples**:
+
+- `codex/v3.6/execution_ack/v1` - Version 3.6, execution acknowledgment, schema v1
+- `codex/v3.6/error/v1` - Version 3.6, error response, schema v1
+
+**Evolution Strategy**:
+
+- **Minor version bump** (3.6 → 3.7): Add optional fields, new categories
+- **Major version bump** (3.x → 4.0): Breaking changes to envelope structure
+- **Schema version bump** (v1 → v2): Breaking changes within category
+
+**Backward Compatibility**:
+
+- Markdown format remains default (no `format` parameter = markdown)
+- JSON opt-in via `format: "json"` parameter
+- Both formats supported indefinitely
+
+---
+
+### Token Savings Analysis
+
+| Operation         | Markdown  | JSON    | Savings |
+| ----------------- | --------- | ------- | ------- |
+| Task started      | 2,500     | 150     | 94%     |
+| Task completed    | 18,000    | 300     | 98.3%   |
+| Status check      | 3,500     | 200     | 94.3%   |
+| Wait complete     | 2,800     | 180     | 93.6%   |
+| List environments | 1,200     | 150     | 87.5%   |
+| Error response    | 1,500     | 200     | 86.7%   |
+| **Average**       | **5,250** | **197** | **97%** |
+
+**Cost Impact**:
+
+- **Input tokens**: 97% reduction for downstream processing
+- **Output tokens**: Same (JSON slightly larger than minimal markdown)
+- **Cache efficiency**: Higher (structured JSON is more cacheable)
+- **Total cost**: ~95% reduction for AI agent workflows
 
 ---
 
 ## Performance Considerations
 
 ### Concurrency
+
 - Default: 2 parallel processes
 - Adjust via `CODEX_MAX_CONCURRENCY` env var
 - Queue prevents resource exhaustion
 
 ### Token Efficiency
+
+- **JSON format** (v3.6.0): 97% reduction vs markdown (5,250 → 197 tokens avg)
 - Local SDK: 45-93% cache rates
 - Thread resumption: Preserves context
 - Structured output: Reduces parsing overhead
+- Metadata extraction: Zero-cost local parsing
 
 ### Memory
+
 - Event streams are line-buffered
 - Partial lines held in memory
 - Completed events released immediately
@@ -650,22 +1065,26 @@ Command → spawn(cmd, args) → Safe Execution
 ## Integration Points
 
 ### With Claude Code
+
 - MCP protocol over stdio
 - JSON-RPC 2.0 format
 - Tool discovery via ListTools
 - Resource discovery via ListResources
 
 ### With Codex CLI
+
 - Subprocess spawning (no shell)
 - JSONL event parsing
 - Error code handling
 
 ### With Codex SDK
+
 - npm package: `@openai/codex-sdk`
 - Thread management: `startThread`, `resumeThread`
 - Event streaming: `runStreamed`
 
 ### With Codex Cloud
+
 - CLI submission: `codex cloud exec`
 - Web UI monitoring: `https://chatgpt.com/codex`
 - Task registry: Local JSON storage

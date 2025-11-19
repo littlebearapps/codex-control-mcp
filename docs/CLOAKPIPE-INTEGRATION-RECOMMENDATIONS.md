@@ -13,6 +13,7 @@
 **Answer**: ✅ **Yes, it is both possible and appropriate** to include privacy-focused error logging in Codex Control MCP.
 
 **Key Findings**:
+
 - Error logging is **standard and expected** in free, open-source CLI tools
 - Environment variables provide opt-out mechanism **without needing GUI**
 - Industry consensus: Collect **error categories only** (not messages/stack traces)
@@ -34,6 +35,7 @@
 #### Real-World Examples
 
 **1. npm (Node Package Manager)**
+
 ```bash
 # Official opt-out
 npm config set send-metrics false
@@ -41,11 +43,13 @@ npm config set send-metrics false
 # Environment variable (undocumented but works)
 export npm_config_send_metrics=false
 ```
+
 - Sends telemetry by default to improve package ecosystem
 - Clear documentation in `npm help config`
 - Used by millions of developers daily
 
 **2. Yarn (Package Manager)**
+
 ```bash
 # Disable telemetry
 yarn config set --home enableTelemetry 0
@@ -53,11 +57,13 @@ yarn config set --home enableTelemetry 0
 # Environment variable
 export YARN_ENABLE_TELEMETRY=0
 ```
+
 - Collects usage data for improvements
 - Easy opt-out via config or env var
 - Transparent about what's collected
 
 **3. Homebrew (Package Manager for macOS)**
+
 ```bash
 # Universal standard
 export DO_NOT_TRACK=1
@@ -68,12 +74,14 @@ export HOMEBREW_NO_ANALYTICS=1
 # Debug mode (see what would be sent)
 export HOMEBREW_ANALYTICS_DEBUG=1
 ```
+
 - **Highest user trust** among package managers
 - Clear documentation: `brew analytics`
 - Auto-disables in CI/CD environments
 - Debug mode for transparency
 
 **4. Next.js (React Framework)**
+
 ```bash
 # Disable telemetry
 export NEXT_TELEMETRY_DISABLED=1
@@ -81,16 +89,19 @@ export NEXT_TELEMETRY_DISABLED=1
 # Or via config
 npx next telemetry disable
 ```
+
 - Collects error and usage data
 - Clear documentation in official docs
 - Shows "Attention: Next.js now collects..." on first run
 - Easy opt-out
 
 **5. Prisma (Database ORM)**
+
 ```bash
 # Disable telemetry
 export CHECKPOINT_DISABLE=1
 ```
+
 - Sends error and usage data
 - Transparent about what's collected
 - Simple environment variable opt-out
@@ -98,23 +109,27 @@ export CHECKPOINT_DISABLE=1
 ### Key Patterns Observed
 
 #### 1. Environment Variables Are Universal
+
 - ✅ **`DO_NOT_TRACK=1`** - Standard across tools (Homebrew, Next.js, etc.)
 - ✅ **Tool-specific variables** - E.g., `NEXT_TELEMETRY_DISABLED=1`, `HOMEBREW_NO_ANALYTICS=1`
 - ✅ **Config files** - Secondary convenience layer (not primary)
 - ✅ **Debug mode** - Transparency feature (e.g., `HOMEBREW_ANALYTICS_DEBUG=1`)
 
 #### 2. Opt-Out by Default (Not Opt-In)
+
 - Most tools **enable telemetry by default** but provide easy disabling
 - Rationale: Majority of users don't change defaults, but those who care can easily opt out
 - Balance between product improvement and user privacy
 
 #### 3. Transparency Builds Trust
+
 - **Clear documentation**: What's collected, why, how to disable
 - **Privacy policies**: Link to formal privacy documentation
 - **Debug mode**: Let users see exactly what would be sent
 - **No surprises**: Show telemetry notice on first run (if interactive)
 
 #### 4. CI/CD Auto-Detection
+
 ```bash
 # Common CI environment variables
 CI=true
@@ -125,6 +140,7 @@ CIRCLECI=true
 JENKINS_HOME=/var/jenkins
 TRAVIS=true
 ```
+
 - Tools automatically disable telemetry in CI/CD
 - Prevents polluting analytics with automated builds
 - Reduces friction for users
@@ -138,6 +154,7 @@ TRAVIS=true
 #### ✅ SAFE to Collect (Error Categories)
 
 **Example Safe Data**:
+
 ```typescript
 {
   error_category: "timeout",           // Generic category (no details)
@@ -150,6 +167,7 @@ TRAVIS=true
 ```
 
 **Why Safe**:
+
 - No user code or data
 - No file paths or environment details
 - No identifiable information
@@ -158,6 +176,7 @@ TRAVIS=true
 #### ❌ NEVER Collect (Sensitive Data)
 
 **Example Unsafe Data**:
+
 ```typescript
 {
   error_message: "Cannot read property 'name' of null",  // Contains code context
@@ -170,6 +189,7 @@ TRAVIS=true
 ```
 
 **Why Unsafe**:
+
 - Error messages contain code context
 - Stack traces reveal code structure
 - File paths are PII (personally identifiable information)
@@ -182,7 +202,9 @@ TRAVIS=true
 **Good News**: CloakPipe already handles PII sanitization!
 
 **From CloakPipe README**:
+
 > All GitHub issues are **public** - CloakPipe sanitizes:
+>
 > - ✅ User file paths → generic paths
 > - ✅ Extension IDs → placeholder IDs
 > - ✅ API keys, tokens, JWTs → redacted
@@ -207,30 +229,33 @@ TRAVIS=true
 // Environment variable configuration
 export const TELEMETRY = {
   // Disabled if ANY of these are true:
-  enabled: !process.env.CODEX_CONTROL_DISABLE_TELEMETRY &&
-           !process.env.DO_NOT_TRACK &&
-           !process.env.CI &&                              // Auto-disable in CI
-           !process.env.CONTINUOUS_INTEGRATION &&
-           !process.env.GITHUB_ACTIONS &&
-           !process.env.GITLAB_CI,
+  enabled:
+    !process.env.CODEX_CONTROL_DISABLE_TELEMETRY &&
+    !process.env.DO_NOT_TRACK &&
+    !process.env.CI && // Auto-disable in CI
+    !process.env.CONTINUOUS_INTEGRATION &&
+    !process.env.GITHUB_ACTIONS &&
+    !process.env.GITLAB_CI,
 
   // Debug mode (log what would be sent, don't actually send)
-  debug: process.env.CODEX_CONTROL_TELEMETRY_DEBUG === '1',
+  debug: process.env.CODEX_CONTROL_TELEMETRY_DEBUG === "1",
 };
 
 // Helper function to check if running in CI/CD
 function isCI(): boolean {
   const CI_VARS = [
-    'CI',
-    'CONTINUOUS_INTEGRATION',
-    'GITHUB_ACTIONS',
-    'GITLAB_CI',
-    'CIRCLECI',
-    'JENKINS_HOME',
-    'TRAVIS',
+    "CI",
+    "CONTINUOUS_INTEGRATION",
+    "GITHUB_ACTIONS",
+    "GITLAB_CI",
+    "CIRCLECI",
+    "JENKINS_HOME",
+    "TRAVIS",
   ];
 
-  return CI_VARS.some(v => process.env[v] === 'true' || process.env[v] !== undefined);
+  return CI_VARS.some(
+    (v) => process.env[v] === "true" || process.env[v] !== undefined,
+  );
 }
 ```
 
@@ -239,32 +264,35 @@ function isCI(): boolean {
 **File**: `src/telemetry.ts` (continued)
 
 ```typescript
-import { CloakPipe } from './cloakpipe/client.js';
+import { CloakPipe } from "./cloakpipe/client.js";
 
 // Error categories (NEVER send actual error messages)
 export enum ErrorCategory {
-  TIMEOUT = 'timeout',
-  AUTH_FAILED = 'auth_failed',
-  INVALID_PARAMS = 'invalid_params',
-  CODEX_CLI_ERROR = 'codex_cli_error',
-  NETWORK_ERROR = 'network_error',
-  THREAD_NOT_FOUND = 'thread_not_found',
-  CLOUD_SUBMISSION_FAILED = 'cloud_submission_failed',
-  TASK_NOT_FOUND = 'task_not_found',
+  TIMEOUT = "timeout",
+  AUTH_FAILED = "auth_failed",
+  INVALID_PARAMS = "invalid_params",
+  CODEX_CLI_ERROR = "codex_cli_error",
+  NETWORK_ERROR = "network_error",
+  THREAD_NOT_FOUND = "thread_not_found",
+  CLOUD_SUBMISSION_FAILED = "cloud_submission_failed",
+  TASK_NOT_FOUND = "task_not_found",
 }
 
 // Safe metadata (no user data)
 interface SafeErrorMetadata {
   category: ErrorCategory;
-  tool: string;                    // e.g., "local_exec", "cloud_submit"
-  duration_ms?: number;            // Performance metric
-  node_version: string;            // Environment info
-  os_platform: string;             // OS type (darwin, linux, win32)
+  tool: string; // e.g., "local_exec", "cloud_submit"
+  duration_ms?: number; // Performance metric
+  node_version: string; // Environment info
+  os_platform: string; // OS type (darwin, linux, win32)
 }
 
 export async function reportError(
   category: ErrorCategory,
-  metadata: Omit<SafeErrorMetadata, 'category' | 'node_version' | 'os_platform'>
+  metadata: Omit<
+    SafeErrorMetadata,
+    "category" | "node_version" | "os_platform"
+  >,
 ): Promise<void> {
   // Respect user privacy settings
   if (!TELEMETRY.enabled) return;
@@ -280,21 +308,24 @@ export async function reportError(
 
   // Debug mode: Show what would be sent (don't actually send)
   if (TELEMETRY.debug) {
-    console.error('[Codex Control Telemetry DEBUG]', JSON.stringify(safeMetadata, null, 2));
+    console.error(
+      "[Codex Control Telemetry DEBUG]",
+      JSON.stringify(safeMetadata, null, 2),
+    );
     return;
   }
 
   try {
     // Send to CloakPipe Worker (Tier 2: Anonymous Plausible Analytics)
     await CloakPipe.capture(new Error(category), {
-      extension: 'codex-control-mcp',
-      surface: 'mcp-server',
+      extension: "codex-control-mcp",
+      surface: "mcp-server",
       metadata: safeMetadata,
     });
   } catch (err) {
     // Fail silently - telemetry errors should never break user workflows
     if (TELEMETRY.debug) {
-      console.error('[Codex Control Telemetry] Failed to send error:', err);
+      console.error("[Codex Control Telemetry] Failed to send error:", err);
     }
   }
 }
@@ -305,9 +336,12 @@ export async function reportError(
 **File**: `src/executor/process_manager.ts` (MODIFIED)
 
 ```typescript
-import { reportError, ErrorCategory } from '../telemetry.js';
+import { reportError, ErrorCategory } from "../telemetry.js";
 
-async function executeCodexTask(task: string, options: CodexOptions): Promise<CodexResult> {
+async function executeCodexTask(
+  task: string,
+  options: CodexOptions,
+): Promise<CodexResult> {
   const startTime = Date.now();
 
   try {
@@ -318,14 +352,14 @@ async function executeCodexTask(task: string, options: CodexOptions): Promise<Co
     const duration = Date.now() - startTime;
 
     // Report error category (NOT the error message)
-    if (error.code === 'TIMEOUT') {
+    if (error.code === "TIMEOUT") {
       await reportError(ErrorCategory.TIMEOUT, {
-        tool: options.tool || 'unknown',
+        tool: options.tool || "unknown",
         duration_ms: duration,
       });
-    } else if (error.message?.includes('Authentication failed')) {
+    } else if (error.message?.includes("Authentication failed")) {
       await reportError(ErrorCategory.AUTH_FAILED, {
-        tool: options.tool || 'unknown',
+        tool: options.tool || "unknown",
         duration_ms: duration,
       });
     }
@@ -339,18 +373,24 @@ async function executeCodexTask(task: string, options: CodexOptions): Promise<Co
 **File**: `src/tools/local_exec.ts` (MODIFIED)
 
 ```typescript
-import { reportError, ErrorCategory } from '../telemetry.js';
+import { reportError, ErrorCategory } from "../telemetry.js";
 
-export async function localExec(params: LocalExecParams): Promise<LocalExecResult> {
+export async function localExec(
+  params: LocalExecParams,
+): Promise<LocalExecResult> {
   try {
     // Existing SDK execution logic...
-    const result = await SDK.startThread(params.task, params.mode, params.workingDir);
+    const result = await SDK.startThread(
+      params.task,
+      params.mode,
+      params.workingDir,
+    );
     return result;
   } catch (error) {
     // Report error category
-    if (error.code === 'THREAD_NOT_FOUND') {
+    if (error.code === "THREAD_NOT_FOUND") {
       await reportError(ErrorCategory.THREAD_NOT_FOUND, {
-        tool: 'local_exec',
+        tool: "local_exec",
       });
     }
 
@@ -363,7 +403,7 @@ export async function localExec(params: LocalExecParams): Promise<LocalExecResul
 
 **File**: `docs/TELEMETRY.md` (NEW)
 
-```markdown
+````markdown
 # Error Reporting & Privacy
 
 Codex Control MCP collects **minimal, anonymous error data** to improve reliability for all users.
@@ -378,6 +418,7 @@ We collect **only error categories** (not error messages or stack traces):
 - Node.js version and OS platform
 
 **Example of what we collect**:
+
 ```json
 {
   "error_category": "timeout",
@@ -387,6 +428,7 @@ We collect **only error categories** (not error messages or stack traces):
   "os_platform": "darwin"
 }
 ```
+````
 
 ## What We DON'T Collect
 
@@ -454,7 +496,8 @@ For more details, see our [Privacy Policy](PRIVACY.md).
 ## Questions or Concerns?
 
 Open an issue on GitHub: https://github.com/littlebearapps/codex-control/issues
-```
+
+````
 
 **File**: `docs/PRIVACY.md` (NEW)
 
@@ -489,7 +532,7 @@ When an error occurs, we collect:
   "node_version": "20.0.0",
   "os_platform": "darwin"
 }
-```
+````
 
 ### What We DON'T Collect
 
@@ -521,11 +564,13 @@ Error categories help us:
 ## Third-Party Services
 
 ### CloakPipe
+
 - **Purpose**: Error category tracking
 - **Data**: Anonymous error categories only
 - **Privacy**: See [CloakPipe Documentation](https://github.com/littlebearapps/cloakpipe)
 
 ### Plausible Analytics
+
 - **Purpose**: Anonymous error pattern tracking
 - **Data**: Error category counts only (no user data)
 - **Privacy**: GDPR-compliant, no cookies, no personal data
@@ -569,7 +614,8 @@ Questions or concerns? Open an issue:
 https://github.com/littlebearapps/codex-control/issues
 
 Or email: privacy@littlebearapps.com
-```
+
+````
 
 #### 5. README Updates
 
@@ -591,10 +637,11 @@ export DO_NOT_TRACK=1
 
 # Tool-specific
 export CODEX_CONTROL_DISABLE_TELEMETRY=1
-```
+````
 
 See [TELEMETRY.md](docs/TELEMETRY.md) and [PRIVACY.md](docs/PRIVACY.md) for details.
-```
+
+````
 
 ---
 
@@ -643,7 +690,7 @@ export function showFirstRunNotice(): void {
 
 // Call in src/index.ts
 showFirstRunNotice();
-```
+````
 
 #### 2. Telemetry Status Command
 
@@ -652,31 +699,39 @@ showFirstRunNotice();
 ```typescript
 // New tool: codex_telemetry_status
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === 'codex_telemetry_status') {
+  if (request.params.name === "codex_telemetry_status") {
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          enabled: TELEMETRY.enabled,
-          debug: TELEMETRY.debug,
-          reason: getTelemetryStatusReason(),
-          how_to_disable: [
-            'export DO_NOT_TRACK=1',
-            'export CODEX_CONTROL_DISABLE_TELEMETRY=1',
-          ],
-          documentation: 'https://github.com/littlebearapps/codex-control/blob/main/docs/TELEMETRY.md',
-        }, null, 2),
-      }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              enabled: TELEMETRY.enabled,
+              debug: TELEMETRY.debug,
+              reason: getTelemetryStatusReason(),
+              how_to_disable: [
+                "export DO_NOT_TRACK=1",
+                "export CODEX_CONTROL_DISABLE_TELEMETRY=1",
+              ],
+              documentation:
+                "https://github.com/littlebearapps/codex-control/blob/main/docs/TELEMETRY.md",
+            },
+            null,
+            2,
+          ),
+        },
+      ],
     };
   }
 });
 
 function getTelemetryStatusReason(): string {
-  if (process.env.DO_NOT_TRACK === '1') return 'Disabled: DO_NOT_TRACK=1';
-  if (process.env.CODEX_CONTROL_DISABLE_TELEMETRY === '1') return 'Disabled: CODEX_CONTROL_DISABLE_TELEMETRY=1';
-  if (isCI()) return 'Disabled: CI environment detected';
-  if (TELEMETRY.debug) return 'Debug mode: Will not send data';
-  return 'Enabled: Collecting anonymous error categories';
+  if (process.env.DO_NOT_TRACK === "1") return "Disabled: DO_NOT_TRACK=1";
+  if (process.env.CODEX_CONTROL_DISABLE_TELEMETRY === "1")
+    return "Disabled: CODEX_CONTROL_DISABLE_TELEMETRY=1";
+  if (isCI()) return "Disabled: CI environment detected";
+  if (TELEMETRY.debug) return "Debug mode: Will not send data";
+  return "Enabled: Collecting anonymous error categories";
 }
 ```
 
@@ -688,24 +743,27 @@ function getTelemetryStatusReason(): string {
 // Simple CLI tool to query CloakPipe for error patterns
 // Usage: npx ts-node scripts/telemetry-dashboard.ts
 
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
 async function fetchErrorPatterns() {
-  const response = await fetch('https://cloakpipe-worker-prod.nathan-55a.workers.dev/stats', {
-    headers: {
-      'Authorization': `Bearer ${process.env.CLOAKPIPE_API_KEY}`,
+  const response = await fetch(
+    "https://cloakpipe-worker-prod.nathan-55a.workers.dev/stats",
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.CLOAKPIPE_API_KEY}`,
+      },
     },
-  });
+  );
 
   const data = await response.json();
 
-  console.log('Error Categories (Last 30 Days):\n');
+  console.log("Error Categories (Last 30 Days):\n");
   console.table(data.error_categories);
 
-  console.log('\nTop Tools with Errors:\n');
+  console.log("\nTop Tools with Errors:\n");
   console.table(data.top_tools);
 
-  console.log('\nPlatform Breakdown:\n');
+  console.log("\nPlatform Breakdown:\n");
   console.table(data.platforms);
 }
 
@@ -721,6 +779,7 @@ fetchErrorPatterns().catch(console.error);
 **Scenario**: User wants to disable all telemetry.
 
 **Experience**:
+
 ```bash
 # User sets global opt-out (works for all tools respecting DO_NOT_TRACK)
 echo "export DO_NOT_TRACK=1" >> ~/.zshrc
@@ -747,6 +806,7 @@ $ codex_telemetry_status
 **Scenario**: User wants to see what would be sent before deciding.
 
 **Experience**:
+
 ```bash
 # Enable debug mode
 export CODEX_CONTROL_TELEMETRY_DEBUG=1
@@ -773,6 +833,7 @@ $ codex_local_exec --task "Analyze code"
 **Scenario**: User doesn't set any environment variables.
 
 **Experience**:
+
 ```bash
 # First run shows notice
 $ codex_local_exec --task "Run tests"
@@ -796,18 +857,18 @@ $ codex_local_exec --task "Run tests"
 
 ## Comparison: CloakPipe Features vs. Industry Standards
 
-| Feature | CloakPipe (Current) | Industry Standard | Recommended for Codex Control MCP |
-|---------|---------------------|-------------------|-----------------------------------|
-| **Opt-Out Mechanism** | Settings toggle (GUI) | Environment variables | ✅ Environment variables (`DO_NOT_TRACK=1`) |
-| **Default State** | Opt-in (user enables) | Opt-out (enabled by default) | ✅ Opt-out (enabled by default) |
-| **Data Collected** | Full errors + context | Error categories only | ✅ Error categories only |
-| **Privacy Tier** | Tier 3 (GitHub Issues) | Tier 2 (Anonymous analytics) | ✅ Tier 2 (Plausible Analytics) |
-| **PII Sanitization** | ✅ Built-in | ✅ Standard | ✅ Already handled by CloakPipe |
-| **Debug Mode** | ❌ Not available | ✅ Common (e.g., Homebrew) | ✅ Add debug mode |
-| **CI Auto-Detection** | ❌ Not implemented | ✅ Universal | ✅ Auto-disable in CI/CD |
-| **Documentation** | ✅ Comprehensive | ✅ Standard | ✅ Add TELEMETRY.md + PRIVACY.md |
-| **First-Run Notice** | N/A (GUI apps) | ✅ Common (CLI tools) | ✅ Non-interactive notice |
-| **Transparency** | ✅ High (privacy warnings) | ✅ High (debug mode) | ✅ Debug mode + docs |
+| Feature               | CloakPipe (Current)        | Industry Standard            | Recommended for Codex Control MCP           |
+| --------------------- | -------------------------- | ---------------------------- | ------------------------------------------- |
+| **Opt-Out Mechanism** | Settings toggle (GUI)      | Environment variables        | ✅ Environment variables (`DO_NOT_TRACK=1`) |
+| **Default State**     | Opt-in (user enables)      | Opt-out (enabled by default) | ✅ Opt-out (enabled by default)             |
+| **Data Collected**    | Full errors + context      | Error categories only        | ✅ Error categories only                    |
+| **Privacy Tier**      | Tier 3 (GitHub Issues)     | Tier 2 (Anonymous analytics) | ✅ Tier 2 (Plausible Analytics)             |
+| **PII Sanitization**  | ✅ Built-in                | ✅ Standard                  | ✅ Already handled by CloakPipe             |
+| **Debug Mode**        | ❌ Not available           | ✅ Common (e.g., Homebrew)   | ✅ Add debug mode                           |
+| **CI Auto-Detection** | ❌ Not implemented         | ✅ Universal                 | ✅ Auto-disable in CI/CD                    |
+| **Documentation**     | ✅ Comprehensive           | ✅ Standard                  | ✅ Add TELEMETRY.md + PRIVACY.md            |
+| **First-Run Notice**  | N/A (GUI apps)             | ✅ Common (CLI tools)        | ✅ Non-interactive notice                   |
+| **Transparency**      | ✅ High (privacy warnings) | ✅ High (debug mode)         | ✅ Debug mode + docs                        |
 
 ---
 
@@ -869,12 +930,14 @@ $ codex_local_exec --task "Run tests"
 ### Key Insight
 
 Users **don't object to telemetry itself** - they object to:
+
 - Lack of transparency
 - Difficult opt-out
 - Collection of sensitive data
 - Unclear purpose
 
 **Solution**: Follow Homebrew pattern (highest user trust):
+
 1. Clear documentation
 2. Easy opt-out (`DO_NOT_TRACK=1`)
 3. Debug mode for transparency
@@ -911,16 +974,19 @@ Users **don't object to telemetry itself** - they object to:
 ### Expected Outcomes
 
 **User Trust**:
+
 - 📈 High trust due to transparency and easy opt-out
 - 📈 Debug mode shows exactly what's being sent
 - 📈 Follows industry standards (npm, Yarn, Homebrew)
 
 **Data Quality**:
+
 - 📈 Better error pattern detection
 - 📈 Prioritize fixes based on real-world usage
 - 📈 Measure fix effectiveness
 
 **User Experience**:
+
 - ✅ Privacy-conscious users can easily opt out
 - ✅ Curious users can use debug mode
 - ✅ Default users help improve reliability
@@ -931,18 +997,23 @@ Users **don't object to telemetry itself** - they object to:
 ## Questions & Answers
 
 ### Q: Is it appropriate for a free tool?
+
 **A**: Yes. npm, Yarn, Homebrew, Next.js, and Prisma all have telemetry in free versions. Users expect it and accept it when done transparently.
 
 ### Q: How do we handle opt-in/opt-out without GUI?
+
 **A**: Environment variables are the universal standard. Users set `DO_NOT_TRACK=1` globally or per-project with direnv.
 
 ### Q: Will this upset users?
+
 **A**: Not if done right. Transparency + easy opt-out + privacy-first approach = user trust. Follow Homebrew pattern.
 
 ### Q: What about GDPR/privacy laws?
+
 **A**: Error categories (not messages) with no PII = no GDPR concerns. CloakPipe already handles PII sanitization.
 
 ### Q: Should we collect more data?
+
 **A**: No. Start minimal (categories only). Can always expand later if needed, but can't un-collect data.
 
 ---

@@ -19,6 +19,7 @@ Successfully updated all MCP configurations across 24 projects to use the new `m
 **File**: `/Users/nathanschram/claude-code-tools/.mcp.json`
 
 **Before**:
+
 ```json
 {
   "mcpServers": {
@@ -33,6 +34,7 @@ Successfully updated all MCP configurations across 24 projects to use the new `m
 ```
 
 **After**:
+
 ```json
 {
   "mcpServers": {
@@ -53,6 +55,7 @@ Successfully updated all MCP configurations across 24 projects to use the new `m
 **Updates Applied**: 17 project .mcp.json files
 
 **Projects Updated**:
+
 1. `/illustrations/.mcp.json`
 2. `/lba/factory/tester/main/.mcp.json`
 3. `/lba/apps/chrome-extensions/palette-kit/main/.mcp.json`
@@ -74,6 +77,7 @@ Successfully updated all MCP configurations across 24 projects to use the new `m
 **Projects Already Updated**: 7 (skipped)
 
 **Change Pattern**:
+
 ```json
 // Before
 {
@@ -104,11 +108,13 @@ Successfully updated all MCP configurations across 24 projects to use the new `m
 **File**: `.mcp.full.json`
 
 **Before**:
+
 ```bash
 load_mcp_secrets codex-control main
 ```
 
 **After**:
+
 ```bash
 load_mcp_secrets mcp-delegator main
 ```
@@ -120,6 +126,7 @@ load_mcp_secrets mcp-delegator main
 ### MCP Tool Prefix
 
 **Before**:
+
 ```
 mcp__codex-control___codex_local_run
 mcp__codex-control___codex_cloud_submit
@@ -127,6 +134,7 @@ mcp__codex-control___codex_cloud_github_setup
 ```
 
 **After** (expected after Claude Code restart):
+
 ```
 mcp__mcp-delegator___codex_local_run
 mcp__mcp-delegator___codex_cloud_submit
@@ -158,6 +166,7 @@ mcp-delegator --version
 ### 2. Restart Claude Code
 
 **In Each Working Directory**:
+
 1. Quit Claude Code completely
 2. Restart in the working directory
 3. Run `/mcp` command
@@ -184,6 +193,7 @@ All updated files have `.backup` copies:
 ```
 
 **To Restore**:
+
 ```bash
 # If needed
 cp /path/to/file.backup /path/to/file
@@ -210,6 +220,7 @@ cp /path/to/file.backup /path/to/file
 ### Optional
 
 4. **Clean Up Backups** (after verification)
+
    ```bash
    find /Users/nathanschram/claude-code-tools -name ".mcp.json.backup" -delete
    ```
@@ -223,16 +234,19 @@ cp /path/to/file.backup /path/to/file
 ## Files Created/Modified
 
 ### Created
+
 - `update-mcp-configs.py` - Automated update script
 - `update-mcp-configs.sh` - Bash version (not used)
 - `docs/MCP-PREFIX-UPDATE-COMPLETE.md` - This document
 
 ### Modified
+
 - `.mcp.json` (root directory)
 - `.mcp.full.json` (project directory)
 - 17 project `.mcp.json` files
 
 ### Backed Up
+
 - 17 `.mcp.json.backup` files
 
 ---
@@ -257,19 +271,23 @@ cp /path/to/file.backup /path/to/file
 ## Summary
 
 ✅ **24 total .mcp.json files processed**
+
 - 17 updated with new server name and command
 - 7 already updated (skipped)
 - 17 backups created
 
 ✅ **MCP tool prefix updated**
+
 - From: `mcp__codex-control__*`
 - To: `mcp__mcp-delegator__*`
 
 ✅ **npm link command deployed**
+
 - Old: `node /full/path/to/dist/index.js`
 - New: `mcp-delegator` (global command)
 
 ✅ **Keychain reference updated**
+
 - Old: `load_mcp_secrets codex-control main`
 - New: `load_mcp_secrets mcp-delegator main`
 

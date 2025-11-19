@@ -1,6 +1,6 @@
-# Workflows Quick Reference
+# Workflows Quick Reference (v3.6.0)
 
-Common development workflows using Codex Control MCP.
+Common development workflows using MCP Delegator with JSON format optimization.
 
 ---
 
@@ -11,6 +11,158 @@ Common development workflows using Codex Control MCP.
 3. **Testing Workflows** - Test execution, failure debugging, coverage
 4. **Cloud Workflows** - Long-running tasks, background processing
 5. **GitHub Workflows** - PR creation, automated fixes, CI integration
+6. **JSON Format Optimization** - AI agent workflows with 97% token reduction (NEW in v3.6)
+
+---
+
+## JSON Format Optimization (v3.6.0)
+
+### Why Use JSON Format
+
+**Token Savings**: 97% reduction (18,000 → 500 tokens per task)
+
+- Faster AI agent responses
+- Lower costs
+- Structured data extraction
+- No markdown parsing needed
+
+### Optimized Workflow Pattern
+
+**Traditional (Markdown)**:
+
+```typescript
+// 1. Submit task
+{ "task": "Run tests", "mode": "read-only" }
+// Returns: 2,500 tokens of markdown
+
+// 2. Get results
+{ "task_id": "T-local-abc123" }
+// Returns: 18,000 tokens of markdown with full output
+```
+
+**Optimized (JSON)** ✅:
+
+```typescript
+// 1. Submit task
+{ "task": "Run tests", "mode": "read-only", "format": "json" }
+// Returns: 150 tokens (execution_ack)
+
+// 2. Get results
+{ "task_id": "T-local-abc123", "format": "json" }
+// Returns: 300 tokens (result_set with metadata, output omitted on success)
+```
+
+**Total Savings**: 20,500 → 450 tokens = **97.8% reduction**
+
+### When to Use JSON Format
+
+**✅ Always use JSON for**:
+
+- AI agent automation
+- Multi-task workflows
+- Batch processing
+- Background tasks
+- CI/CD pipelines
+
+**❌ Use Markdown for**:
+
+- Human-readable output
+- Interactive debugging
+- One-off manual tasks
+
+### JSON Workflow Example: Test Suite Automation
+
+**Goal**: Run tests, extract results, fix failures, verify fixes
+
+**Step 1: Run Tests (JSON)**
+
+```typescript
+{
+  "task": "Run complete test suite and report results",
+  "mode": "read-only",
+  "format": "json"
+}
+```
+
+**Response** (150 tokens):
+
+```json
+{
+  "version": "3.6",
+  "tool": "_codex_local_run",
+  "status": "ok",
+  "data": {
+    "task_id": "T-local-abc123",
+    "accepted": true
+  }
+}
+```
+
+**Step 2: Get Results (JSON)**
+
+```typescript
+{
+  "task_id": "T-local-abc123",
+  "format": "json"
+}
+```
+
+**Response** (300 tokens with metadata):
+
+```json
+{
+  "version": "3.6",
+  "tool": "_codex_local_results",
+  "status": "ok",
+  "data": {
+    "result": "failure",
+    "metadata": {
+      "test_results": {
+        "passed": 115,
+        "failed": 2,
+        "failed_tests": ["test_auth_timeout", "test_api_validation"]
+      },
+      "error_context": {
+        "error_message": "TypeError: Cannot read property 'id' of null",
+        "failed_files": ["src/auth.ts"],
+        "suggestions": [
+          "Start investigation at src/auth.ts:42",
+          "Check for null/undefined values"
+        ]
+      }
+    },
+    "output": {
+      "included": true // Included because test failed
+    }
+  }
+}
+```
+
+**Step 3: Fix Failures (JSON)**
+
+```typescript
+{
+  "task": "Fix the 2 failing tests: test_auth_timeout and test_api_validation. Issue is TypeError at src/auth.ts:42 - check for null values.",
+  "mode": "workspace-write",
+  "format": "json"
+}
+```
+
+**Step 4: Verify Fixes (JSON)**
+
+```typescript
+{
+  "task": "Run only the 2 previously failing tests to verify fixes",
+  "mode": "read-only",
+  "format": "json"
+}
+```
+
+**Total Token Usage**:
+
+- Markdown: ~40,000 tokens
+- JSON: ~1,200 tokens
+- **Savings**: 97%
 
 ---
 
@@ -21,6 +173,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Analyze code for bugs, security issues, or improvements.
 
 **Steps**:
+
 ```
 1. Use codex_run with read-only mode
    → Fast, no file changes
@@ -34,6 +187,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Analyze
 {
@@ -56,6 +210,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Use Cases**:
+
 - Pre-commit code review
 - Security audit
 - Performance analysis
@@ -68,6 +223,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Plan large-scale refactoring with detailed analysis.
 
 **Steps**:
+
 ```
 1. Use codex_local_exec (read-only)
    → Get detailed analysis with thread persistence
@@ -83,6 +239,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Initial analysis
 {
@@ -112,6 +269,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Benefits**:
+
 - ✅ Thread persistence preserves context
 - ✅ High cache rates (45-93%) save costs
 - ✅ Iterative exploration before commitment
@@ -125,6 +283,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Build new feature with test-driven approach.
 
 **Steps**:
+
 ```
 1. codex_local_exec (read-only)
    → Analyze existing code, plan approach
@@ -142,6 +301,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Analysis
 {
@@ -173,6 +333,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Best Practices**:
+
 - ✅ Use feature branches (not main)
 - ✅ Write tests first
 - ✅ Leverage thread persistence
@@ -185,6 +346,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Debug issue, find root cause, apply minimal fix.
 
 **Steps**:
+
 ```
 1. codex_local_exec (read-only)
    → Reproduce bug, analyze symptoms
@@ -200,6 +362,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Reproduce and analyze
 {
@@ -229,6 +392,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Benefits**:
+
 - ✅ Systematic debugging approach
 - ✅ Context preserved across steps
 - ✅ Minimal, targeted fixes
@@ -242,6 +406,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Execute test suite, identify failures, apply fixes.
 
 **Steps**:
+
 ```
 1. codex_run (read-only)
    → Run test suite, capture failures
@@ -256,6 +421,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example (Few Failures)**:
+
 ```typescript
 // Step 1: Run tests
 {
@@ -271,6 +437,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example (Many Failures)**:
+
 ```typescript
 // Use Cloud for long-running task
 {
@@ -287,6 +454,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Identify untested code and add coverage.
 
 **Steps**:
+
 ```
 1. codex_local_exec (read-only)
    → Run coverage tool, identify gaps
@@ -299,6 +467,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Coverage analysis
 {
@@ -340,6 +509,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Run comprehensive tests in background.
 
 **Steps**:
+
 ```
 1. codex_cloud_submit
    → Submit task to Codex Cloud
@@ -355,6 +525,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example**:
+
 ```typescript
 // Step 1: Submit
 {
@@ -384,6 +555,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Large-scale refactoring that takes hours.
 
 **Steps**:
+
 ```
 1. Setup GitHub environment
    → Use codex_github_setup_guide
@@ -399,6 +571,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Example**:
+
 ```typescript
 // Evening: Submit task
 {
@@ -425,6 +598,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Complete feature development with automated PR.
 
 **Prerequisites**:
+
 ```
 1. GitHub environment configured
    → Use codex_github_setup_guide
@@ -434,6 +608,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Workflow**:
+
 ```typescript
 // Submit complete feature task
 {
@@ -452,6 +627,7 @@ Common development workflows using Codex Control MCP.
 ```
 
 **Task Description Best Practices**:
+
 - ✅ Specify branch name explicitly
 - ✅ Include testing requirements
 - ✅ Specify PR title and description needs
@@ -464,6 +640,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Fix GitHub issues automatically.
 
 **Workflow**:
+
 ```typescript
 // Fix specific GitHub issue
 {
@@ -486,6 +663,7 @@ Common development workflows using Codex Control MCP.
 **Goal**: Run Codex tasks in GitHub Actions.
 
 **Setup** (`.github/workflows/codex-review.yml`):
+
 ```yaml
 name: Codex Code Review
 
@@ -515,32 +693,35 @@ jobs:
 
 ## Workflow Selection Matrix
 
-| Scenario | Tool Chain | Duration | Persistence |
-|----------|-----------|----------|-------------|
-| **Quick analysis** | `codex_run` | 1-5 min | ❌ No |
-| **Iterative dev** | `codex_local_exec` + `resume` | 5-30 min | ✅ Thread |
-| **Long refactoring** | `codex_cloud_submit` | 30+ min | ✅ Task |
-| **Preview changes** | `codex_plan` → `codex_apply` | 2-10 min | ❌ No |
-| **Multi-step debugging** | `codex_local_exec` + `resume` | 10-20 min | ✅ Thread |
-| **GitHub PR** | `codex_cloud_submit` | 20-60 min | ✅ Task |
+| Scenario                 | Tool Chain                    | Duration  | Persistence |
+| ------------------------ | ----------------------------- | --------- | ----------- |
+| **Quick analysis**       | `codex_run`                   | 1-5 min   | ❌ No       |
+| **Iterative dev**        | `codex_local_exec` + `resume` | 5-30 min  | ✅ Thread   |
+| **Long refactoring**     | `codex_cloud_submit`          | 30+ min   | ✅ Task     |
+| **Preview changes**      | `codex_plan` → `codex_apply`  | 2-10 min  | ❌ No       |
+| **Multi-step debugging** | `codex_local_exec` + `resume` | 10-20 min | ✅ Thread   |
+| **GitHub PR**            | `codex_cloud_submit`          | 20-60 min | ✅ Task     |
 
 ---
 
 ## Best Practices Across Workflows
 
 ### Before Starting
+
 - ✅ Check git status (clean working directory)
 - ✅ Create feature branch (not main)
 - ✅ Review existing code structure
 - ✅ Define clear success criteria
 
 ### During Execution
+
 - ✅ Use descriptive task descriptions
 - ✅ Leverage thread persistence for multi-step tasks
 - ✅ Monitor token usage (local SDK tools)
 - ✅ Check intermediate results
 
 ### After Completion
+
 - ✅ Review all changes (`git diff`)
 - ✅ Run tests locally
 - ✅ Verify no secrets committed
@@ -548,6 +729,7 @@ jobs:
 - ✅ Update documentation if needed
 
 ### Error Recovery
+
 - ✅ Use `codex_local_resume` to continue from failure
 - ✅ Review error messages carefully
 - ✅ Check `codex_status` for queue issues
@@ -560,11 +742,13 @@ jobs:
 **Fully automated pipeline** - No manual versioning or publishing required.
 
 ### Automated on Every PR
+
 - Multi-platform testing (Node 20.x/22.x on Ubuntu/macOS/Windows)
 - Lint, type check, coverage, security audit
 - CodeQL security scanning
 
 ### Automated on Main Commits
+
 - **semantic-release** determines version from conventional commits:
   - `fix:` → Patch (3.x.x)
   - `feat:` → Minor (3.x.0)
@@ -574,6 +758,7 @@ jobs:
 - Create GitHub releases
 
 ### Provenance E409 Fix (v3.3.3+)
+
 - **Problem**: npm registry race condition causes E409 "packument save" errors
 - **Solution**: Post-publish verification script (based on CKEditor solution)
 - Handles case where package publishes successfully despite error message
@@ -581,6 +766,7 @@ jobs:
 - **See**: `docs/PROVENANCE-E409-FIX.md` for complete details
 
 ### Continuous Security
+
 - Weekly CodeQL scans
 - Dependabot dependency updates
 - Secret scanning with push protection

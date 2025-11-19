@@ -36,15 +36,28 @@ export declare class CloudCancelTool {
                     type: string;
                     description: string;
                 };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
+                };
             };
             required: string[];
         };
     };
     execute(params: any): Promise<{
         content: {
+            type: string;
+            text: string;
+        }[];
+        isError: boolean;
+    } | {
+        content: {
             type: "text";
             text: string;
         }[];
+        isError?: undefined;
     }>;
 }
 //# sourceMappingURL=cloud_cancel.d.ts.map

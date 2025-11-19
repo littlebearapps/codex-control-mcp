@@ -33,7 +33,7 @@ export interface CodexMetadata {
         };
     };
     task_status?: {
-        status: 'pending' | 'running' | 'completed' | 'failed' | 'canceled';
+        status: "pending" | "running" | "completed" | "failed" | "canceled";
         progress_percent?: number;
         task_id?: string;
     };

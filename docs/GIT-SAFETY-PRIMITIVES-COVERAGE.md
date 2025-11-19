@@ -15,6 +15,7 @@ Git safety checks are integrated into **ALL 4 execution primitives** that can pe
 ## Execution Primitives (4 tools) - ✅ ALL COVERED
 
 ### 1. `_codex_local_run` ✅
+
 - **File**: `src/tools/local_run.ts`
 - **Git Safety**: ✅ Integrated (lines 48-107)
 - **Features**:
@@ -25,6 +26,7 @@ Git safety checks are integrated into **ALL 4 execution primitives** that can pe
 - **Status**: READY FOR TESTING
 
 ### 2. `_codex_local_exec` ✅
+
 - **File**: `src/tools/local_exec.ts`
 - **Git Safety**: ✅ Integrated (lines 110-169)
 - **Features**:
@@ -34,6 +36,7 @@ Git safety checks are integrated into **ALL 4 execution primitives** that can pe
 - **Status**: PRODUCTION READY (previously tested)
 
 ### 3. `_codex_local_resume` ✅
+
 - **File**: `src/tools/local_resume.ts`
 - **Git Safety**: ✅ Integrated (lines 75-139)
 - **Features**:
@@ -43,6 +46,7 @@ Git safety checks are integrated into **ALL 4 execution primitives** that can pe
 - **Status**: READY FOR TESTING
 
 ### 4. `_codex_cloud_submit` ✅
+
 - **File**: `src/tools/cloud.ts`
 - **Git Safety**: ✅ Integrated
 - **Features**:
@@ -58,6 +62,7 @@ Git safety checks are integrated into **ALL 4 execution primitives** that can pe
 These tools don't execute git operations, only manage/monitor tasks:
 
 ### Status & Management (7 tools)
+
 - `_codex_local_status` - Check local task status
 - `_codex_local_results` - Get task results
 - `_codex_local_wait` - Wait for task completion
@@ -68,6 +73,7 @@ These tools don't execute git operations, only manage/monitor tasks:
 - `_codex_cloud_cancel` - Cancel cloud task
 
 ### Configuration (2 tools)
+
 - `_codex_cloud_list_environments` - List available environments
 - `_codex_cloud_github_setup` - Generate GitHub setup guide
 
@@ -81,11 +87,14 @@ All 4 execution tools follow the same pattern:
 
 ```typescript
 // 1. Import detection and checkpointing
-import { RiskyOperationDetector, GitOperationTier } from '../security/risky_operation_detector.js';
-import { SafetyCheckpointing } from '../security/safety_checkpointing.js';
+import {
+  RiskyOperationDetector,
+  GitOperationTier,
+} from "../security/risky_operation_detector.js";
+import { SafetyCheckpointing } from "../security/safety_checkpointing.js";
 
 // 2. Add parameter to schema
-allow_destructive_git: z.boolean().optional().default(false)
+allow_destructive_git: z.boolean().optional().default(false);
 
 // 3. Detect risky operations BEFORE execution
 const detector = new RiskyOperationDetector();
@@ -97,7 +106,10 @@ if (highestTier === GitOperationTier.ALWAYS_BLOCKED) {
 }
 
 // 5. Handle Tier 2 (REQUIRES_CONFIRMATION) without permission
-if (highestTier === GitOperationTier.REQUIRES_CONFIRMATION && !allow_destructive_git) {
+if (
+  highestTier === GitOperationTier.REQUIRES_CONFIRMATION &&
+  !allow_destructive_git
+) {
   return confirmationMessage; // Triggers Claude Code dialog
 }
 
@@ -115,16 +127,19 @@ if (allow_destructive_git) {
 ## Test Coverage
 
 ### Unit Tests ✅
+
 - **File**: `test-git-safety.ts`
 - **Tests**: 9/9 passing (100%)
 - **Coverage**: Tier 1, Tier 2, Tier 3 detection
 
 ### Integration Tests ✅
+
 - **File**: `test-git-safety-integration.ts`
 - **Tests**: 26/26 passing (100%)
 - **Coverage**: Detection, checkpointing, message formatting
 
 ### MCP Primitive Tests 🔄 IN PROGRESS
+
 - **File**: `test-manual-mcp-integration.ts`
 - **Expected**: 10/10 tests passing after local_run + local_resume integration
 - **Coverage**: All 4 execution primitives
@@ -134,14 +149,18 @@ if (allow_destructive_git) {
 ## Safety Guarantees
 
 ### Tier 1: ALWAYS_BLOCKED ❌
+
 These operations **CANNOT BE EXECUTED** via any primitive:
+
 - `git gc --prune=now`
 - `git reflog expire --expire-unreachable=now`
 - `git push --force` to protected branches (main/master/trunk/release)
 - `git filter-repo` on protected branches
 
 ### Tier 2: REQUIRES_CONFIRMATION ⚠️
+
 These operations require **explicit user confirmation via Claude Code dialog**:
+
 - `git reset --hard`
 - `git rebase`
 - `git push --force` to feature branches
@@ -156,7 +175,9 @@ These operations require **explicit user confirmation via Claude Code dialog**:
 ✅ Execution proceeds
 
 ### Tier 3: SAFE ✅
+
 These operations execute **without warnings**:
+
 - `git status`, `git log`, `git diff`, `git show`
 - `git add`, `git commit` (without --amend)
 - `git push` (fast-forward only)
@@ -167,14 +188,14 @@ These operations execute **without warnings**:
 
 ## Deployment Status
 
-| Primitive | Git Safety | Checkpoint | Tested | Production Ready |
-|-----------|------------|------------|--------|------------------|
-| `_codex_local_run` | ✅ | ✅ | 🔄 | 🔄 Pending Test |
-| `_codex_local_exec` | ✅ | ✅ | ✅ | ✅ YES |
-| `_codex_local_resume` | ✅ | ✅ | 🔄 | 🔄 Pending Test |
-| `_codex_cloud_submit` | ✅ | N/A* | ✅ | ✅ YES |
+| Primitive             | Git Safety | Checkpoint | Tested | Production Ready |
+| --------------------- | ---------- | ---------- | ------ | ---------------- |
+| `_codex_local_run`    | ✅         | ✅         | 🔄     | 🔄 Pending Test  |
+| `_codex_local_exec`   | ✅         | ✅         | ✅     | ✅ YES           |
+| `_codex_local_resume` | ✅         | ✅         | 🔄     | 🔄 Pending Test  |
+| `_codex_cloud_submit` | ✅         | N/A\*      | ✅     | ✅ YES           |
 
-*Cloud executes in isolated containers - no local checkpoints needed
+\*Cloud executes in isolated containers - no local checkpoints needed
 
 ---
 

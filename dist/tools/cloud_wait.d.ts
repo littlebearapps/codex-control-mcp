@@ -1,31 +1,12 @@
 /**
- * Cloud Wait Tool - Server-side polling for cloud tasks
- *
- * Waits for cloud task completion with automatic progress updates.
- * Uses Codex CLI to check status periodically.
+ * Cloud Wait Tool - Block until completion and return results summary
  */
-/**
- * Cloud wait tool handler
- */
-export declare function handleCloudWait(params: {
+export interface CloudWaitInput {
     task_id: string;
     timeout_sec?: number;
-    poll_interval_sec?: number;
-}): Promise<{
-    success: boolean;
-    task_id: string;
-    status: string;
-    progress?: any;
-    result?: string;
-    error?: string;
-    message: string;
-    elapsed_ms: number;
-    timed_out: boolean;
-    web_ui_url: string;
-}>;
-/**
- * MCP Tool Class
- */
+    include_output?: boolean;
+    format?: "json" | "markdown";
+}
 export declare class CloudWaitTool {
     static getSchema(): {
         name: string;
@@ -40,20 +21,35 @@ export declare class CloudWaitTool {
                 timeout_sec: {
                     type: string;
                     description: string;
+                    default: number;
                 };
-                poll_interval_sec: {
+                include_output: {
                     type: string;
                     description: string;
+                    default: boolean;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
                 };
             };
             required: string[];
         };
     };
-    execute(params: any): Promise<{
+    private isTerminal;
+    execute(input: CloudWaitInput): Promise<{
         content: {
-            type: "text";
+            type: string;
             text: string;
         }[];
+        isError: boolean;
+    } | {
+        content: {
+            type: string;
+            text: string;
+        }[];
+        isError?: undefined;
     }>;
 }
 //# sourceMappingURL=cloud_wait.d.ts.map

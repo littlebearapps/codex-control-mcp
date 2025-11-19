@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { ToolExecuteExtra } from '../types/progress.js';
+import { z } from "zod";
+import { ToolExecuteExtra } from "../types/progress.js";
 declare const LocalExecInputSchema: z.ZodObject<{
     task: z.ZodString;
     workingDir: z.ZodOptional<z.ZodString>;
@@ -8,11 +8,13 @@ declare const LocalExecInputSchema: z.ZodObject<{
     skipGitRepoCheck: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
     model: z.ZodOptional<z.ZodString>;
     allow_destructive_git: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+    format: z.ZodDefault<z.ZodOptional<z.ZodEnum<["json", "markdown"]>>>;
 }, "strip", z.ZodTypeAny, {
     task: string;
     mode: "read-only" | "workspace-write" | "danger-full-access";
     skipGitRepoCheck: boolean;
     allow_destructive_git: boolean;
+    format: "json" | "markdown";
     outputSchema?: any;
     model?: string | undefined;
     workingDir?: string | undefined;
@@ -24,6 +26,7 @@ declare const LocalExecInputSchema: z.ZodObject<{
     workingDir?: string | undefined;
     skipGitRepoCheck?: boolean | undefined;
     allow_destructive_git?: boolean | undefined;
+    format?: "json" | "markdown" | undefined;
 }>;
 export type LocalExecInput = z.infer<typeof LocalExecInputSchema>;
 export interface LocalExecResult {
@@ -76,6 +79,12 @@ export declare class LocalExecTool {
                     type: string;
                     description: string;
                     default: boolean;
+                };
+                format: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
                 };
             };
             required: string[];

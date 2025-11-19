@@ -21,6 +21,7 @@ Successfully renamed the project from "Codex Control MCP" to "MCP Delegator" to 
 **File**: `package.json`
 
 **Changes**:
+
 - Name: `@littlebearapps/codex-control-mcp` → `@littlebearapps/mcp-delegator`
 - Version: `3.0.1` → `3.2.0`
 - Description: Updated to reflect multi-agent delegation
@@ -29,6 +30,7 @@ Successfully renamed the project from "Codex Control MCP" to "MCP Delegator" to 
 - Repository URLs: Updated to `mcp-delegator`
 
 **Before**:
+
 ```json
 {
   "name": "@littlebearapps/codex-control-mcp",
@@ -40,6 +42,7 @@ Successfully renamed the project from "Codex Control MCP" to "MCP Delegator" to 
 ```
 
 **After**:
+
 ```json
 {
   "name": "@littlebearapps/mcp-delegator",
@@ -57,16 +60,19 @@ Successfully renamed the project from "Codex Control MCP" to "MCP Delegator" to 
 **File**: `setup-npm-link.sh`
 
 **Changes**:
+
 - Script header updated to reference `mcp-delegator`
 - Package name validation updated to `@littlebearapps/mcp-delegator`
 - Added migration step to remove old `codex-control-mcp` link
 - Updated output messages and instructions
 
 **Global Symlink**:
+
 - Old: `/opt/homebrew/bin/codex-control-mcp`
 - New: `/opt/homebrew/bin/mcp-delegator`
 
 **Verification**:
+
 ```bash
 $ which mcp-delegator
 /opt/homebrew/bin/mcp-delegator
@@ -79,10 +85,12 @@ $ which mcp-delegator
 **File**: `.mcp.json`
 
 **Changes**:
+
 - Server name: `codex-control` → `mcp-delegator`
 - Command: `codex-control-mcp` → `mcp-delegator`
 
 **Before**:
+
 ```json
 {
   "mcpServers": {
@@ -94,6 +102,7 @@ $ which mcp-delegator
 ```
 
 **After**:
+
 ```json
 {
   "mcpServers": {
@@ -109,6 +118,7 @@ $ which mcp-delegator
 ### 4. Documentation Updates ✅
 
 **CLAUDE.md**:
+
 - Title: "Codex Control MCP Server" → "MCP Delegator"
 - Version: 3.0.1 → 3.2.0
 - Purpose: Updated to reflect delegation pattern
@@ -116,6 +126,7 @@ $ which mcp-delegator
 - Current Focus section updated with rename details and missing features roadmap
 
 **README.md**:
+
 - Title: "Codex Control MCP Server" → "MCP Delegator"
 - Version: 3.0.1 → 3.2.0
 - Package name updated
@@ -125,6 +136,7 @@ $ which mcp-delegator
 - Version history updated
 
 **CHANGELOG.md**:
+
 - Header updated: "Codex Control MCP" → "MCP Delegator (formerly Codex Control MCP)"
 - New v3.2.0 entry added with:
   - Rename rationale
@@ -138,23 +150,28 @@ $ which mcp-delegator
 ## Files Modified
 
 ### Core Configuration (4 files)
+
 1. ✅ `package.json` - Package name, version, bin, keywords, repository URLs
 2. ✅ `config.json` - Server name, description, version
 3. ✅ `setup-npm-link.sh` - npm link script updated for new name
 4. ✅ `.mcp.json` - MCP configuration updated
 
 ### Source Code (1 file)
+
 5. ✅ `src/index.ts` - Server class name, constants, log messages
 
 ### Documentation (3 files)
+
 6. ✅ `CLAUDE.md` - Title, version, purpose, current focus
 7. ✅ `README.md` - Title, version, package name, repository URLs
 8. ✅ `CHANGELOG.md` - v3.2.0 entry added
 
 ### Git Configuration (1 file)
+
 9. ✅ Git remote URL updated to new repository name
 
 ### Build Artifacts
+
 10. ✅ `dist/` - Rebuilt TypeScript output
 11. ✅ `/opt/homebrew/bin/mcp-delegator` - Global symlink created
 
@@ -167,10 +184,12 @@ $ which mcp-delegator
 ### Local Changes (Complete)
 
 **Remote URL Updated**:
+
 - Old: `https://github.com/littlebearapps/codex-control-mcp.git`
 - New: `https://github.com/littlebearapps/mcp-delegator.git`
 
 **Verification**:
+
 ```bash
 $ git remote -v
 origin	https://github.com/littlebearapps/mcp-delegator.git (fetch)
@@ -182,6 +201,7 @@ origin	https://github.com/littlebearapps/mcp-delegator.git (push)
 **⚠️ IMPORTANT**: You need to rename the repository on GitHub to complete the migration.
 
 **Steps**:
+
 1. Go to: https://github.com/littlebearapps/codex-control-mcp
 2. Click "Settings" (top right)
 3. Under "General" → "Repository name"
@@ -190,12 +210,14 @@ origin	https://github.com/littlebearapps/mcp-delegator.git (push)
 6. Click "Rename"
 
 **After Rename**:
+
 - All existing URLs will redirect automatically (GitHub provides permanent redirects)
 - Issues, PRs, and release history are preserved
 - Local git remote already updated (done above)
 - Documentation URLs already updated (package.json, README.md, CHANGELOG.md)
 
 **GitHub Features Updated Automatically**:
+
 - ✅ Repository URL redirects
 - ✅ Issues and PRs preserved
 - ✅ Release history preserved
@@ -251,6 +273,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 **Required Changes**:
 
 1. **Update `.mcp.json`** in each project:
+
    ```json
    {
      "mcpServers": {
@@ -267,6 +290,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 2. **Restart Claude Code** in each working directory
 
 **Projects to Update** (from root CLAUDE.md):
+
 - ✅ codex-control (this project) - Already updated
 - ⏳ Root (instH) - Needs update
 - ⏳ Auditor Toolkit (instB) - Needs update if using codex-control
@@ -279,6 +303,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 ### MCP Configuration
 
 **Old**:
+
 ```json
 "codex-control": {
   "command": "codex-control-mcp"
@@ -286,6 +311,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 ```
 
 **New**:
+
 ```json
 "mcp-delegator": {
   "command": "mcp-delegator"
@@ -308,6 +334,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 **No backward compatibility maintained** - This is a clean break.
 
 **Rationale**:
+
 - MCP server not yet published to npm (no external users)
 - Clean rename is simpler than maintaining dual names
 - All projects under user's control can be updated easily
@@ -343,18 +370,21 @@ $ npm list -g @littlebearapps/mcp-delegator
 ### Short Term (v3.3.0)
 
 **Implement Phase 1 Features** (from MISSING-CODEX-FEATURES-IMPLEMENTATION-GUIDE.md):
+
 - Model Selection tools
 - Reasoning Level control (50-90% cost savings!)
 
 ### Medium Term (v3.4.0)
 
 **Implement Phase 2 Features**:
+
 - Multimodal support (images)
 - Web search integration
 
 ### Long Term (v4.0.0)
 
 **Add Claude Code Agent**:
+
 - Integrate Anthropic Agent SDK
 - Support delegation to Claude Code agent
 - Multi-agent orchestration workflows
@@ -364,6 +394,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 ## Documentation References
 
 **Created During Analysis**:
+
 - `docs/NAMING-AND-FEATURES-ANALYSIS-2025-11-15.md` (850+ lines)
   - Naming research and rationale
   - MCP ecosystem conventions
@@ -378,6 +409,7 @@ $ npm list -g @littlebearapps/mcp-delegator
   - Testing criteria
 
 **Updated**:
+
 - `CLAUDE.md` - Project memory/context
 - `README.md` - Public documentation
 - `CHANGELOG.md` - Version history
@@ -427,6 +459,7 @@ $ cat .mcp.json | grep -A 3 "mcp-delegator"
 **Status**: ✅ Rename Complete - Ready for Testing
 
 **Changes**:
+
 - ✅ Package renamed to `@littlebearapps/mcp-delegator`
 - ✅ Version bumped to 3.2.0
 - ✅ npm link created and verified

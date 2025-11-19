@@ -24,6 +24,7 @@
 **Solution**: Automatic migration with fallback
 
 **Implementation**:
+
 - Modified `src/state/task_registry.ts` constructor with auto-migration logic
 - Updated `src/tools/list_environments.ts` config path
 - Updated `src/state/cloud_task_registry.ts` config path
@@ -32,22 +33,26 @@
 - Added comprehensive CHANGELOG entry with breaking change notice
 
 **Testing**:
+
 - ✅ Automatic migration test: Old directory renamed to new directory
 - ✅ All 60 tasks preserved (no data loss)
 - ✅ All files migrated (tasks.db, environments.json, cloud-tasks.json)
 - ✅ npm link working (v3.4.1 active globally)
 
 **Migration Scenarios Tested**:
+
 1. ✅ Old directory only → Automatic migration
 2. ✅ Both directories exist → Use new, warn about old
 3. ⏳ Migration failure → Fallback to old directory (not tested, built into code)
 
 **Files Changed**: 10 total
+
 - 4 source files (task_registry.ts, list_environments.ts, cloud_task_registry.ts, github_setup.ts)
 - 4 version files (package.json, src/index.ts, config.json, CLAUDE.md)
 - 2 documentation files (CHANGELOG.md, CONFIG-MIGRATION-PLAN.md)
 
 **Documents Created**:
+
 - `docs/debugging/CONFIG-MIGRATION-PLAN.md` - Detailed migration plan
 - `docs/debugging/V3.4.1-MIGRATION-COMPLETE.md` - Implementation summary
 - `docs/debugging/V3.4.1-MIGRATION-VERIFIED.md` - Test results (4/4 tests passed)
@@ -59,16 +64,19 @@
 **Created comprehensive issue catalog** from auditor-toolkit error reports:
 
 **`docs/debugging/AUDITOR-TOOLKIT-ISSUES.md`**:
+
 - 12 distinct issues across 3 categories
 - Categorized by severity (2 CRITICAL, 1 HIGH, 4 MEDIUM, 4 LOW)
 - Detailed evidence and impact analysis for each issue
 
 **Category Breakdown**:
+
 - **Task Execution & Registry**: 5 issues (CRITICAL/HIGH)
 - **Git Workflow**: 4 issues (LOW - enhancements)
 - **Output & Communication**: 3 issues (MEDIUM)
 
 **`docs/debugging/INVESTIGATION-PLAN.md`**:
+
 - 4-phase investigation plan (4-8 hour estimate)
 - Detailed test cases for each issue
 - SQL queries for registry diagnostics
@@ -83,12 +91,14 @@
 **Investigation Complete** - See `docs/debugging/ISSUE-1.1-INVESTIGATION.md`
 
 **Key Findings**:
+
 1. ✅ **Code Analysis**: All task registration/query code is correct
 2. ✅ **Critical Discovery**: Errors occurred with OLD setup (v3.2.1 + ~/.config/codex-control/)
 3. ✅ **Timeline Analysis**: Errors reported BEFORE migration to v3.4.1 + ~/.config/mcp-delegator/
 4. ⚠️ **Hypothesis**: Migration may have already resolved the issue
 
 **Root Cause Analysis** (6 hypotheses evaluated):
+
 1. ❌ Database write failure: <5% probability (SQLite is synchronous)
 2. ❌ Working directory mismatch: <10% probability (showAll bypasses filter)
 3. ⚠️ Timing issue: ~20% probability (unlikely but possible)
@@ -97,11 +107,13 @@
 6. ⚠️ Codex SDK never starts: ~15% probability (timeout should catch this)
 
 **Testing Plan Created**:
+
 - Test 1: Verify issue is resolved with v3.4.1
 - Test 2: Verify task execution (file creation)
 - Test 3: Direct SQLite query stress test
 
 **Recommendations**:
+
 1. Test in auditor-toolkit (where errors were originally reported)
 2. Verify v3.4.1 fixes the issue
 3. If issue persists, investigate Codex SDK event stream
@@ -115,6 +127,7 @@
 **Resolution**: Fully documented
 
 **Findings**:
+
 - **Location**: `~/.config/mcp-delegator/tasks.db` (migrated from codex-control)
 - **Format**: SQLite database (better-sqlite3)
 - **Size**: 5.2 MB (60 tasks)
@@ -139,6 +152,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 ```
 
 **Benefits**:
+
 - ✅ Changes propagate immediately after rebuild
 - ✅ No need to republish for local testing
 - ✅ Global command available in all projects
@@ -153,9 +167,10 @@ $ npm list -g @littlebearapps/mcp-delegator
 ```
 
 **Distribution**:
+
 - Compiled JavaScript: `dist/` (gitignored)
 - TypeScript source: `src/`
-- 15 MCP tools (all with _ prefix)
+- 15 MCP tools (all with \_ prefix)
 
 ---
 
@@ -218,18 +233,22 @@ $ npm list -g @littlebearapps/mcp-delegator
 ### Source Code Files (4 files)
 
 **`src/state/task_registry.ts`** (lines 91-125):
+
 - Added automatic migration logic in constructor
 - Detects old directory, renames to new directory
 - Fallback to old directory if migration fails
 - Warnings if both directories exist
 
 **`src/tools/list_environments.ts`** (lines 5, 25):
+
 - Updated config path: `~/.config/codex-control/` → `~/.config/mcp-delegator/`
 
 **`src/state/cloud_task_registry.ts`** (lines 42-46):
+
 - Updated config path with migration note
 
 **`src/tools/github_setup.ts`** (lines 380, 382):
+
 - Updated MCP resource reference and GitHub repo URL
 
 ### Version Files (4 files)
@@ -265,6 +284,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 ### Pending (17 tasks remaining)
 
 **High Priority**:
+
 1. Test Issue 1.1 fix in auditor-toolkit to verify it's resolved
 2. Investigate Issue 1.2: Tasks report success without creating files
 3. Investigate Issue 1.3: Stuck tasks in registry - check timeout/cleanup logic
@@ -293,6 +313,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 2. **Decision Point**: Publish v3.4.1 or Continue Investigation?
 
    **Option A: Publish Now** (if Test 1 passes)
+
    ```bash
    # Commit and push (triggers semantic-release)
    git add -A
@@ -374,18 +395,21 @@ $ npm list -g @littlebearapps/mcp-delegator
 ## Files Overview
 
 ### Source Files Modified (4)
+
 - `src/state/task_registry.ts`
 - `src/tools/list_environments.ts`
 - `src/state/cloud_task_registry.ts`
 - `src/tools/github_setup.ts`
 
 ### Version Files Updated (4)
+
 - `package.json`
 - `src/index.ts`
 - `config.json`
 - `CLAUDE.md`
 
 ### Documentation Created (8)
+
 - `docs/debugging/CONFIG-MIGRATION-PLAN.md`
 - `docs/debugging/AUDITOR-TOOLKIT-ISSUES.md`
 - `docs/debugging/INVESTIGATION-PLAN.md`
@@ -417,6 +441,7 @@ $ npm list -g @littlebearapps/mcp-delegator
 ### Recommendation
 
 **Test First, Then Publish**:
+
 1. Run Issue 1.1 tests in auditor-toolkit
 2. Verify migration resolved original errors
 3. If successful, commit and publish v3.4.1

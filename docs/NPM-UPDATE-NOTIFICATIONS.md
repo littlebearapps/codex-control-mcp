@@ -19,6 +19,7 @@ Implemented automatic update notifications to alert users when a new version of 
 **`update-notifier`** (v7.3.1)
 
 **Why this package**:
+
 - ✅ Most popular: 5,327 projects using it (vs 118 for simple-update-notifier)
 - ✅ Well-maintained: Last published 1 year ago (vs 2 years for alternatives)
 - ✅ Battle-tested: Industry standard for CLI update notifications
@@ -27,6 +28,7 @@ Implemented automatic update notifications to alert users when a new version of 
 - ✅ Global-aware: Shows correct install command for global packages
 
 **Alternatives considered**:
+
 - `simple-update-notifier` (2.0.0): Less popular, older, simpler
 - `update-notifier-plus` (1.0.1): Very old (9 years), not maintained
 
@@ -37,6 +39,7 @@ Implemented automatic update notifications to alert users when a new version of 
 ### 1. Dependencies Added
 
 **`package.json`**:
+
 ```json
 {
   "dependencies": {
@@ -53,19 +56,23 @@ Implemented automatic update notifications to alert users when a new version of 
 **`src/index.ts`** (lines 39-47, 402-408):
 
 **Imports**:
+
 ```typescript
-import updateNotifier from 'update-notifier';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import updateNotifier from "update-notifier";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 // Read package.json for update notifier
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
+const pkg = JSON.parse(
+  readFileSync(join(__dirname, "../package.json"), "utf-8"),
+);
 ```
 
 **Main Function**:
+
 ```typescript
 async function main() {
   try {
@@ -80,7 +87,7 @@ async function main() {
     const server = new MCPDelegatorServer();
     await server.start();
   } catch (error) {
-    console.error('[MCPDelegator] Fatal error:', error);
+    console.error("[MCPDelegator] Fatal error:", error);
     process.exit(1);
   }
 }
@@ -101,13 +108,15 @@ async function main() {
 ### Configuration
 
 **Update Check Interval**: 24 hours (1 day)
+
 ```typescript
-updateCheckInterval: 1000 * 60 * 60 * 24
+updateCheckInterval: 1000 * 60 * 60 * 24;
 ```
 
 **Global Install**: Shows correct npm command
+
 ```typescript
-isGlobal: true
+isGlobal: true;
 ```
 
 ---
@@ -117,6 +126,7 @@ isGlobal: true
 ### When Update Available
 
 **Console Output**:
+
 ```
 ╭───────────────────────────────────────────────────╮
 │                                                   │
@@ -133,6 +143,7 @@ isGlobal: true
 ### When Up-to-Date
 
 **Console Output**:
+
 ```
 [MCPDelegator] Server started successfully via npm link ✅
 [MCPDelegator] Name: mcp-delegator
@@ -178,15 +189,19 @@ cat ~/.config/configstore/update-notifier-@littlebearapps-mcp-delegator.json
 **Challenge**: Import package.json in ESM (type: "module")
 
 **Solution**: Use `fs.readFileSync` with `fileURLToPath`
+
 ```typescript
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
+const pkg = JSON.parse(
+  readFileSync(join(__dirname, "../package.json"), "utf-8"),
+);
 ```
 
 **Alternative** (Node.js 20.10+):
+
 ```typescript
-import pkg from '../package.json' with { type: 'json' };
+import pkg from "../package.json" with { type: "json" };
 ```
 
 **Reason for current approach**: Better compatibility with older Node.js 20.x versions
@@ -194,6 +209,7 @@ import pkg from '../package.json' with { type: 'json' };
 ### Non-Blocking Execution
 
 **update-notifier** checks asynchronously:
+
 - ✅ Does NOT block server startup
 - ✅ Does NOT delay MCP initialization
 - ✅ Runs in background thread
@@ -207,11 +223,13 @@ import pkg from '../package.json' with { type: 'json' };
 ### Customization Available
 
 **Update Check Interval**:
+
 ```typescript
 updateCheckInterval: 1000 * 60 * 60 * 24 * 7, // Weekly
 ```
 
 **Custom Message**:
+
 ```typescript
 .notify({
   isGlobal: true,
@@ -220,11 +238,13 @@ updateCheckInterval: 1000 * 60 * 60 * 24 * 7, // Weekly
 ```
 
 **Defer Notifications**:
+
 ```typescript
 updateNotifier({ pkg, defer: true }).notify();
 ```
 
 **Box Style**:
+
 ```typescript
 .notify({
   boxenOptions: {
@@ -242,16 +262,19 @@ updateNotifier({ pkg, defer: true }).notify();
 Users can disable update notifications:
 
 **Method 1: Environment Variable**
+
 ```bash
 export NO_UPDATE_NOTIFIER=1
 ```
 
 **Method 2: Config File**
+
 ```bash
 echo '{"optOut": true}' > ~/.config/configstore/update-notifier-@littlebearapps-mcp-delegator.json
 ```
 
 **Method 3: Global npm Setting**
+
 ```bash
 npm config set update-notifier false
 ```
@@ -265,6 +288,7 @@ npm config set update-notifier false
 **Next Release**: v3.5.0 (minor version bump - new feature)
 
 **Semantic Versioning**:
+
 - v3.4.1: Config directory migration (breaking change)
 - v3.5.0: npm update notifications (new feature) ← This feature
 
@@ -275,7 +299,7 @@ npm config set update-notifier false
 
 ### Features
 
-* **updates:** Add automatic npm update notifications ([#TBD](https://github.com/littlebearapps/mcp-delegator/issues/TBD))
+- **updates:** Add automatic npm update notifications ([#TBD](https://github.com/littlebearapps/mcp-delegator/issues/TBD))
   - Notify users when new versions are available
   - Non-intrusive daily background checks
   - Shows global install command: `npm i -g @littlebearapps/mcp-delegator`
@@ -288,12 +312,14 @@ npm config set update-notifier false
 ## Benefits
 
 ### For Users
+
 - ✅ **Stay Up-to-Date**: Automatic notifications when updates available
 - ✅ **Non-Intrusive**: Only shows when there's actually an update
 - ✅ **Clear Instructions**: Shows exact command to update
 - ✅ **Opt-Out Available**: Can disable if desired
 
 ### For Maintainers
+
 - ✅ **Faster Adoption**: Users update to latest versions quicker
 - ✅ **Reduced Support**: Fewer users on old, buggy versions
 - ✅ **Better Feedback**: Users test new features faster
@@ -303,15 +329,15 @@ npm config set update-notifier false
 
 ## Comparison with Alternatives
 
-| Feature | update-notifier | simple-update-notifier | Manual Checks |
-|---------|----------------|----------------------|--------------|
-| **Adoption** | 5,327 projects | 118 projects | N/A |
-| **Maintenance** | 1 year ago | 2 years ago | N/A |
-| **Non-blocking** | ✅ Yes | ✅ Yes | ❌ No |
-| **Configurable** | ✅ Highly | ⚠️ Limited | N/A |
-| **Opt-out** | ✅ Yes | ✅ Yes | N/A |
-| **Global-aware** | ✅ Yes | ⚠️ Manual | N/A |
-| **Caching** | ✅ Yes | ✅ Yes | ❌ No |
+| Feature          | update-notifier | simple-update-notifier | Manual Checks |
+| ---------------- | --------------- | ---------------------- | ------------- |
+| **Adoption**     | 5,327 projects  | 118 projects           | N/A           |
+| **Maintenance**  | 1 year ago      | 2 years ago            | N/A           |
+| **Non-blocking** | ✅ Yes          | ✅ Yes                 | ❌ No         |
+| **Configurable** | ✅ Highly       | ⚠️ Limited             | N/A           |
+| **Opt-out**      | ✅ Yes          | ✅ Yes                 | N/A           |
+| **Global-aware** | ✅ Yes          | ⚠️ Manual              | N/A           |
+| **Caching**      | ✅ Yes          | ✅ Yes                 | ❌ No         |
 
 **Verdict**: update-notifier is the industry standard for good reason
 
@@ -322,6 +348,7 @@ npm config set update-notifier false
 ### Potential Improvements (Not Implemented)
 
 1. **Custom Branding**:
+
    ```typescript
    .notify({
      message: '🐻 Little Bear Apps: Update available!\n{updateCommand}',
@@ -329,6 +356,7 @@ npm config set update-notifier false
    ```
 
 2. **Release Notes Link**:
+
    ```typescript
    .notify({
      message: 'Run `{updateCommand}` to update.\nSee changelog: https://github.com/littlebearapps/mcp-delegator/releases/tag/v{latestVersion}',
@@ -336,9 +364,10 @@ npm config set update-notifier false
    ```
 
 3. **Breaking Change Warnings**:
+
    ```typescript
    if (semver.major(latest) > semver.major(current)) {
-     console.error('⚠️  BREAKING CHANGES in this update!');
+     console.error("⚠️  BREAKING CHANGES in this update!");
    }
    ```
 
@@ -376,17 +405,21 @@ npm config set update-notifier false
 ### Issue: Notification Not Showing
 
 **Diagnosis**:
+
 ```bash
 cat ~/.config/configstore/update-notifier-@littlebearapps-mcp-delegator.json
 ```
 
 **Solutions**:
+
 1. Delete cache file to force recheck:
+
    ```bash
    rm ~/.config/configstore/update-notifier-@littlebearapps-mcp-delegator.json
    ```
 
 2. Check npm registry has newer version:
+
    ```bash
    npm view @littlebearapps/mcp-delegator version
    ```
@@ -399,6 +432,7 @@ cat ~/.config/configstore/update-notifier-@littlebearapps-mcp-delegator.json
 ### Issue: Notification Too Frequent
 
 **Solution**: Increase check interval
+
 ```typescript
 updateCheckInterval: 1000 * 60 * 60 * 24 * 7, // Weekly instead of daily
 ```
@@ -408,6 +442,7 @@ updateCheckInterval: 1000 * 60 * 60 * 24 * 7, // Weekly instead of daily
 **Problem**: Shows `npm install` instead of `npm i -g`
 
 **Solution**: Ensure `isGlobal: true` is set
+
 ```typescript
 .notify({ isGlobal: true });
 ```
@@ -425,6 +460,7 @@ updateCheckInterval: 1000 * 60 * 60 * 24 * 7, // Weekly instead of daily
 **Status**: ✅ Implementation Complete - Ready for Next Release (v3.5.0)
 
 **Files Changed**: 3 total
+
 - `package.json` (dependencies)
 - `src/index.ts` (implementation)
 - `docs/debugging/NPM-UPDATE-NOTIFICATIONS.md` (this document)

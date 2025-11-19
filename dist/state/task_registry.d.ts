@@ -7,15 +7,15 @@
  * - SEP-1391 alignment (state terminology, polling guidance, TTL)
  * - Support for disambiguation and auto-resolution
  */
-import { ProgressSummary } from '../executor/progress_inference.js';
+import { ProgressSummary } from "../executor/progress_inference.js";
 /**
  * Task origin (local or cloud)
  */
-export type TaskOrigin = 'local' | 'cloud';
+export type TaskOrigin = "local" | "cloud";
 /**
  * Task status (SEP-1391 aligned + git verification statuses)
  */
-export type TaskStatus = 'pending' | 'working' | 'completed' | 'completed_with_warnings' | 'completed_with_errors' | 'failed' | 'canceled' | 'unknown';
+export type TaskStatus = "pending" | "working" | "completed" | "completed_with_warnings" | "completed_with_errors" | "failed" | "canceled" | "unknown";
 /**
  * Unified task record
  */
